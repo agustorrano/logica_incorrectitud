@@ -54,13 +54,15 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_Seq_Er : #p : stmt -> #q : stmt ->
     #s : state -> #t : state ->
     runsto p s Er t -> runsto (Seq p q) s Er t
-  | R_Seq_Ok : #p : stmt -> #q : stmt ->
+  | R_Seq : #p : stmt -> #q : stmt -> #m : term_mode ->
     #s : state -> #t : state -> #u : state ->
-    runsto p s Ok t -> runsto q t Ok u ->
-    runsto (Seq p q) s Ok u
+    runsto p s Ok t -> runsto q t m u ->
+    runsto (Seq p q) s m u
   | R_Choice_L : #p : stmt -> #q : stmt ->
     #s : state -> #m : term_mode -> #t : state ->
     runsto p s m t -> runsto (Choice p q) s m t
   | R_Choice_R : #p : stmt -> #q : stmt ->
     #s: state -> #m : term_mode -> #t : state ->
     runsto q s m t -> runsto (Choice p q) s m t
+  | R_Kleene_Zero : #p : stmt -> #s : state -> 
+    runsto (Kleene p) s Ok s

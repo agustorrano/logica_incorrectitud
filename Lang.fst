@@ -62,24 +62,24 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_Assume : s : state -> #e : expr -> 
     squash (eval_expr s e == 0) ->
     runsto (Assume e) s Ok s
-  | R_Seq_Er : #p : stmt -> #q : stmt ->
+  | R_SeqEr : #p : stmt -> #q : stmt ->
     #s : state -> #t : state ->
     runsto p s Er t -> runsto (Seq p q) s Er t
   | R_Seq : #p : stmt -> #q : stmt -> #m : term_mode ->
     #s : state -> #t : state -> #u : state ->
     runsto p s Ok t -> runsto q t m u ->
     runsto (Seq p q) s m u
-  | R_Choice_L : #p : stmt -> #q : stmt ->
+  | R_ChoiceL : #p : stmt -> #q : stmt ->
     #s : state -> #m : term_mode -> #t : state ->
     runsto p s m t -> runsto (Choice p q) s m t
-  | R_Choice_R : #p : stmt -> #q : stmt ->
+  | R_ChoiceR : #p : stmt -> #q : stmt ->
     #s: state -> #m : term_mode -> #t : state ->
     runsto q s m t -> runsto (Choice p q) s m t
-  | R_Kleene_Zero : #p : stmt -> #s : state -> 
+  | R_Kleene0 : #p : stmt -> #s : state -> 
     runsto (Kleene p) s Ok s
-  | R_Kleene_Step : #p : stmt -> #s : state ->
-    #m : term_mode -> #t : state -> q : stmt ->
-    runsto (Seq (Kleene p) q) s m t ->
+  | R_KleeneS : #p : stmt -> #s : state ->
+    #m : term_mode -> #t : state ->
+    runsto (Seq (Kleene p) p) s m t ->
     runsto (Kleene p) s m t
   | R_Local : s : state -> #x : var -> #p : stmt -> 
     m : term_mode -> t : state ->
@@ -96,7 +96,6 @@ let init : state = fun _ -> 0
 //  = R_Local init Ok (override init "x" 1) 1
 //      _
 
-
 type cond = state -> prop
 
 // Lógica de incorrectitud
@@ -112,6 +111,7 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : co
     il_triple pre (Nondet x) (fun s -> exists v. pre (override s x v)) (fun s -> false)
 
   // | I_Local : 
+
   | I_Skip : pre : cond -> 
     il_triple pre Skip pre (fun s -> false)
 
@@ -128,24 +128,25 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : co
     il_triple mid_ok q post_ok post_er ->
     il_triple pre (Seq p q) post_ok (fun s -> mid_er s \/ post_er s)
 
-  | I_Choice : #p : stmt -> #q : stmt -> #pre : cond -> 
-    #post_okp : cond -> #post_erp : cond ->
-    #post_okq : cond -> #post_erq : cond ->
-    il_triple pre p post_okp post_erp ->
-    il_triple pre q post_okq post_erq ->
-    il_triple pre (Choice p q) 
-      (fun s -> post_okp s \/ post_okq s)
-      (fun s -> post_erp s \/ post_erq s)
+  //| I_Choice : #p : stmt -> #q : stmt -> #pre : cond -> 
+  //  #post_okp : cond -> #post_erp : cond ->
+  //  #post_okq : cond -> #post_erq : cond ->
+  //  il_triple pre p post_okp post_erp ->
+  //  il_triple pre q post_okq post_erq ->
+  //  il_triple pre (Choice p q) 
+  //    (fun s -> post_okp s \/ post_okq s)
+  //    (fun s -> post_erp s \/ post_erq s)
 
   // Equivalente a la de arriba (esta es la versión del paper):
-  // | I_Choice1 : #p : stmt -> #q : stmt ->
-  //   #pre : cond -> #post_ok : cond -> #post_er : cond ->
-  //   il_triple pre p post_ok post_er ->
-  //   il_triple pre (Choice p q) post_ok post_er
-  // | I_Choice2 : #p : stmt -> #q : stmt ->
-  //   #pre : cond -> #post_ok : cond -> #post_er : cond ->
-  //   il_triple pre q post_ok post_er ->
-  //   il_triple pre (Choice p q) post_ok post_er
+  | I_ChoiceL : #p : stmt -> #q : stmt ->
+    #pre : cond -> #post_ok : cond -> #post_er : cond ->
+    il_triple pre p post_ok post_er ->
+    il_triple pre (Choice p q) post_ok post_er
+  
+  | I_ChoiceR : #p : stmt -> #q : stmt ->
+    #pre : cond -> #post_ok : cond -> #post_er : cond ->
+    il_triple pre q post_ok post_er ->
+    il_triple pre (Choice p q) post_ok post_er
 
   | I_Kleene0 :
     #p : stmt -> #pre : cond -> 
@@ -161,29 +162,136 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : co
     (n : nat ->
       il_triple (variant n) p (variant (n + 1)) (fun s -> false)) ->
     il_triple (variant 0) (Kleene p) (fun s -> exists n. variant n s) (fun s -> false)
-
+  
+  | I_Empty : #pre : cond -> #p : stmt -> 
+    il_triple pre p (fun s -> false) (fun s -> false)
+  
+  | I_Consequence : #pre : cond -> #p : stmt -> 
+    #post_ok : cond -> #post_er : cond -> 
+    pre' : cond -> post_ok' : cond -> post_er' : cond ->
+    il_triple pre p post_ok post_er ->
+    squash (forall x. pre x ==> pre' x) ->
+    squash (forall x. post_ok' x ==> post_ok x) ->
+    squash (forall x. post_er' x ==> post_er x) ->
+    il_triple pre' p post_ok' post_er'
+  
+  | I_Disjunction : #pre1 : cond -> #pre2 : cond -> 
+    #p : stmt -> #post_ok1 : cond -> #post_ok2 : cond -> 
+    #post_er1 : cond -> #post_er2 : cond ->
+    il_triple pre1 p post_ok1 post_er1 ->
+    il_triple pre2 p post_ok2 post_er2 ->
+    il_triple (fun s -> pre1 s \/ pre2 s) p 
+      (fun s -> post_ok1 s \/ post_ok2 s) 
+      (fun s -> post_er1 s \/ post_er2 s)
 
 let test : (x:int & y:int{x > y}) = (|3,2|)
 
-// Si se complica por el 'if' en el refinamiento, considerar las dos de abajo
-let soundness
-  (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
-  (m : term_mode)
-  (pf : il_triple pre p post_ok post_er)
-  (s1 : state { if m = Ok then post_ok s1 else post_er s1 })
-  : (s0 : state { pre s0 } & runsto p s0 m s1) =
-  admit()
-
-let soundness_ok
+let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : il_triple pre p post_ok post_er)
   (s1 : state { post_ok s1 })
-  : (s0 : state { pre s0 } & runsto p s0 Ok s1) =
-  admit()
+  : Tot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
+  match pf with
+  | I_Assign #pre #x #e -> admit()
 
-let soundness_er
+  | I_Nondet #x #pre -> admit()
+
+  | I_Skip _ -> 
+    let s0 = s1 in
+    let r = R_Skip s0 in
+    (|s0, r|)
+
+  | I_Error _ -> admit()
+
+  | I_Assume e -> admit()
+
+  | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q ->
+    let (|s_mid, r_q|) = 
+      soundness_ok q mid_ok post_ok post_er pf_q s1 in
+    let (|s0, r_p|) =
+      soundness_ok p pre mid_ok mid_er pf_p s_mid in
+    let r = R_Seq r_p r_q in
+    (|s0, r|)
+  
+  | I_ChoiceL #p #q #pre #post_ok #post_er pf_p ->
+    let (|s0, r_p|) =
+      soundness_ok p pre post_ok post_er pf_p s1 in
+    let r = R_ChoiceL #p #q r_p in
+    (|s0, r|)
+  
+  | I_ChoiceR #p #q #pre #post_ok #post_er pf_q ->
+    let (|s0, r_q|) =
+      soundness_ok q pre post_ok post_er pf_q s1 in
+    let r = R_ChoiceR #p #q r_q in
+    (|s0, r|)
+
+  | I_Kleene0 #p ->
+    let s0 = s1 in
+    let r = R_Kleene0 #p in
+    (|s0, r|)
+  
+  | I_KleeneS #p #pre #post_ok #post_er pf_seq ->
+    let (|s0, r_seq|) =
+      soundness_ok (Seq (Kleene p) p) pre post_ok post_er pf_seq s1 in
+    let r = R_KleeneS #p r_seq in
+    (|s0, r|)
+
+  | I_KleeneVariant #variant #p pf_var -> admit()
+
+  | I_Empty -> admit()
+
+  | I_Consequence #pre #p #post_ok #post_er
+    pre' post_ok' post_er' pf_p sq1 sq2 sq3 -> 
+    let _ = sq2 in
+    let _ = sq1 in
+    let (|s0, r|) = soundness_ok p pre post_ok post_er pf_p s1 in
+    (|s0, r|)
+  
+  | I_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
+    #post_er1 #post_er2 pf_p1 pf_p2 ->
+    admit()
+
+let rec soundness_er
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : il_triple pre p post_ok post_er)
   (s1 : state { post_er s1 })
   : (s0 : state { pre s0 } & runsto p s0 Er s1) =
-  admit()
+  match pf with
+  | I_Assign -> admit()
+
+  | I_Nondet -> admit()
+
+  | I_Skip _ -> admit()
+
+  | I_Error _ -> 
+    let s0 = s1 in
+    let r = R_Error s0 in
+    (|s0, r|)
+
+  | I_Assume _ -> admit()
+
+  | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q -> admit()
+  
+  | I_ChoiceL #p #q #pre #post_ok #post_er pf_p ->
+    let (|s0, r_p|) =
+      soundness_er p pre post_ok post_er pf_p s1 in
+    let r = R_ChoiceL #p #q r_p in
+    (|s0, r|)
+  
+  | I_ChoiceR #p #q #pre #post_ok #post_er pf_q ->
+    let (|s0, r_q|) =
+      soundness_er q pre post_ok post_er pf_q s1 in
+    let r = R_ChoiceR #p #q r_q in
+    (|s0, r|)
+
+  | I_Kleene0 -> admit()
+  
+  | I_KleeneS #p #pre #post_ok #post_er pf_seq -> admit()
+
+  | I_KleeneVariant _ -> admit()
+
+  | I_Empty -> admit()
+
+  | I_Consequence _ _ _ _ _ _ _ -> admit()
+  
+  | I_Disjunction _ _ -> admit()

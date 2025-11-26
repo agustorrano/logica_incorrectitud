@@ -2,6 +2,13 @@ module Lang
 
 open FStar.Mul
 
+module S = FStar.StrongExcludedMiddle
+
+unfold
+let p2b (p : prop) : GTot bool = S.strong_excluded_middle p
+
+let unreachable #a (_ : squash False) : a = coerce_eq () ()
+
 type var = string
 type value = int
 
@@ -32,7 +39,7 @@ type term_mode =
 
 type state = var -> int
 
-let rec eval_expr (s : state) (e : expr) : int =
+let rec eval_expr (s : state) (e : expr) : GTot int =
   match e with
     | Var x -> s x
     | Const n -> n
@@ -186,6 +193,10 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : co
 
 let test : (x:int & y:int{x > y}) = (|3,2|)
 
+let hd (l : list int {Cons? l}) : int =
+  match l with
+  | hd::tl -> hd
+
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : il_triple pre p post_ok post_er)
@@ -201,9 +212,13 @@ let rec soundness_ok
     let r = R_Skip s0 in
     (|s0, r|)
 
-  | I_Error _ -> admit()
+  | I_Error _ -> unreachable ()
 
-  | I_Assume e -> admit()
+  | I_Assume pre #e ->
+    assert (pre s1 /\ eval_expr s1 e == 0);
+    let s0 = s1 in
+    let r = R_Assume s0 #e () in
+    (|s0, r|)
 
   | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q ->
     let (|s_mid, r_q|) = 
@@ -238,7 +253,7 @@ let rec soundness_ok
 
   | I_KleeneVariant #variant #p pf_var -> admit()
 
-  | I_Empty -> admit()
+  | I_Empty -> unreachable ()
 
   | I_Consequence #pre #p #post_ok #post_er
     pre' post_ok' post_er' pf_p sq1 sq2 sq3 -> 
@@ -251,27 +266,36 @@ let rec soundness_ok
     #post_er1 #post_er2 pf_p1 pf_p2 ->
     admit()
 
-let rec soundness_er
+and soundness_er
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : il_triple pre p post_ok post_er)
   (s1 : state { post_er s1 })
-  : (s0 : state { pre s0 } & runsto p s0 Er s1) =
+  : GTot (s0 : state { pre s0 } & runsto p s0 Er s1)
+         (decreases pf)
+   =
   match pf with
-  | I_Assign -> admit()
-
-  | I_Nondet -> admit()
-
-  | I_Skip _ -> admit()
+  | I_Assign -> unreachable ()
+  | I_Nondet -> unreachable ()
+  | I_Skip _ -> unreachable ()
+  | I_Assume _ -> unreachable ()
 
   | I_Error _ -> 
     let s0 = s1 in
     let r = R_Error s0 in
     (|s0, r|)
 
-  | I_Assume _ -> admit()
+  | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er' pf_p pf_q ->
+    if p2b (mid_er s1) then
+      let (| s0, r |) = soundness_er p pre mid_ok mid_er pf_p s1 in
+      (| s0, R_SeqEr #p #q r |)
+    else (
+      assert (post_er s1);
+      let (| s_mid, r2 |) = soundness_er q mid_ok post_ok post_er' pf_q s1 in
+      assert (mid_ok s_mid);
+      let (| s0, r1 |) = soundness_ok p pre mid_ok mid_er pf_p s_mid in
+      (| s0, R_Seq #p #q r1 r2 |)
+    )
 
-  | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q -> admit()
-  
   | I_ChoiceL #p #q #pre #post_ok #post_er pf_p ->
     let (|s0, r_p|) =
       soundness_er p pre post_ok post_er pf_p s1 in
@@ -290,7 +314,7 @@ let rec soundness_er
 
   | I_KleeneVariant _ -> admit()
 
-  | I_Empty -> admit()
+  | I_Empty -> unreachable ()
 
   | I_Consequence _ _ _ _ _ _ _ -> admit()
   

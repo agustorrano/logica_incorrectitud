@@ -3,6 +3,23 @@ module IncLogic
 open FStar.Mul
 
 module S = FStar.StrongExcludedMiddle
+module FE = FStar.FunctionalExtensionality
+open FStar.FunctionalExtensionality { (^->) }
+
+let test2 () =
+  let f1 x = 1+x in
+  let f2 x = x+1 in
+  assert (forall x. f1 x == f2 x);
+  assert (FE.feq f1 f2);
+  assert (FE.on_domain int f1 == FE.on_domain int f2)
+
+let test () =
+  let f1 : (nat ^-> int) = FE.on_dom nat (fun x -> x <: int) in
+  let f2 : (nat ^-> int) = FE.on_dom nat (fun x -> if x < 0 then -x else x) in
+  // assert (forall (x:nat). f1 x == f2 x);
+  assert (FE.feq #nat f1 f2);
+  // assert (FE.on_domain nat f1 == FE.on_domain nat f2);
+  assert (f1 == f2)
 
 unfold
 let p2b (p : prop) : GTot bool = S.strong_excluded_middle p
@@ -59,6 +76,17 @@ let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
 // Semántica del lenguaje
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> Type0 =
+  (* no-op, sólo reescribe los estados. Si usáramos funciones
+     extensionales para state (i.e. ^->) tendríamos
+     la igualdad s0 == s0' y no haría falta esta regla. *)
+  | R_Ext : #p:stmt -> #s0:state -> #m:term_mode -> #s1:state ->
+    runsto p s0 m s1 ->
+    s0' : state ->
+    s1' : state ->
+    (#_ : squash (forall x. s0 x == s0' x)) ->
+    (#_ : squash (forall x. s1 x == s1' x)) ->
+    runsto p s0' m s1'
+
   | R_Assign : s : state ->
     #x : var -> #e : expr ->
     runsto (Assign x e) s Ok (override s x (eval_expr s e))
@@ -115,7 +143,8 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : co
       (fun s -> false)
 
   | I_Nondet : #x : var -> #pre : cond ->
-    il_triple pre (Nondet x) (fun s -> exists v. pre (override s x v)) (fun s -> false)
+    il_triple pre (Nondet x) (fun s ->
+      exists v. pre (override s x v)) (fun s -> false)
 
   // | I_Local : 
 
@@ -191,11 +220,11 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : co
       (fun s -> post_ok1 s \/ post_ok2 s) 
       (fun s -> post_er1 s \/ post_er2 s)
 
-let test : (x:int & y:int{x > y}) = (|3,2|)
+// let _ : (x:int & y:int{x > y}) = (|3,2|)
 
-let hd (l : list int {Cons? l}) : int =
-  match l with
-  | hd::tl -> hd
+// let hd (l : list int {Cons? l}) : int =
+//   match l with
+//   | hd::tl -> hd
 
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
@@ -206,8 +235,28 @@ let rec soundness_ok
   | I_Assign #pre #x #e -> 
     admit()
 
-  | I_Nondet #x #pre -> 
-    admit()
+  | I_Nondet #x #pre ->
+    assert (p == Nondet x);
+    // Existe v tal que pre s1[v/x]
+    assert (exists v. pre (override s1 x v));
+    // Tomar ese v.
+    let v = FStar.IndefiniteDescription.indefinite_description_ghost
+              _ (fun v -> pre (override s1 x v)) in
+    assert (pre (override s1 x v));
+    let s0 = override s1 x v in
+    assert (pre s0);
+    // ^ Conseguimos un estado inicial.
+
+    // Dado que podemos elegir el valor que toma x, elijamos (s1 x).
+    // Entonces es claro que terminamos en s1, como necesitamos.
+    let pf0 : runsto (Nondet x) s0 Ok (override s0 x (s1 x)) =
+      R_Nondet s0 #x (s1 x)
+    in
+    // Solamente hay que aplicar extensionalidad...
+    let pf1 : runsto (Nondet x) s0 Ok s1 =
+      R_Ext pf0 _ _
+    in
+    (|s0, pf1|)
 
   | I_Skip _ -> 
     let s0 = s1 in

@@ -1,4 +1,4 @@
-module Lang
+module IncLogic
 
 open FStar.Mul
 
@@ -201,11 +201,13 @@ let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : il_triple pre p post_ok post_er)
   (s1 : state { post_ok s1 })
-  : Tot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
+  : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
   match pf with
-  | I_Assign #pre #x #e -> admit()
+  | I_Assign #pre #x #e -> 
+    admit()
 
-  | I_Nondet #x #pre -> admit()
+  | I_Nondet #x #pre -> 
+    admit()
 
   | I_Skip _ -> 
     let s0 = s1 in
@@ -251,20 +253,26 @@ let rec soundness_ok
     let r = R_KleeneS #p r_seq in
     (|s0, r|)
 
-  | I_KleeneVariant #variant #p pf_var -> admit()
+  | I_KleeneVariant #variant #p pf_var -> 
+    admit()
 
   | I_Empty -> unreachable ()
 
   | I_Consequence #pre #p #post_ok #post_er
-    pre' post_ok' post_er' pf_p sq1 sq2 sq3 -> 
-    let _ = sq2 in
-    let _ = sq1 in
+    pre' post_ok' post_er' pf_p _ _ _ -> 
     let (|s0, r|) = soundness_ok p pre post_ok post_er pf_p s1 in
     (|s0, r|)
   
   | I_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
     #post_er1 #post_er2 pf_p1 pf_p2 ->
-    admit()
+    if p2b (post_ok1 s1) then
+      let (|s0, r|) = soundness_ok p pre1 post_ok1 post_er1 pf_p1 s1 in
+      (|s0, r|)
+    else (
+      assert (post_ok2 s1);
+      let (|s0, r|) = soundness_ok p pre2 post_ok2 post_er2 pf_p2 s1 in
+      (|s0, r|)
+    )
 
 and soundness_er
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
@@ -284,13 +292,13 @@ and soundness_er
     let r = R_Error s0 in
     (|s0, r|)
 
-  | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er' pf_p pf_q ->
+  | I_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q ->
     if p2b (mid_er s1) then
       let (| s0, r |) = soundness_er p pre mid_ok mid_er pf_p s1 in
       (| s0, R_SeqEr #p #q r |)
     else (
       assert (post_er s1);
-      let (| s_mid, r2 |) = soundness_er q mid_ok post_ok post_er' pf_q s1 in
+      let (| s_mid, r2 |) = soundness_er q mid_ok post_ok post_er pf_q s1 in
       assert (mid_ok s_mid);
       let (| s0, r1 |) = soundness_ok p pre mid_ok mid_er pf_p s_mid in
       (| s0, R_Seq #p #q r1 r2 |)
@@ -308,14 +316,30 @@ and soundness_er
     let r = R_ChoiceR #p #q r_q in
     (|s0, r|)
 
-  | I_Kleene0 -> admit()
+  | I_Kleene0 -> unreachable ()
   
-  | I_KleeneS #p #pre #post_ok #post_er pf_seq -> admit()
+  | I_KleeneS #p #pre #post_ok #post_er pf_seq ->
+    let (|s0, r_seq|) =
+      soundness_er (Seq (Kleene p) p) pre post_ok post_er pf_seq s1 in
+    let r = R_KleeneS #p r_seq in
+    (|s0, r|)
 
-  | I_KleeneVariant _ -> admit()
+  | I_KleeneVariant _ -> unreachable ()
 
   | I_Empty -> unreachable ()
 
-  | I_Consequence _ _ _ _ _ _ _ -> admit()
+  | I_Consequence #pre #p #post_ok #post_er
+    pre' post_ok' post_er' pf_p _ _ _ -> 
+    let (|s0, r|) = soundness_er p pre post_ok post_er pf_p s1 in
+    (|s0, r|)
   
-  | I_Disjunction _ _ -> admit()
+  | I_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
+    #post_er1 #post_er2 pf_p1 pf_p2 ->
+    if p2b (post_er1 s1) then
+      let (|s0, r|) = soundness_er p pre1 post_ok1 post_er1 pf_p1 s1 in
+      (|s0, r|)
+    else (
+      assert (post_er2 s1);
+      let (|s0, r|) = soundness_er p pre2 post_ok2 post_er2 pf_p2 s1 in
+      (|s0, r|)
+    )

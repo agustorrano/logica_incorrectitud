@@ -318,7 +318,31 @@ let rec soundness_ok
     (|s0, r|)
 
   | I_KleeneVariant #variant #p pf_var -> 
-    admit()
+    // Existe n tal que variant n s1
+    assert (exists n. variant n s1);
+    let n = FStar.IndefiniteDescription.indefinite_description_ghost
+              _ (fun n -> variant n s1) in
+    assert (variant n s1);
+    // Función auxiliar
+    let rec aux (m : nat) (t : state { variant m t })
+      : GTot (s0 : state { variant 0 s0 } & runsto (Kleene p) s0 Ok t) (decreases m) =
+      if m = 0 then
+        let s0 = t in
+        let r = R_Kleene0 #p in
+        (| s0, r |)
+      else 
+        let m' = m - 1 in
+        // Usamos la hipótesis del variante
+        let pf_p = pf_var m' in
+        // Obtenemos el estado intermedio
+        let (| s_mid, r_p |) =
+          soundness_ok p (variant m') (variant (m' + 1)) (fun _ -> false) pf_p t in
+        // Aplicamos la IH
+        let (| s0, r_kleene |) = aux m' s_mid in
+        let r = R_KleeneS #p (R_Seq r_kleene r_p) in
+        (| s0, r |)
+    in
+    aux n s1
 
   | I_Empty -> unreachable ()
 

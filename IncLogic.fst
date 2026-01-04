@@ -56,6 +56,8 @@ type term_mode =
 
 type state = var -> int
 
+type cond = state -> prop
+
 let rec eval_expr (s : state) (e : expr) : GTot int =
   match e with
     | Var x -> s x
@@ -116,6 +118,9 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #m : term_mode -> #t : state ->
     runsto (Seq (Kleene p) p) s m t ->
     runsto (Kleene p) s m t
+  | R_KleeneVariant : #p : stmt -> #s0 : state ->
+    #sn : state -> n : nat ->
+    runsto (Kleene p) s0 Ok sn
   | R_Local : s : state -> #x : var -> #p : stmt -> 
     m : term_mode -> t : state ->
     v : value ->
@@ -130,8 +135,6 @@ let init : state = fun _ -> 0
 //                  (override init "x" 1)
 //  = R_Local init Ok (override init "x" 1) 1
 //      _
-
-type cond = state -> prop
 
 // Lógica de incorrectitud
 noeq
@@ -232,8 +235,23 @@ let rec soundness_ok
   (s1 : state { post_ok s1 })
   : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
   match pf with
-  | I_Assign #pre #x #e -> 
-    admit()
+  | I_Assign #pre #x #e ->
+    assert (p == Assign x e);
+    // Existe x_init tal que pre s1[x_init/x] y s1[x] = e[x_init]
+    assert (exists x_init. pre (override s1 x x_init) 
+            /\ (s1 x = eval_expr (override s1 x x_init) e));
+    let x_init = FStar.IndefiniteDescription.indefinite_description_ghost 
+                 _ (fun x_init -> pre (override s1 x x_init) 
+                    /\ (s1 x = eval_expr (override s1 x x_init) e))
+    in
+    assert (pre (override s1 x x_init) 
+            /\ (s1 x = eval_expr (override s1 x x_init) e));
+    let s0 = override s1 x x_init in
+    assert (pre s0);
+    let pf0 = R_Assign s0 #x #e in
+    assert (forall y. override s0 x (eval_expr s0 e) y == s1 y);
+    let pf1 : runsto (Assign x e) s0 Ok s1 = R_Ext pf0 s0 s1 in
+    (| s0, pf1 |)
 
   | I_Nondet #x #pre ->
     assert (p == Nondet x);
@@ -303,7 +321,13 @@ let rec soundness_ok
     (|s0, r|)
 
   | I_KleeneVariant #variant #p pf_var -> 
-    admit()
+    assert (exists n. variant n s1);
+    let n = FStar.IndefiniteDescription.indefinite_description_ghost
+              _ (fun n -> variant n s1) in
+    assert (variant n s1);
+    let s0 = s1 in
+    let r = R_KleeneVariant #p #s0 #s1 n in
+    (|s0, r|)
 
   | I_Empty -> unreachable ()
 

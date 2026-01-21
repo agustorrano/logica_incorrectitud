@@ -16,6 +16,7 @@ type loc = nat
 type value = 
   | Int of int 
   | Loc of loc
+  //| Invalid
 
 type store = var -> value
 type heap = loc -> option value
@@ -157,3 +158,103 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (snd s l == None)) ->
     runsto (Store e1 e2) s Er s
 
+noeq
+type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : cond) -> Type =
+  | ISL_Assign : #pre : cond -> x : var -> e : expr ->
+    isl_triple pre (Assign x e) 
+      (fun (st, hp) -> exists x_init. 
+        pre (x_init, hp) /\ (st x == Int (eval_expr (x_init, hp) e) /\
+        (forall y. (y <> x) ==> st y == x_init y))) (fun s -> false)
+  
+  | ISL_Nondet : #pre : cond -> x : var -> 
+    isl_triple pre (Nondet x)
+      (fun (st, hp) -> exists v.
+        pre (override st x v, hp)) (fun s -> false)
+  
+  | ISL_Skip : #pre : cond ->
+    isl_triple pre Skip pre (fun s -> false)
+  
+  | ISL_Error : #pre : cond ->
+    isl_triple pre Error (fun s -> false) pre
+  
+  | ISL_Assume : #pre : cond -> e : expr ->
+    isl_triple pre (Assume e)
+      (fun s -> pre s /\ (eval_expr s e == 0)) (fun s -> false)
+  
+  | ISL_Seq : #p : stmt -> #q : stmt ->
+    #pre : cond -> #mid_ok : cond -> #mid_er : cond ->
+    #post_ok : cond -> #post_er : cond ->
+    isl_triple pre p mid_ok mid_er ->
+    isl_triple mid_ok q post_ok post_er ->
+    isl_triple pre (Seq p q) post_ok (fun s -> mid_er s \/ post_er s)
+  
+  | ISL_ChoiceL : #p : stmt -> #q : stmt ->
+    #pre : cond -> #post_ok : cond -> #post_er : cond ->
+    isl_triple pre p post_ok post_er ->
+    isl_triple pre (Choice p q) post_ok post_er
+  
+  | ISL_ChoiceR : #p : stmt -> #q : stmt ->
+    #pre : cond -> #post_ok : cond -> #post_er : cond ->
+    isl_triple pre q post_ok post_er ->
+    isl_triple pre (Choice p q) post_ok post_er
+  
+  | ISL_Kleene0 : #p : stmt ->#pre : cond ->
+    isl_triple pre (Kleene p) pre (fun s -> false)
+  
+  | ISL_KleeneS : #p : stmt -> #pre : cond ->
+    #post_ok : cond -> #post_er : cond ->
+    isl_triple pre (Seq (Kleene p) p) post_ok post_er ->
+    isl_triple pre (Kleene p) post_ok post_er
+  
+  // | ISL_Exist : 
+  
+  | ISL_Consequence : #pre : cond -> #p : stmt ->
+    #post_ok : cond -> #post_er : cond ->
+    pre' : cond -> post_ok' : cond -> post_er' : cond ->
+    isl_triple pre p post_ok post_er ->
+    squash (forall x. pre x ==> pre' x) ->
+    squash (forall x. post_ok' x ==> post_ok x) ->
+    squash (forall x. post_er' x ==> post_er x) ->
+    isl_triple pre' p post_ok' post_er'
+
+  | ISL_Disjunction : #pre1 : cond -> #pre2 : cond ->
+    #p : stmt -> #post_ok1 : cond -> #post_ok2 : cond ->
+    #post_er1 : cond -> #post_er2 : cond ->
+    isl_triple pre1 p post_ok1 post_er1 ->
+    isl_triple pre2 p post_ok2 post_er2 ->
+    isl_triple (fun s -> pre1 s \/ pre2 s) p
+      (fun s -> post_ok1 s \/ post_ok2 s)
+      (fun s -> post_er1 s \/ post_er2 s)
+
+  // | ISL_Subst : 
+  
+  // | ISL_Local :
+
+  | ISL_Frame : #pre : cond -> #p : stmt ->
+    #post_ok : cond -> #post_er : cond -> fr : cond ->
+    isl_triple pre p post_ok post_er ->
+    isl_triple (fun s -> pre s /\ fr s) p
+      (fun s -> post_ok s /\ fr s)
+      (fun s -> post_er s /\ fr s)
+  
+  // | ISL_Alloc1 : 
+
+  // | ISL_Alloc2 : 
+  
+  // | ISL_Free :
+
+  // | ISL_FreeEr :
+
+  // | ISL_FreeNull :
+  
+  // | ISL_Load :
+
+  // | ISL_LoadEr :
+
+  // | ISL_LoadNull :
+  
+  // | ISL_Store :
+
+  // | ISL_StoreEr :
+
+  // | ISL_StoreNull :

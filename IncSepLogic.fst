@@ -16,10 +16,15 @@ type loc = nat
 type value = 
   | Int of int 
   | Loc of loc
-  //| Invalid
+
+type cell =
+  | Full of value
+  | Empty
+  | Unknown
 
 type store = var -> value
-type heap = loc -> option value
+// type heap = loc -> option value
+type heap = loc -> cell
 
 type expr =
   | Var : var -> expr
@@ -116,25 +121,25 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     runsto (Local x p) s m ((fun y -> if x = y then (fst s) y else (fst t) y), (snd t))
   // |[ L : x := alloc()]|ok = {(σ, (s[x |-> l], h[l |-> v])) | 
   // σ = (s, h) ∧ v ∈ Val /\ (l ∉ dom(h) \/ h(l) = ⊥)}
-  | R_Alloc : s : state -> #x : var -> l : loc -> 
-    #(squash (snd s l == None)) ->
+  | R_Alloc : s : state -> #x : var -> l : loc -> v : value ->
+    #(squash (snd s l == Unknown \/ snd s l == Empty)) ->
     runsto (Alloc x) s Ok (let (st, hp) = s in
-    override st x (Loc l), override hp l (Some (Int 0)))
+    override st x (Loc l), override hp l (Full v))
   // |[ L : free(x)]|ok = {(σ, (s, h[s(x) |-> ⊥])) | σ = (s, h) ∧ h(s(x)) ∈ Val}
   | R_Free : s : state -> e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
-    #(squash (snd s l <> None)) ->
+    #(squash (snd s l <> Empty)) ->
     runsto (Free e) s Ok (let (st, hp) = s in
-    st, override hp l None)
+    st, override hp l Empty)
     // |[L : free(x)]|er(L') = {(σ, σ) | L = L' /\ σ = (s, h) ∧ (s(x) = null \/ h(s(x)) = ⊥)}
   | R_FreeEr : s : state -> e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
-    #(squash (snd s l == None)) ->
+    #(squash (snd s l == Empty)) ->
     runsto (Free e) s Er s
   // |[L : x := [y]]|ok = {(σ, (s, h[x |-> v])) | σ = (s, h) ∧ h(s(y)) = v ∈ Val}
   | R_Load : s : state -> x : var -> e : expr ->
     l : loc -> v : value ->
-    #(squash (snd s l == Some v)) ->
+    #(squash (snd s l == Full v)) ->
     #(squash (eval_expr s e == l)) ->
     runsto (Load x e) s Ok (let (st, hp) = s in
     override st x v, hp)
@@ -142,21 +147,58 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_LoadEr : s : state -> x : var -> 
     e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
-    #(squash (snd s l == None)) ->
+    #(squash (snd s l == Empty)) ->
     runsto (Load x e) s Er s
   // |[L : [x] := y]|ok = {(σ, (s, h[s(x) |-> s(y)])) | σ = (s, h) ∧ h(s(x)) ∈ Val}
   | R_Store : s : state -> e1 : expr -> e2 : expr ->
     l : loc -> v : value ->
-    #(squash (snd s l == Some v)) ->
+    #(squash (snd s l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
     runsto (Store e1 e2) s Ok (let (st, hp) = s in
-    st, override hp l (Some (Int (eval_expr s e2))))
+    st, override hp l (Full (Int (eval_expr s e2))))
   // |[L : [x] := y]|er(L') = {(σ, σ) | L = L' /\ σ = (s, h) ∧ (s(x) = null \/ h(s(x)) = ⊥)}
   | R_StoreEr : s : state -> e1 : expr ->
     e2 : expr -> l : loc ->
     #(squash (eval_expr s e1 == l)) ->
-    #(squash (snd s l == None)) ->
+    #(squash (snd s l == Empty)) ->
     runsto (Store e1 e2) s Er s
+
+// disjunción de celdas
+let cell_disjoint (c1 c2 : cell) : prop =
+  c1 == Unknown \/ c2 == Unknown
+
+// unión de celdas
+let cell_union (c1 c2 : cell) : cell =
+  match c1 with
+    | Unknown -> c2
+    | _ -> c1
+
+// disjunción de heaps
+let heaps_disjoint (h1 h2 : heap) : prop =
+  forall l. cell_disjoint (h1 l) (h2 l)
+
+// unión de heaps
+let heap_union (h1 h2 : heap) : heap =
+  fun l -> cell_union (h1 l) (h2 l)
+
+// definir operador * de logica de separacion
+let sep_conj (p q : cond) : cond =
+  fun (st, hp) -> 
+    exists h1 h2.
+      heaps_disjoint h1 h2 /\
+      hp == heap_union h1 h2 /\
+      p (st, h1) /\ q (st, h2)
+
+unfold let ( ** ) = sep_conj
+
+let points_to (l : loc) (v : value) : cond =
+  fun (st, hp) -> hp l == Full v /\
+  forall l'. (l' <> l) ==> (hp l' == Unknown)
+
+let test1 (l:loc) (v1 v2:value) (s:state) :
+  Lemma (requires ( (points_to l v1 ** points_to l v2) s ))
+        (ensures  ( False ))
+= ()
 
 noeq
 type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : cond) -> Type =
@@ -206,8 +248,6 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
     isl_triple pre (Seq (Kleene p) p) post_ok post_er ->
     isl_triple pre (Kleene p) post_ok post_er
   
-  // | ISL_Exist : 
-  
   | ISL_Consequence : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond ->
     pre' : cond -> post_ok' : cond -> post_er' : cond ->
@@ -226,35 +266,114 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (fun s -> post_ok1 s \/ post_ok2 s)
       (fun s -> post_er1 s \/ post_er2 s)
 
-  // | ISL_Subst : 
-  
-  // | ISL_Local :
-
   | ISL_Frame : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond -> fr : cond ->
     isl_triple pre p post_ok post_er ->
-    isl_triple (fun s -> pre s /\ fr s) p
-      (fun s -> post_ok s /\ fr s)
-      (fun s -> post_er s /\ fr s)
+    isl_triple (pre ** fr) p
+      (post_ok ** fr )
+      (post_er ** fr)
   
-  // | ISL_Alloc1 : 
+  | ISL_Alloc1 : x : var ->
+    isl_triple (fun (st, hp) -> exists l. hp l == Unknown)
+      (Alloc x)
+      (fun (st, hp) -> exists l v.
+        st x == Loc l /\
+        hp l == Full v) 
+      (fun s -> false)
 
-  // | ISL_Alloc2 : 
+  | ISL_Alloc2 : x : var ->
+    isl_triple 
+      (fun (st, hp) -> exists l.
+         hp l == Empty)
+      (Alloc x)
+      (fun (st, hp) -> exists l v.
+        st x == Loc l /\
+        hp l == Full v) 
+      (fun s -> false)
   
-  // | ISL_Free :
+  | ISL_Free : e : expr ->
+    isl_triple
+      (fun s -> exists l v.
+        eval_expr s e == l /\
+        snd s l == Full v)
+      (Free e)
+      (fun (st, hp) -> forall l'.
+        (eval_expr (st, hp) e == l') ==> (hp l' == Empty))
+      (fun s -> false)
 
-  // | ISL_FreeEr :
+  | ISL_FreeEr : e : expr ->
+    isl_triple
+      (fun s -> exists l.
+        eval_expr s e == l /\
+        snd s l == Empty)
+      (Free e)
+      (fun s -> false)
+      (fun s -> exists l.
+        eval_expr s e == l /\
+        snd s l == Empty)
 
-  // | ISL_FreeNull :
+  | ISL_FreeNull : e : expr ->
+    isl_triple
+      (fun s -> eval_expr s e == 0)
+      (Free e)
+      (fun s -> false)
+      (fun s -> eval_expr s e == 0)
   
-  // | ISL_Load :
+  | ISL_Load : x : var -> e : expr ->
+    isl_triple
+      (fun s -> exists l v.
+        eval_expr s e == l /\
+        snd s l == Full v)
+      (Load x e)
+      (fun s -> exists l v.
+        eval_expr s e == l /\
+        snd s l == Full v /\
+        fst s x == v)
+      (fun s -> false)
 
-  // | ISL_LoadEr :
+  | ISL_LoadEr : x : var -> e : expr ->
+    isl_triple
+      (fun s -> exists l.
+        eval_expr s e == l /\
+        snd s l == Empty)
+      (Load x e)
+      (fun s -> false)
+      (fun s -> exists l.
+        eval_expr s e == l /\
+        snd s l == Empty)
 
-  // | ISL_LoadNull :
+  | ISL_LoadNull : x : var -> e : expr ->
+    isl_triple
+      (fun s -> eval_expr s e == 0)
+      (Load x e)
+      (fun s -> false)
+      (fun s -> eval_expr s e == 0)
   
-  // | ISL_Store :
+  | ISL_Store : e1 : expr -> e2 : expr ->
+    isl_triple
+      (fun s -> exists l v.
+        eval_expr s e1 == l /\
+        snd s l == Full v)
+      (Store e1 e2)
+      (fun s -> exists l.
+        eval_expr s e1 == l /\
+        snd s l == Full (Int (eval_expr s e2)))
+      (fun s -> false)
+    
+  | ISL_StoreEr : e1 : expr -> e2 : expr ->
+    isl_triple
+      (fun s -> exists l.
+        eval_expr s e1 == l /\
+        snd s l == Empty)
+      (Store e1 e2)
+      (fun s -> false)
+      (fun s -> exists l.
+        eval_expr s e2 == l /\
+        snd s l == Empty)
 
-  // | ISL_StoreEr :
-
-  // | ISL_StoreNull :
+  | ISL_StoreNull : e1 : expr -> e2 : expr ->
+    isl_triple
+      (fun s -> eval_expr s e1 == 0)
+      (Store e1 e2)
+      (fun s -> false)
+      (fun s -> eval_expr s e2 == 0)

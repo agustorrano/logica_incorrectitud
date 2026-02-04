@@ -230,8 +230,9 @@ let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : il_triple pre p post_ok post_er)
   (s1 : state { post_ok s1 })
-  : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
-  match pf with
+  : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) 
+         (decreases pf) 
+  = match pf with
   | I_Assign #pre #x #e ->
     assert (p == Assign x e);
     // Existe x_init tal que pre s1[x_init/x] y s1[x] = e[x_init]
@@ -368,8 +369,7 @@ and soundness_er
   (s1 : state { post_er s1 })
   : GTot (s0 : state { pre s0 } & runsto p s0 Er s1)
          (decreases pf)
-   =
-  match pf with
+  = match pf with
   | I_Assign -> unreachable ()
   | I_Nondet -> unreachable ()
   | I_Skip _ -> unreachable ()

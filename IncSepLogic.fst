@@ -377,3 +377,17 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (Store e1 e2)
       (fun s -> false)
       (fun s -> eval_expr s e2 == 0)
+
+let soundness_ok
+  (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
+  (pf : isl_triple pre p post_ok post_er)
+  (s1 : state { post_ok s1 })
+  : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
+  admit()
+
+// and soundness_er
+//   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
+//   (pf : il_triple pre p post_ok post_er)
+//   (s1 : state { post_er s1 })
+//   : GTot (s0 : state { pre s0 } & runsto p s0 Er s1) (decreases pf) = 
+//   admit()

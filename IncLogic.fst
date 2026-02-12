@@ -88,7 +88,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     (#_ : squash (forall x. s0 x == s0' x)) ->
     (#_ : squash (forall x. s1 x == s1' x)) ->
     runsto p s0' m s1'
-
+    
   | R_Assign : s : state ->
     #x : var -> #e : expr ->
     runsto (Assign x e) s Ok (override s x (eval_expr s e))

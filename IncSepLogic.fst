@@ -23,7 +23,6 @@ type cell =
   | Unknown
 
 type store = var -> value
-// type heap = loc -> option value
 type heap = loc -> cell
 
 type expr =
@@ -69,7 +68,9 @@ let rec eval_expr (s : state) (e : expr) : GTot int =
       )
     | Const n -> n
     | Plus e1 e2 -> eval_expr s e1 + eval_expr s e2
-    | Minus e1 e2 -> eval_expr s e1 - eval_expr s e2
+    | Minus e1 e2 -> 
+      let res = eval_expr s e1 - eval_expr s e2 in
+      if res >= 0 then res else 0
     | Times e1 e2 -> eval_expr s e1 * eval_expr s e2
     | Eq e1 e2 -> if eval_expr s e1 = eval_expr s e2
                   then 0 else 1
@@ -84,6 +85,13 @@ let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
 // Semántica del lenguaje
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> Type0 =
+  | R_Ext : #p:stmt -> #s0:state -> #m:term_mode -> #s1:state ->
+    runsto p s0 m s1 -> s0' : state -> s1' : state ->
+    (squash (forall (x:var). fst s0 x == fst s0' x)) -> 
+    (squash (forall (l:loc). snd s0 l == snd s0' l)) -> 
+    (squash (forall (x:var). fst s1 x == fst s1' x)) ->
+    (squash (forall (l:loc). snd s1 l == snd s1' l)) ->
+    runsto p s0' m s1'
   | R_Skip : s : state -> runsto Skip s Ok s
   | R_Error : s : state -> runsto Error s Er s
   | R_Assign : x : var -> 
@@ -195,6 +203,11 @@ let points_to (l : loc) (v : value) : cond =
   fun (st, hp) -> hp l == Full v /\
   forall l'. (l' <> l) ==> (hp l' == Unknown)
 
+let points_to_empty (l : loc) : cond =
+  fun (st, hp) -> 
+    hp l == Empty /\
+    (forall l'. (l' <> l) ==> (hp l' == Unknown))
+
 let test1 (l:loc) (v1 v2:value) (s:state) :
   Lemma (requires ( (points_to l v1 ** points_to l v2) s ))
         (ensures  ( False ))
@@ -278,39 +291,41 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (Alloc x)
       (fun (st, hp) -> exists l v.
         st x == Loc l /\
-        hp l == Full v) 
+        points_to l v (st, hp)) 
       (fun s -> false)
 
   | ISL_Alloc2 : x : var ->
     isl_triple 
       (fun (st, hp) -> exists l.
-         hp l == Empty)
+        hp l == Empty)
       (Alloc x)
       (fun (st, hp) -> exists l v.
         st x == Loc l /\
-        hp l == Full v) 
+        points_to l v (st, hp)) 
       (fun s -> false)
   
   | ISL_Free : e : expr ->
     isl_triple
       (fun s -> exists l v.
         eval_expr s e == l /\
-        snd s l == Full v)
+        points_to l v s)
       (Free e)
-      (fun (st, hp) -> forall l'.
-        (eval_expr (st, hp) e == l') ==> (hp l' == Empty))
+      (fun s -> exists l.
+        eval_expr s e == l /\
+        (fun (st, hp) -> hp l == Empty /\
+        forall l'. l' <> l ==> hp l' == Unknown) s)
       (fun s -> false)
 
   | ISL_FreeEr : e : expr ->
     isl_triple
       (fun s -> exists l.
         eval_expr s e == l /\
-        snd s l == Empty)
+        points_to_empty l s)
       (Free e)
       (fun s -> false)
       (fun s -> exists l.
         eval_expr s e == l /\
-        snd s l == Empty)
+        points_to_empty l s)
 
   | ISL_FreeNull : e : expr ->
     isl_triple
@@ -323,11 +338,11 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
     isl_triple
       (fun s -> exists l v.
         eval_expr s e == l /\
-        snd s l == Full v)
+        points_to l v s)
       (Load x e)
       (fun s -> exists l v.
         eval_expr s e == l /\
-        snd s l == Full v /\
+        points_to l v s /\
         fst s x == v)
       (fun s -> false)
 
@@ -335,12 +350,12 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
     isl_triple
       (fun s -> exists l.
         eval_expr s e == l /\
-        snd s l == Empty)
+        points_to_empty l s)
       (Load x e)
       (fun s -> false)
       (fun s -> exists l.
         eval_expr s e == l /\
-        snd s l == Empty)
+        points_to_empty l s)
 
   | ISL_LoadNull : x : var -> e : expr ->
     isl_triple
@@ -353,23 +368,23 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
     isl_triple
       (fun s -> exists l v.
         eval_expr s e1 == l /\
-        snd s l == Full v)
+        points_to l v s)
       (Store e1 e2)
       (fun s -> exists l.
         eval_expr s e1 == l /\
-        snd s l == Full (Int (eval_expr s e2)))
+        points_to l (Int (eval_expr s e2)) s)
       (fun s -> false)
     
   | ISL_StoreEr : e1 : expr -> e2 : expr ->
     isl_triple
       (fun s -> exists l.
         eval_expr s e1 == l /\
-        snd s l == Empty)
+        points_to_empty l s)
       (Store e1 e2)
       (fun s -> false)
       (fun s -> exists l.
         eval_expr s e2 == l /\
-        snd s l == Empty)
+        points_to_empty l s)
 
   | ISL_StoreNull : e1 : expr -> e2 : expr ->
     isl_triple
@@ -378,16 +393,207 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (fun s -> false)
       (fun s -> eval_expr s e2 == 0)
 
-let soundness_ok
+let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : isl_triple pre p post_ok post_er)
   (s1 : state { post_ok s1 })
-  : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) =
-  admit()
+  : GTot (s0 : state { pre s0 } & runsto p s0 Ok s1) (decreases pf) 
+  = match pf with
+  | ISL_Assign #pre #x #e ->
+    let (st1, hp1) = s1 in
+    assert (p == Assign x e);
+    assert (exists (st_init:store). pre (st_init, hp1) /\ 
+            st1 x == Int (eval_expr (st_init, hp1) e) /\
+            (forall y. y <> x ==> st1 y == st_init y));
+    let st_init = FStar.IndefiniteDescription.indefinite_description_ghost 
+                  store (fun st_i -> pre (st_i, hp1) 
+                  /\ st1 x == Int (eval_expr (st_i, hp1) e)
+                  /\ (forall y. y <> x ==> st1 y == st_i y))
+    in
+    let s0 = (st_init, hp1) in
+    assert (pre s0);
+    let pf0 = R_Assign x e s0 in
+    assert (forall y. fst (override st_init x (Int (eval_expr s0 e)), snd s0) y == fst s1 y);
+    let pf1 : runsto (Assign x e) s0 Ok s1 = R_Ext pf0 s0 s1 () () () () in
+    (| s0, pf1 |)
+  
+  | ISL_Nondet #pre #x -> admit()
 
-// and soundness_er
-//   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
-//   (pf : il_triple pre p post_ok post_er)
-//   (s1 : state { post_er s1 })
-//   : GTot (s0 : state { pre s0 } & runsto p s0 Er s1) (decreases pf) = 
-//   admit()
+  | ISL_Skip -> 
+    let s0 = s1 in
+    let r = R_Skip s0 in
+    (|s0, r|)
+  
+  | ISL_Error -> unreachable ()
+
+  | ISL_Assume #pre #e ->
+    assert (pre s1 /\ eval_expr s1 e == 0);
+    let s0 = s1 in
+    let r = R_Assume s0 #e () in
+    (|s0, r|)
+
+  | ISL_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q ->
+    let (|s_mid, r_q|) = 
+      soundness_ok q mid_ok post_ok post_er pf_q s1 in
+    let (|s0, r_p|) =
+      soundness_ok p pre mid_ok mid_er pf_p s_mid in
+    let r = R_Seq r_p r_q in
+    (|s0, r|)
+
+  | ISL_ChoiceL #p #q #pre #post_ok #post_er pf_p ->
+    let (|s0, r_p|) =
+      soundness_ok p pre post_ok post_er pf_p s1 in
+    let r = R_ChoiceL #p #q r_p in
+    (|s0, r|)
+
+  | ISL_ChoiceR #p #q #pre #post_ok #post_er pf_q -> 
+    let (|s0, r_q|) =
+      soundness_ok q pre post_ok post_er pf_q s1 in
+    let r = R_ChoiceR #p #q r_q in
+    (|s0, r|)
+
+  | ISL_Kleene0 #p ->
+    let s0 = s1 in
+    let r = R_Kleene0 #p in
+    (|s0, r|)
+
+  | ISL_KleeneS #p #pre #post_ok #post_er pf_seq ->
+    let (|s0, r_seq|) =
+      soundness_ok (Seq (Kleene p) p) pre post_ok post_er pf_seq s1 in
+    let r = R_KleeneS #p r_seq in
+    (|s0, r|)
+
+  | ISL_Consequence #pre #p #post_ok #post_er
+    pre' post_ok' post_er' pf_p _ _ _ ->
+    let (|s0, r|) = soundness_ok p pre post_ok post_er pf_p s1 in
+    (|s0, r|)
+
+  | ISL_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
+    #post_er1 #post_er2 pf_p1 pf_p2 ->
+    if p2b (post_ok1 s1) then
+      let (|s0, r|) = soundness_ok p pre1 post_ok1 post_er1 pf_p1 s1 in
+      (|s0, r|)
+    else (
+      assert (post_ok2 s1);
+      let (|s0, r|) = soundness_ok p pre2 post_ok2 post_er2 pf_p2 s1 in
+      (|s0, r|)
+    )
+
+  | ISL_Frame #pre #p #post_ok #post_er fr pf_p -> admit()
+
+  | ISL_Alloc1 #x -> admit()
+
+  | ISL_Alloc2 #x -> admit()
+
+  | ISL_Free #e -> admit()
+
+  | ISL_FreeEr #e -> unreachable ()
+
+  | ISL_FreeNull #e -> unreachable ()
+
+  | ISL_Load #x #e -> admit()
+
+  | ISL_LoadEr #x #e -> unreachable ()
+
+  | ISL_LoadNull #x #e -> unreachable ()
+
+  | ISL_Store #e1 #e2 -> admit()
+
+  | ISL_StoreEr #e1 #e2 -> unreachable ()
+
+  | ISL_StoreNull #e1 #e2 -> unreachable ()
+
+and soundness_er
+  (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
+  (pf : isl_triple pre p post_ok post_er)
+  (s1 : state { post_er s1 })
+  : GTot (s0 : state { pre s0 } & runsto p s0 Er s1) (decreases pf) 
+  = match pf with
+  | ISL_Assign #pre #x #e -> unreachable ()
+  
+  | ISL_Nondet #pre #x -> unreachable ()
+
+  | ISL_Skip -> unreachable ()
+  
+  | ISL_Error ->
+    let s0 = s1 in
+    let r = R_Error s0 in
+    (|s0, r|)
+
+  | ISL_Assume #pre #e -> unreachable ()
+
+  | ISL_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q ->
+    if p2b (mid_er s1) then
+      let (| s0, r |) = soundness_er p pre mid_ok mid_er pf_p s1 in
+      (| s0, R_SeqEr #p #q r |)
+    else (
+      assert (post_er s1);
+      let (| s_mid, r2 |) = soundness_er q mid_ok post_ok post_er pf_q s1 in
+      assert (mid_ok s_mid);
+      let (| s0, r1 |) = soundness_ok p pre mid_ok mid_er pf_p s_mid in
+      (| s0, R_Seq #p #q r1 r2 |)
+    )
+
+  | ISL_ChoiceL #p #q #pre #post_ok #post_er pf_p ->
+    let (|s0, r_p|) =
+      soundness_er p pre post_ok post_er pf_p s1 in
+    let r = R_ChoiceL #p #q r_p in
+    (|s0, r|)
+
+  | ISL_ChoiceR #p #q #pre #post_ok #post_er pf_q ->
+    let (|s0, r_q|) =
+      soundness_er q pre post_ok post_er pf_q s1 in
+    let r = R_ChoiceR #p #q r_q in
+    (|s0, r|)
+
+  | ISL_Kleene0 -> unreachable ()
+
+  | ISL_KleeneS #p #pre #post_ok #post_er pf_seq ->
+    let (|s0, r_seq|) =
+      soundness_er (Seq (Kleene p) p) pre post_ok post_er pf_seq s1 in
+    let r = R_KleeneS #p r_seq in
+    (|s0, r|)
+
+  | ISL_Consequence #pre #p #post_ok #post_er
+    pre' post_ok' post_er' pf_p _ _ _ ->
+    let (|s0, r|) = soundness_er p pre post_ok post_er pf_p s1 in
+    (|s0, r|)
+
+  | ISL_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
+    #post_er1 #post_er2 pf_p1 pf_p2 ->
+    if p2b (post_er1 s1) then
+      let (|s0, r|) = soundness_er p pre1 post_ok1 post_er1 pf_p1 s1 in
+      (|s0, r|)
+    else (
+      assert (post_er2 s1);
+      let (|s0, r|) = soundness_er p pre2 post_ok2 post_er2 pf_p2 s1 in
+      (|s0, r|)
+    )
+
+  | ISL_Frame #pre #p #post_ok #post_er fr pf_p -> admit()
+
+  | ISL_Alloc1 #x -> unreachable ()
+
+  | ISL_Alloc2 #x -> unreachable ()
+
+  | ISL_Free #e -> unreachable ()
+
+  | ISL_FreeEr #e -> admit()
+
+  | ISL_FreeNull #e -> admit()
+
+  | ISL_Load #x #e -> unreachable ()
+
+  | ISL_LoadEr #x #e -> admit()
+
+  | ISL_LoadNull #x #e -> admit()
+
+  | ISL_Store #e1 #e2 -> unreachable ()
+
+  | ISL_StoreEr #e1 #e2 -> admit()
+
+  | ISL_StoreNull #e1 #e2 -> admit() 
+  
+
+// { x -> Full _,        { x -> Empty,
+//    y -> 42 }             y -> 42 }

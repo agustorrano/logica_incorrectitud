@@ -82,6 +82,24 @@ let rec eval_expr (s : state) (e : expr) : GTot int =
 let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
   fun z -> if z = x then y else f z
 
+// disjunción de celdas
+let cell_disjoint (c1 c2 : cell) : prop =
+  c1 == Unknown \/ c2 == Unknown
+
+// unión de celdas
+let cell_union (c1 c2 : cell) : cell =
+  match c1 with
+    | Unknown -> c2
+    | _ -> c1
+
+// disjunción de heaps
+let heaps_disjoint (h1 h2 : heap) : prop =
+  forall l. cell_disjoint (h1 l) (h2 l)
+
+// unión de heaps
+let heap_union (h1 h2 : heap) : heap =
+  fun l -> cell_union (h1 l) (h2 l)
+
 // Semántica del lenguaje
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> Type0 =
@@ -127,6 +145,11 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     m : term_mode -> t : state -> v : value ->
     runsto p ((override (fst s) x v), (snd s)) m t ->
     runsto (Local x p) s m ((fun y -> if x = y then (fst s) y else (fst t) y), (snd t))
+  | R_Frame : #p : stmt -> #s0 : state -> #m : term_mode -> #s1 : state ->
+    runsto p s0 m s1 -> h_fr : heap ->
+    (squash (heaps_disjoint (snd s0) h_fr)) ->
+    (squash (heaps_disjoint (snd s1) h_fr)) ->
+    runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
   // |[ L : x := alloc()]|ok = {(σ, (s[x |-> l], h[l |-> v])) | 
   // σ = (s, h) ∧ v ∈ Val /\ (l ∉ dom(h) \/ h(l) = ⊥)}
   | R_Alloc : s : state -> #x : var -> l : loc -> v : value ->
@@ -171,25 +194,8 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (snd s l == Empty)) ->
     runsto (Store e1 e2) s Er s
 
-// disjunción de celdas
-let cell_disjoint (c1 c2 : cell) : prop =
-  c1 == Unknown \/ c2 == Unknown
-
-// unión de celdas
-let cell_union (c1 c2 : cell) : cell =
-  match c1 with
-    | Unknown -> c2
-    | _ -> c1
-
-// disjunción de heaps
-let heaps_disjoint (h1 h2 : heap) : prop =
-  forall l. cell_disjoint (h1 l) (h2 l)
-
-// unión de heaps
-let heap_union (h1 h2 : heap) : heap =
-  fun l -> cell_union (h1 l) (h2 l)
-
 // definir operador * de logica de separacion
+unfold
 let sep_conj (p q : cond) : cond =
   fun (st, hp) -> 
     exists h1 h2.
@@ -282,6 +288,9 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   | ISL_Frame : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond -> fr : cond ->
     isl_triple pre p post_ok post_er ->
+    squash (forall st0 hp0 st1 hp1 m h. 
+        runsto p (st0, hp0) m (st1, hp1) ==> 
+        fr (st1, h) ==> fr (st0, h)) ->
     isl_triple (pre ** fr) p
       (post_ok ** fr )
       (post_er ** fr)
@@ -312,8 +321,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (Free e)
       (fun s -> exists l.
         eval_expr s e == l /\
-        (fun (st, hp) -> hp l == Empty /\
-        forall l'. l' <> l ==> hp l' == Unknown) s)
+        points_to_empty l s)
       (fun s -> false)
 
   | ISL_FreeEr : e : expr ->
@@ -383,7 +391,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (Store e1 e2)
       (fun s -> false)
       (fun s -> exists l.
-        eval_expr s e2 == l /\
+        eval_expr s e1 == l /\
         points_to_empty l s)
 
   | ISL_StoreNull : e1 : expr -> e2 : expr ->
@@ -391,7 +399,23 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (fun s -> eval_expr s e1 == 0)
       (Store e1 e2)
       (fun s -> false)
-      (fun s -> eval_expr s e2 == 0)
+      (fun s -> eval_expr s e1 == 0)
+
+let lemma_exists_tuple (#a #b: Type) (p: a -> b -> prop) :
+  Lemma (requires (exists (x:a) (y:b). p x y))
+        (ensures (exists (tup: a & b). p (fst tup) (snd tup))) 
+  = 
+  let x = FStar.IndefiniteDescription.indefinite_description_ghost 
+            a (fun x -> exists y. p x y) in
+  let y = FStar.IndefiniteDescription.indefinite_description_ghost 
+            b (fun y -> p x y) in
+  let tup : a & b = (x, y) in
+  assert (p (fst tup) (snd tup))
+
+assume val lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state) 
+  (h_fr:heap) (r:runsto p s0 m s1) :
+  Lemma (requires (heaps_disjoint (snd s1) h_fr))
+        (ensures  (heaps_disjoint (snd s0) h_fr))
 
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
@@ -417,7 +441,66 @@ let rec soundness_ok
     let pf1 : runsto (Assign x e) s0 Ok s1 = R_Ext pf0 s0 s1 () () () () in
     (| s0, pf1 |)
   
-  | ISL_Nondet #pre #x -> admit()
+  | ISL_Nondet #pre #x -> 
+    let (st1, hp1) = s1 in
+    assert (p == Nondet x);
+    assert (exists v. pre (override st1 x v, hp1));
+    let v = FStar.IndefiniteDescription.indefinite_description_ghost
+              _ (fun v -> pre (override st1 x v, hp1)) in
+    assert (pre (override st1 x v, hp1));
+    let s0 = (override st1 x v, hp1) in
+    assert (pre s0);
+    let pf0 = R_Nondet s0 #x (st1 x) in
+    let pf1 : runsto (Nondet x) s0 Ok s1 =
+      R_Ext pf0 s0 s1 () () () ()
+    in
+    (|s0, pf1|)
+
+  | ISL_Frame #p_pre #p_cmd #p_ok #p_er fr pf_p _ ->
+    let (st1, hp1) = s1 in
+    assert ((p_ok ** fr) s1); 
+
+    let p_two (h1:heap) (h2:heap) : prop = 
+      heaps_disjoint h1 h2 /\ 
+      hp1 == heap_union h1 h2 /\ 
+      p_ok (st1, h1) /\ 
+      fr (st1, h2)
+    in
+    assert (exists (h1:heap) (h2:heap). p_two h1 h2);
+    
+    lemma_exists_tuple p_two;
+    let logic_parts (hp_tup : heap & heap) : prop = 
+      p_two (fst hp_tup) (snd hp_tup) 
+    in
+    assert (exists (hp_tup: heap & heap). logic_parts hp_tup);
+    
+    let h_parts = FStar.IndefiniteDescription.indefinite_description_ghost (heap & heap) logic_parts in
+    let h_ok = fst h_parts in
+    let h_fr = snd h_parts in
+
+    let (|s0_local, r_local|) = soundness_ok p_cmd p_pre p_ok p_er pf_p (st1, h_ok) in
+    let (st0, hp0) = s0_local in
+
+    assert (heaps_disjoint h_ok h_fr);
+    lemma_runsto_disjoint h_fr r_local;
+    assert (heaps_disjoint hp0 h_fr);
+
+    let s0 : state = (st0, heap_union hp0 h_fr) in
+    let r_global = R_Frame r_local h_fr () () in
+
+    assert (p_pre (st0, hp0));
+    assert (fr (st1, h_fr)); 
+    assert (fr (st0, h_fr));
+    assert (snd s0 == heap_union hp0 h_fr);
+    assert (heaps_disjoint hp0 h_fr /\ snd s0 == heap_union hp0 h_fr /\ p_pre (st0, hp0) /\ fr (st0, h_fr));
+    
+    assert (exists (h1 h2: heap). 
+              heaps_disjoint h1 h2 /\ 
+              snd s0 == heap_union h1 h2 /\ 
+              p_pre (st0, h1) /\ 
+              fr (st0, h2));
+    assert ((p_pre ** fr) s0);
+    (| s0, r_global |)
 
   | ISL_Skip -> 
     let s0 = s1 in
@@ -479,9 +562,25 @@ let rec soundness_ok
       (|s0, r|)
     )
 
-  | ISL_Frame #pre #p #post_ok #post_er fr pf_p -> admit()
+  | ISL_Alloc1 #x -> 
+    let (st1, hp1) = s1 in
+    let p_lv (l_i : loc) (v_i : value) : prop =
+      st1 x == Loc l_i /\ points_to l_i v_i s1
+    in
+    lemma_exists_tuple p_lv;
+    let logic_parts (lv : loc & value) : prop =
+      p_lv (fst lv) (snd lv)
+    in
+    let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
+    let l = fst lv_w in
+    let v = snd lv_w in
 
-  | ISL_Alloc1 #x -> admit()
+    let st0 = st1 in
+    let hp0 = override hp1 l Unknown in
+    let s0 : state = (st0, hp0) in
+    let r_alloc = R_Alloc s0 #x l v in
+    let r = R_Ext r_alloc s0 s1 () () () () in
+    (|s0, r|)
 
   | ISL_Alloc2 #x -> admit()
 
@@ -570,7 +669,7 @@ and soundness_er
       (|s0, r|)
     )
 
-  | ISL_Frame #pre #p #post_ok #post_er fr pf_p -> admit()
+  | ISL_Frame #pre #p #post_ok #post_er fr pf_p _ -> admit()
 
   | ISL_Alloc1 #x -> unreachable ()
 

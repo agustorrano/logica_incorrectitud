@@ -14,7 +14,7 @@ let unreachable #a (_ : squash False) : a = coerce_eq () ()
 type var = string
 type loc = nat
 type value = 
-  | Int of int 
+  | Nat of nat 
   | Loc of loc
 
 type cell =
@@ -27,7 +27,7 @@ type heap = loc -> cell
 
 type expr =
   | Var : var -> expr
-  | Const : int -> expr
+  | Const : nat -> expr
   | Plus : expr -> expr -> expr
   | Minus : expr -> expr -> expr
   | Times : expr -> expr -> expr
@@ -58,13 +58,13 @@ type state = store & heap
 
 type cond = state -> prop
 
-let rec eval_expr (s : state) (e : expr) : GTot int =
+let rec eval_expr (s : state) (e : expr) : GTot nat =
   let (st, hp) = s in
   match e with
     | Var x -> (
       match st x with
-        | Int n -> n
-        | Loc l -> l <: int
+        | Nat n -> n
+        | Loc l -> l
       )
     | Const n -> n
     | Plus e1 e2 -> eval_expr s e1 + eval_expr s e2
@@ -115,7 +115,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_Assign : x : var -> 
     e : expr -> s : state -> 
     runsto (Assign x e) s Ok (let (st, hp) = s in
-    override st x (Int (eval_expr s e)), hp)
+    override st x (Nat (eval_expr s e)), hp)
   | R_Nondet : s : state -> #x : var -> v : value ->
     runsto (Nondet x) s Ok (let (st, hp) = s in
     override st x v, hp)
@@ -186,7 +186,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (snd s l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
     runsto (Store e1 e2) s Ok (let (st, hp) = s in
-    st, override hp l (Full (Int (eval_expr s e2))))
+    st, override hp l (Full (Nat (eval_expr s e2))))
   // |[L : [x] := y]|er(L') = {(σ, σ) | L = L' /\ σ = (s, h) ∧ (s(x) = null \/ h(s(x)) = ⊥)}
   | R_StoreEr : s : state -> e1 : expr ->
     e2 : expr -> l : loc ->
@@ -224,7 +224,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
     isl_triple pre (Assign x e) 
       (fun (st, hp) -> exists x_init. 
-        pre (x_init, hp) /\ (st x == Int (eval_expr (x_init, hp) e) /\
+        pre (x_init, hp) /\ (st x == Nat (eval_expr (x_init, hp) e) /\
         (forall y. (y <> x) ==> st y == x_init y))) (fun s -> false)
   
   | ISL_Nondet : #pre : cond -> x : var -> 
@@ -315,25 +315,17 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   
   | ISL_Free : e : expr ->
     isl_triple
-      (fun s -> exists l v.
-        eval_expr s e == l /\
-        points_to l v s)
+      (fun s -> exists v. points_to (eval_expr s e) v s)
       (Free e)
-      (fun s -> exists l.
-        eval_expr s e == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e) s)
       (fun s -> false)
 
   | ISL_FreeEr : e : expr ->
     isl_triple
-      (fun s -> exists l.
-        eval_expr s e == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e) s)
       (Free e)
       (fun s -> false)
-      (fun s -> exists l.
-        eval_expr s e == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e) s)
 
   | ISL_FreeNull : e : expr ->
     isl_triple
@@ -344,26 +336,19 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   
   | ISL_Load : x : var -> e : expr ->
     isl_triple
-      (fun s -> exists l v.
-        eval_expr s e == l /\
-        points_to l v s)
+      (fun s -> exists v. points_to (eval_expr s e) v s)
       (Load x e)
-      (fun s -> exists l v.
-        eval_expr s e == l /\
-        points_to l v s /\
+      (fun s -> exists v. 
+        points_to (eval_expr s e) v s /\
         fst s x == v)
       (fun s -> false)
 
   | ISL_LoadEr : x : var -> e : expr ->
     isl_triple
-      (fun s -> exists l.
-        eval_expr s e == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e) s)
       (Load x e)
       (fun s -> false)
-      (fun s -> exists l.
-        eval_expr s e == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e) s)
 
   | ISL_LoadNull : x : var -> e : expr ->
     isl_triple
@@ -374,25 +359,17 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   
   | ISL_Store : e1 : expr -> e2 : expr ->
     isl_triple
-      (fun s -> exists l v.
-        eval_expr s e1 == l /\
-        points_to l v s)
+      (fun s -> exists v. points_to (eval_expr s e1) v s)
       (Store e1 e2)
-      (fun s -> exists l.
-        eval_expr s e1 == l /\
-        points_to l (Int (eval_expr s e2)) s)
+      (fun s -> points_to (eval_expr s e1) (Nat (eval_expr s e2)) s)
       (fun s -> false)
     
   | ISL_StoreEr : e1 : expr -> e2 : expr ->
     isl_triple
-      (fun s -> exists l.
-        eval_expr s e1 == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e1) s)
       (Store e1 e2)
       (fun s -> false)
-      (fun s -> exists l.
-        eval_expr s e1 == l /\
-        points_to_empty l s)
+      (fun s -> points_to_empty (eval_expr s e1) s)
 
   | ISL_StoreNull : e1 : expr -> e2 : expr ->
     isl_triple
@@ -412,10 +389,30 @@ let lemma_exists_tuple (#a #b: Type) (p: a -> b -> prop) :
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
-assume val lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state) 
+let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state) 
   (h_fr:heap) (r:runsto p s0 m s1) :
   Lemma (requires (heaps_disjoint (snd s1) h_fr))
         (ensures  (heaps_disjoint (snd s0) h_fr))
+        (decreases r) 
+  = match r with
+  | R_Ext r' _ _ _ _ _ _ ->
+    lemma_runsto_disjoint h_fr r'
+  | R_SeqEr r_p ->
+    lemma_runsto_disjoint h_fr r_p
+  | R_Seq r_p r_q ->
+    lemma_runsto_disjoint h_fr r_q;
+    lemma_runsto_disjoint h_fr r_p
+  | R_ChoiceL r_p ->
+    lemma_runsto_disjoint h_fr r_p
+  | R_ChoiceR r_q ->
+    lemma_runsto_disjoint h_fr r_q
+  | R_KleeneS r_seq ->
+    lemma_runsto_disjoint h_fr r_seq
+  | R_Local _ _ _ _ r' ->
+    lemma_runsto_disjoint h_fr r'
+  | R_Frame r' _ _ _ ->
+    lemma_runsto_disjoint h_fr r'
+  | _ -> ()
 
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
@@ -427,17 +424,17 @@ let rec soundness_ok
     let (st1, hp1) = s1 in
     assert (p == Assign x e);
     assert (exists (st_init:store). pre (st_init, hp1) /\ 
-            st1 x == Int (eval_expr (st_init, hp1) e) /\
+            st1 x == Nat (eval_expr (st_init, hp1) e) /\
             (forall y. y <> x ==> st1 y == st_init y));
     let st_init = FStar.IndefiniteDescription.indefinite_description_ghost 
                   store (fun st_i -> pre (st_i, hp1) 
-                  /\ st1 x == Int (eval_expr (st_i, hp1) e)
+                  /\ st1 x == Nat (eval_expr (st_i, hp1) e)
                   /\ (forall y. y <> x ==> st1 y == st_i y))
     in
     let s0 = (st_init, hp1) in
     assert (pre s0);
     let pf0 = R_Assign x e s0 in
-    assert (forall y. fst (override st_init x (Int (eval_expr s0 e)), snd s0) y == fst s1 y);
+    assert (forall y. fst (override st_init x (Nat (eval_expr s0 e)), snd s0) y == fst s1 y);
     let pf1 : runsto (Assign x e) s0 Ok s1 = R_Ext pf0 s0 s1 () () () () in
     (| s0, pf1 |)
   

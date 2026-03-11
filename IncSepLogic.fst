@@ -169,6 +169,9 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (eval_expr s e == l)) ->
     #(squash (snd s l == Empty)) ->
     runsto (Free e) s Er s
+  | R_FreeNull : s : state -> e : expr ->
+    #(squash (eval_expr s e == 0)) ->
+    runsto (Free e) s Er s
   // |[L : x := [y]]|ok = {(σ, (s, h[x |-> v])) | σ = (s, h) ∧ h(s(y)) = v ∈ Val}
   | R_Load : s : state -> x : var -> e : expr ->
     l : loc -> v : value ->
@@ -182,6 +185,9 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (eval_expr s e == l)) ->
     #(squash (snd s l == Empty)) ->
     runsto (Load x e) s Er s
+  | R_LoadNull : s : state -> x : var -> e : expr ->
+    #(squash (eval_expr s e == 0)) ->
+    runsto (Load x e) s Er s
   // |[L : [x] := y]|ok = {(σ, (s, h[s(x) |-> s(y)])) | σ = (s, h) ∧ h(s(x)) ∈ Val}
   | R_Store : s : state -> e1 : expr -> e2 : expr ->
     l : loc -> v : value ->
@@ -194,6 +200,9 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     e2 : expr -> l : loc ->
     #(squash (eval_expr s e1 == l)) ->
     #(squash (snd s l == Empty)) ->
+    runsto (Store e1 e2) s Er s
+  | R_StoreNull : s : state -> e1 : expr -> e2 : expr ->
+    #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s Er s
 
 // definir operador * de logica de separacion
@@ -416,6 +425,14 @@ let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state)
     lemma_runsto_disjoint h_fr r'
   | _ -> ()
 
+let rec lemma_eval_expr_store (st:store) (h1 h2:heap) (e:expr) :
+  Lemma (ensures eval_expr (st, h1) e == eval_expr (st, h2) e) (decreases e) =
+  match e with
+  | Var _ | Const _ -> ()
+  | Plus e1 e2 | Minus e1 e2 | Times e1 e2 | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 -> 
+    lemma_eval_expr_store st h1 h2 e1;
+    lemma_eval_expr_store st h1 h2 e2
+
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : isl_triple pre p post_ok post_er)
@@ -581,21 +598,87 @@ let rec soundness_ok
     let r = R_Ext r_alloc s0 s1 () () () () in
     (|s0, r|)
 
-  | ISL_Alloc2 #x -> admit()
+  | ISL_Alloc2 #x ->
+    let (st1, hp1) = s1 in
+    let p_lv (l_i : loc) (v_i : value) : prop =
+      st1 x == Loc l_i /\ points_to l_i v_i s1
+    in
+    lemma_exists_tuple p_lv;
+    let logic_parts (lv : loc & value) : prop =
+      p_lv (fst lv) (snd lv)
+    in
+    let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
+    let l = fst lv_w in
+    let v = snd lv_w in
 
-  | ISL_Free #e -> admit()
+    let st0 = st1 in
+    let hp0 = override hp1 l Empty in
+    let s0 : state = (st0, hp0) in
+    let r_alloc = R_Alloc s0 #x l v in
+    let r = R_Ext r_alloc s0 s1 () () () () in
+    (|s0, r|)
+
+  | ISL_Free #e -> 
+    let (st1, hp1) = s1 in
+    let l = eval_expr s1 e in
+    let v = Nat 0 in
+
+    let st0 = st1 in
+    let hp0 = override hp1 l (Full v) in
+    let s0 : state = (st0, hp0) in
+    lemma_eval_expr_store st0 hp1 hp0 e;
+    Classical.exists_intro (fun v -> points_to (eval_expr s0 e) v s0) v;
+    let r_free = R_Free s0 e l in
+    let hp1' = override hp0 l Empty in
+    let r = R_Ext r_free s0 s1 () () () () in
+    (|s0, r|)
 
   | ISL_FreeEr #e -> unreachable ()
 
   | ISL_FreeNull #e -> unreachable ()
 
-  | ISL_Load #x #e -> admit()
+  | ISL_Load #x #e ->
+    let (st1, hp1) = s1 in
+    let p_lv (l_i : loc) (v_i : value) : prop =
+      eval_expr s1 e == l_i /\ points_to l_i v_i s1 /\ st1 x == v_i
+    in
+    lemma_exists_tuple p_lv;
+    let logic_parts (lv : loc & value) : prop = p_lv (fst lv) (snd lv) in
+    let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
+    let l = fst lv_w in
+    let v = snd lv_w in
+    let st0 = st1 in
+    let hp0 = hp1 in
+    let s0 : state = (st0, hp0) in
+    Classical.exists_intro (fun v_i -> eval_expr s0 e == l /\ points_to l v_i s0) v;
+    Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e == l_i /\ points_to l_i v_i s0) l;
+    let r_load = R_Load s0 x e l v in
+    let st1' = override st0 x v in
+    let r = R_Ext r_load s0 s1 () () () () in
+    (|s0, r|)
 
   | ISL_LoadEr #x #e -> unreachable ()
 
   | ISL_LoadNull #x #e -> unreachable ()
 
-  | ISL_Store #e1 #e2 -> admit()
+  | ISL_Store #e1 #e2 -> 
+    let (st1, hp1) = s1 in
+    let p_l (l_i : loc) : prop =
+      eval_expr s1 e1 == l_i /\ points_to l_i (Nat (eval_expr s1 e2)) s1
+    in
+    let l = FStar.IndefiniteDescription.indefinite_description_ghost loc p_l in
+    let v_old = Nat 0 in
+    let st0 = st1 in
+    let hp0 = override hp1 l (Full v_old) in
+    let s0 : state = (st0, hp0) in
+    lemma_eval_expr_store st0 hp1 hp0 e1;
+    lemma_eval_expr_store st0 hp1 hp0 e2;
+    Classical.exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
+    Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
+    let r_store = R_Store s0 e1 e2 l v_old in
+    let hp1' = override hp0 l (Full (Nat (eval_expr s0 e2))) in
+    let r = R_Ext r_store s0 s1 () () () () in
+    (|s0, r|)
 
   | ISL_StoreEr #e1 #e2 -> unreachable ()
 
@@ -668,7 +751,27 @@ and soundness_er
       (|s0, r|)
     )
 
-  | ISL_Frame #pre #p #post_ok #post_er fr pf_p _ -> admit()
+  | ISL_Frame #pre #p #post_ok #post_er fr pf_p _ ->
+    let (st1, hp1) = s1 in
+    let p_two (h1 : heap) (h2 : heap) : prop =
+      heaps_disjoint h1 h2 /\
+      hp1 == heap_union h1 h2 /\
+      post_er (st1, h1) /\
+      fr (st1, h2)
+    in
+    lemma_exists_tuple p_two;
+    let logic_parts (hp_tup : heap & heap) : prop =
+      p_two (fst hp_tup) (snd hp_tup)
+    in
+    let h_parts = FStar.IndefiniteDescription.indefinite_description_ghost (heap & heap) logic_parts in
+    let h_er = fst h_parts in
+    let h_fr = snd h_parts in
+    let (|s0_local, r_local|) = soundness_er p pre post_ok post_er pf_p (st1, h_er) in
+    let (st0, hp0) = s0_local in
+    lemma_runsto_disjoint h_fr r_local;
+    let s0 : state = (st0, heap_union hp0 h_fr) in
+    let r = R_Frame r_local h_fr () () in
+    (|s0, r|)
 
   | ISL_Alloc1 #x -> unreachable ()
 
@@ -676,22 +779,39 @@ and soundness_er
 
   | ISL_Free #e -> unreachable ()
 
-  | ISL_FreeEr #e -> admit()
+  | ISL_FreeEr #e ->
+    let s0 = s1 in
+    let l = eval_expr s0 e in
+    let r = R_FreeEr s0 e l in
+    (|s0, r|)
 
-  | ISL_FreeNull #e -> admit()
+  | ISL_FreeNull #e ->
+    let s0 = s1 in
+    let r = R_FreeNull s0 e in
+    (|s0, r|)
 
   | ISL_Load #x #e -> unreachable ()
 
-  | ISL_LoadEr #x #e -> admit()
+  | ISL_LoadEr #x #e -> 
+    let s0 = s1 in
+    let l = eval_expr s0 e in
+    let r = R_LoadEr s0 x e l in
+    (|s0, r|)
 
-  | ISL_LoadNull #x #e -> admit()
+  | ISL_LoadNull #x #e ->
+    let s0 = s1 in
+    let r = R_LoadNull s0 x e in
+    (|s0, r|)
 
   | ISL_Store #e1 #e2 -> unreachable ()
 
-  | ISL_StoreEr #e1 #e2 -> admit()
+  | ISL_StoreEr #e1 #e2 ->
+    let s0 = s1 in
+    let l = eval_expr s0 e1 in
+    let r = R_StoreEr s0 e1 e2 l in
+    (|s0, r|)
 
-  | ISL_StoreNull #e1 #e2 -> admit() 
-  
-
-// { x -> Full _,        { x -> Empty,
-//    y -> 42 }             y -> 42 }
+  | ISL_StoreNull #e1 #e2 ->
+    let s0 = s1 in
+    let r = R_StoreNull s0 e1 e2 in
+    (|s0, r|) 

@@ -87,7 +87,8 @@ let cell_disjoint (c1 c2 : cell) : prop =
   c1 == Unknown \/ c2 == Unknown
 
 // unión de celdas
-let cell_union (c1 c2 : cell) : cell =
+// GM: Agregué el refinamiento
+let cell_union (c1 c2 : cell{cell_disjoint c1 c2}) : cell =
   match c1 with
     | Unknown -> c2
     | _ -> c1
@@ -97,7 +98,8 @@ let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
 
 // unión de heaps
-let heap_union (h1 h2 : heap) : heap =
+// GM: Agregué el refinamiento
+let heap_union (h1 h2 : heap{heaps_disjoint h1 h2}) : heap =
   fun l -> cell_union (h1 l) (h2 l)
 
 // Semántica del lenguaje

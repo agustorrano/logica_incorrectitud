@@ -25,6 +25,14 @@ type cell =
 type store = var -> value
 type heap = loc -> cell
 
+let heap_is_complete (h : heap) : prop =
+  forall l. ~ (Unknown? (h l))
+
+let complete_heap : Type = h : heap{heap_is_complete h}
+
+let initial_heap : complete_heap =
+  fun _ -> Empty
+
 type expr =
   | Var : var -> expr
   | Const : nat -> expr
@@ -147,27 +155,32 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     m : term_mode -> t : state -> v : value ->
     runsto p ((override (fst s) x v), (snd s)) m t ->
     runsto (Local x p) s m ((fun y -> if x = y then (fst s) y else (fst t) y), (snd t))
-  | R_Frame : #p : stmt -> #s0 : state -> #m : term_mode -> #s1 : state ->
-    runsto p s0 m s1 -> h_fr : heap ->
-    (squash (heaps_disjoint (snd s0) h_fr)) ->
-    (squash (heaps_disjoint (snd s1) h_fr)) ->
-    runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
+
+  // No hay comando Frame en los programas!
+  // | R_Frame : #p : stmt -> #s0 : state -> #m : term_mode -> #s1 : state ->
+  //   runsto p s0 m s1 -> h_fr : heap ->
+  //   (squash (heaps_disjoint (snd s0) h_fr)) ->
+  //   (squash (heaps_disjoint (snd s1) h_fr)) ->
+  //   runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
   // |[ L : x := alloc()]|ok = {(σ, (s[x |-> l], h[l |-> v])) | 
   // σ = (s, h) ∧ v ∈ Val /\ (l ∉ dom(h) \/ h(l) = ⊥)}
-  | R_Alloc : s : state -> #x : var -> l : loc -> v : value ->
-    #(squash (snd s l == Unknown \/ snd s l == Empty)) ->
+  | R_Alloc : s : state -> #x : var -> l : loc{l =!= 0} -> v : value ->
+    #(squash (snd s l == Empty)) ->
     runsto (Alloc x) s Ok (let (st, hp) = s in
     override st x (Loc l), override hp l (Full v))
   // |[ L : free(x)]|ok = {(σ, (s, h[s(x) |-> ⊥])) | σ = (s, h) ∧ h(s(x)) ∈ Val}
   | R_Free : s : state -> e : expr -> l : loc ->
-    #(squash (eval_expr s e == l)) ->
-    #(squash (snd s l <> Empty)) ->
+    #(squash (eval_expr s e == l /\ l =!= 0)) ->
+    #(squash (Full? (snd s l))) ->
     runsto (Free e) s Ok (let (st, hp) = s in
     st, override hp l Empty)
     // |[L : free(x)]|er(L') = {(σ, σ) | L = L' /\ σ = (s, h) ∧ (s(x) = null \/ h(s(x)) = ⊥)}
   | R_FreeEr : s : state -> e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
-    #(squash (snd s l == Empty)) ->
+    #(squash (l == 0 \/ snd s l == Empty)) ->
+    runsto (Free e) s Er s
+  | R_FreeNull : s : state -> e : expr ->
+    #(squash (eval_expr s e == 0)) ->
     runsto (Free e) s Er s
   | R_FreeNull : s : state -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
@@ -183,7 +196,10 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_LoadEr : s : state -> x : var -> 
     e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
-    #(squash (snd s l == Empty)) ->
+    #(squash (l == 0 \/ snd s l == Empty)) ->
+    runsto (Load x e) s Er s
+  | R_LoadNull : s : state -> x : var -> e : expr ->
+    #(squash (eval_expr s e == 0)) ->
     runsto (Load x e) s Er s
   | R_LoadNull : s : state -> x : var -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
@@ -199,12 +215,27 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_StoreEr : s : state -> e1 : expr ->
     e2 : expr -> l : loc ->
     #(squash (eval_expr s e1 == l)) ->
-    #(squash (snd s l == Empty)) ->
+    #(squash (l == 0 \/ snd s l == Empty)) ->
+    runsto (Store e1 e2) s Er s
+  | R_StoreNull : s : state -> e1 : expr -> e2 : expr ->
+    #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s Er s
   | R_StoreNull : s : state -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s Er s
 
+let r_frame (#p:stmt) (#s0 : state) (#m : term_mode) (#s1 : state)
+  (r : runsto p s0 m s1) (h_fr : heap)
+  (#_ : squash (heaps_disjoint (snd s0) h_fr))
+  (#_ : squash (heaps_disjoint (snd s1) h_fr)) :
+  runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
+  = admit ()
+
+  // | R_Frame : #p : stmt -> #s0 : state -> #m : term_mode -> #s1 : state ->
+  //   runsto p s0 m s1 -> h_fr : heap ->
+  //   (squash (heaps_disjoint (snd s0) h_fr)) ->
+  //   (squash (heaps_disjoint (snd s1) h_fr)) ->
+  //   runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
 // definir operador * de logica de separacion
 unfold
 let sep_conj (p q : cond) : cond =
@@ -215,6 +246,10 @@ let sep_conj (p q : cond) : cond =
       p (st, h1) /\ q (st, h2)
 
 unfold let ( ** ) = sep_conj
+
+let emp : cond =
+  fun (st, hp) ->
+    forall l. hp l == Unknown \/ hp l == Empty
 
 let points_to (l : loc) (v : value) : cond =
   fun (st, hp) -> hp l == Full v /\
@@ -307,20 +342,21 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
       (post_er ** fr)
   
   | ISL_Alloc1 : x : var ->
-    isl_triple (fun (st, hp) -> exists l. hp l == Unknown)
+    isl_triple emp
       (Alloc x)
       (fun (st, hp) -> exists l v.
         st x == Loc l /\
+        l =!= 0 /\
         points_to l v (st, hp)) 
       (fun s -> false)
 
-  | ISL_Alloc2 : x : var ->
+  | ISL_Alloc2 : x : var -> l : loc ->
     isl_triple 
-      (fun (st, hp) -> exists l.
-        hp l == Empty)
+      (fun s0 -> points_to_empty l s0)
       (Alloc x)
-      (fun (st, hp) -> exists l v.
+      (fun (st, hp) -> exists v.
         st x == Loc l /\
+        l =!= 0 /\
         points_to l v (st, hp)) 
       (fun s -> false)
   
@@ -421,8 +457,8 @@ let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state)
     lemma_runsto_disjoint h_fr r_seq
   | R_Local _ _ _ _ r' ->
     lemma_runsto_disjoint h_fr r'
-  | R_Frame r' _ _ _ ->
-    lemma_runsto_disjoint h_fr r'
+  // | R_Frame r' _ _ _ ->
+  //   lemma_runsto_disjoint h_fr r'
   | _ -> ()
 
 let rec lemma_eval_expr_store (st:store) (h1 h2:heap) (e:expr) :
@@ -502,7 +538,7 @@ let rec soundness_ok
     assert (heaps_disjoint hp0 h_fr);
 
     let s0 : state = (st0, heap_union hp0 h_fr) in
-    let r_global = R_Frame r_local h_fr () () in
+    let r_global = r_frame r_local h_fr in
 
     assert (p_pre (st0, hp0));
     assert (fr (st1, h_fr)); 
@@ -581,7 +617,7 @@ let rec soundness_ok
   | ISL_Alloc1 #x -> 
     let (st1, hp1) = s1 in
     let p_lv (l_i : loc) (v_i : value) : prop =
-      st1 x == Loc l_i /\ points_to l_i v_i s1
+      st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
     in
     lemma_exists_tuple p_lv;
     let logic_parts (lv : loc & value) : prop =
@@ -590,12 +626,14 @@ let rec soundness_ok
     let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
+    assert (Full? (hp1 l));
 
     let st0 = st1 in
-    let hp0 = override hp1 l Unknown in
+    let hp0 = override hp1 l Empty in
     let s0 : state = (st0, hp0) in
-    let r_alloc = R_Alloc s0 #x l v in
+    let r_alloc = R_Alloc s0 #x l v #() in
     let r = R_Ext r_alloc s0 s1 () () () () in
+    assert pre s0;
     (|s0, r|)
 
   | ISL_Alloc2 #x ->
@@ -775,7 +813,7 @@ and soundness_er
 
   | ISL_Alloc1 #x -> unreachable ()
 
-  | ISL_Alloc2 #x -> unreachable ()
+  | ISL_Alloc2 #x _ -> unreachable ()
 
   | ISL_Free #e -> unreachable ()
 

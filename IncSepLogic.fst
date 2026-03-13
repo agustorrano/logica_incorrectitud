@@ -182,9 +182,6 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_FreeNull : s : state -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Free e) s Er s
-  | R_FreeNull : s : state -> e : expr ->
-    #(squash (eval_expr s e == 0)) ->
-    runsto (Free e) s Er s
   // |[L : x := [y]]|ok = {(σ, (s, h[x |-> v])) | σ = (s, h) ∧ h(s(y)) = v ∈ Val}
   | R_Load : s : state -> x : var -> e : expr ->
     l : loc -> v : value ->
@@ -201,9 +198,6 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
   | R_LoadNull : s : state -> x : var -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Load x e) s Er s
-  | R_LoadNull : s : state -> x : var -> e : expr ->
-    #(squash (eval_expr s e == 0)) ->
-    runsto (Load x e) s Er s
   // |[L : [x] := y]|ok = {(σ, (s, h[s(x) |-> s(y)])) | σ = (s, h) ∧ h(s(x)) ∈ Val}
   | R_Store : s : state -> e1 : expr -> e2 : expr ->
     l : loc -> v : value ->
@@ -216,9 +210,6 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     e2 : expr -> l : loc ->
     #(squash (eval_expr s e1 == l)) ->
     #(squash (l == 0 \/ snd s l == Empty)) ->
-    runsto (Store e1 e2) s Er s
-  | R_StoreNull : s : state -> e1 : expr -> e2 : expr ->
-    #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s Er s
   | R_StoreNull : s : state -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr s e1 == 0)) ->
@@ -636,7 +627,7 @@ let rec soundness_ok
     assert pre s0;
     (|s0, r|)
 
-  | ISL_Alloc2 #x ->
+  | ISL_Alloc2 #x _ ->
     let (st1, hp1) = s1 in
     let p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ points_to l_i v_i s1
@@ -808,7 +799,7 @@ and soundness_er
     let (st0, hp0) = s0_local in
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, heap_union hp0 h_fr) in
-    let r = R_Frame r_local h_fr () () in
+    let r = r_frame r_local h_fr in
     (|s0, r|)
 
   | ISL_Alloc1 #x -> unreachable ()

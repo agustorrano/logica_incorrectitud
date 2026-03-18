@@ -19,8 +19,8 @@ type value =
 
 type cell =
   | Full of value
-  | Empty
-  | Unknown
+  | Empty // Es mío, pero lo destruí - la celda SÍ pertenece a mi footprint y tengo la certeza de que fue liberada con Free
+  | Unknown // No es mío - la celda NO pertenece a mi footprint
 
 type store = var -> value
 type heap = loc -> cell
@@ -215,18 +215,120 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s Er s
 
-let r_frame (#p:stmt) (#s0 : state) (#m : term_mode) (#s1 : state)
+let rec lemma_eval_expr_store (st:store) (h1 h2:heap) (e:expr) :
+  Lemma (ensures eval_expr (st, h1) e == eval_expr (st, h2) e) (decreases e) =
+  match e with
+  | Var _ | Const _ -> ()
+  | Plus e1 e2 | Minus e1 e2 | Times e1 e2 | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 -> 
+    lemma_eval_expr_store st h1 h2 e1;
+    lemma_eval_expr_store st h1 h2 e2
+
+let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state) 
+  (h_fr:heap) (r:runsto p s0 m s1) :
+  Lemma (requires (heaps_disjoint (snd s1) h_fr))
+        (ensures  (heaps_disjoint (snd s0) h_fr))
+        (decreases r) 
+  = match r with
+  | R_Ext r' _ _ _ _ _ _ ->
+    lemma_runsto_disjoint h_fr r'
+  | R_SeqEr r_p ->
+    lemma_runsto_disjoint h_fr r_p
+  | R_Seq r_p r_q ->
+    lemma_runsto_disjoint h_fr r_q;
+    lemma_runsto_disjoint h_fr r_p
+  | R_ChoiceL r_p ->
+    lemma_runsto_disjoint h_fr r_p
+  | R_ChoiceR r_q ->
+    lemma_runsto_disjoint h_fr r_q
+  | R_KleeneS r_seq ->
+    lemma_runsto_disjoint h_fr r_seq
+  | R_Local _ _ _ _ r' ->
+    lemma_runsto_disjoint h_fr r'
+  // | R_Frame r' _ _ _ ->
+  //   lemma_runsto_disjoint h_fr r'
+  | _ -> ()
+
+let rec r_frame (#p:stmt) (#s0 : state) (#m : term_mode) (#s1 : state)
   (r : runsto p s0 m s1) (h_fr : heap)
   (#_ : squash (heaps_disjoint (snd s0) h_fr))
   (#_ : squash (heaps_disjoint (snd s1) h_fr)) :
-  runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
-  = admit ()
+  GTot (runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr))
+  (decreases r) = 
+  let s0_fr = (fst s0, heap_union (snd s0) h_fr) in
+  let s1_fr = (fst s1, heap_union (snd s1) h_fr) in
+  match r with
+  | R_Ext r' _ _ _ _ _ _ ->
+    let r_fr = r_frame r' h_fr #() #() in
+    R_Ext r_fr s0_fr s1_fr () () () ()
+  | R_Skip _ ->
+    R_Ext (R_Skip s0_fr) s0_fr s1_fr () () () ()
+  | R_Error _ ->
+    R_Ext (R_Error s0_fr) s0_fr s1_fr () () () ()
+  | R_Assign x e s ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_Assign x e s0_fr) s0_fr s1_fr () () () ()
+  | R_Nondet _ #x v ->
+    R_Ext (R_Nondet s0_fr #x v) s0_fr s1_fr () () () ()
+  | R_Assume _ #e _ ->
+    lemma_eval_expr_store (fst s0) (snd s0) (snd s0_fr) e;
+    R_Ext (R_Assume s0_fr #e ()) s0_fr s1_fr () () () ()
+  | R_SeqEr #p #q r_p ->
+    let r_p_fr = r_frame r_p h_fr #() #() in
+    R_Ext (R_SeqEr #p #q r_p_fr) s0_fr s1_fr () () () ()
+  | R_Seq r_p r_q ->
+    lemma_runsto_disjoint h_fr r_q;
+    let r_p_fr = r_frame r_p h_fr #() #() in
+    let r_q_fr = r_frame r_q h_fr #() #() in
+    R_Ext (R_Seq r_p_fr r_q_fr) s0_fr s1_fr () () () ()
+  | R_ChoiceL #p #q r_p ->
+    let r_p_fr = r_frame r_p h_fr #() #() in
+    R_Ext (R_ChoiceL #p #q r_p_fr) s0_fr s1_fr () () () ()
+  | R_ChoiceR #p #q r_q ->
+    let r_q_fr = r_frame r_q h_fr #() #() in
+    R_Ext (R_ChoiceR #p #q r_q_fr) s0_fr s1_fr () () () ()
+  | R_Kleene0 #p ->
+    R_Ext (R_Kleene0 #p #s0_fr) s0_fr s1_fr () () () ()
+  | R_KleeneS r_seq ->
+    let r_seq_fr = r_frame r_seq h_fr #() #() in
+    R_Ext (R_KleeneS r_seq_fr) s0_fr s1_fr () () () ()
+  | R_Local s #x #p m t v r_inner ->
+    let r_inner_fr = r_frame r_inner h_fr #() #() in
+    let t_fr = (fst t, heap_union (snd t) h_fr) in
+    let r0 = R_Local s0_fr #x #p m t_fr v r_inner_fr in
+    R_Ext r0 s0_fr s1_fr () () () ()
+  | R_Alloc _ #x l v ->
+    R_Ext (R_Alloc s0_fr #x l v) s0_fr s1_fr () () () ()
+  | R_Free s e l ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_Free s0_fr e l) s0_fr s1_fr () () () ()
+  | R_FreeEr s e l ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_FreeEr s0_fr e l) s0_fr s1_fr () () () ()
+  | R_FreeNull s e ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_FreeNull s0_fr e) s0_fr s1_fr () () () ()
+  | R_Load s x e l v ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_Load s0_fr x e l v) s0_fr s1_fr () () () ()
+  | R_LoadEr s x e l ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_LoadEr s0_fr x e l) s0_fr s1_fr () () () ()
+  | R_LoadNull s x e ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
+    R_Ext (R_LoadNull s0_fr x e) s0_fr s1_fr () () () ()
+  | R_Store s e1 e2 l v ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e1;
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e2;
+    R_Ext (R_Store s0_fr e1 e2 l v) s0_fr s1_fr () () () ()
+  | R_StoreEr s e1 e2 l ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e1;
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e2;
+    R_Ext (R_StoreEr s0_fr e1 e2 l) s0_fr s1_fr () () () ()
+  | R_StoreNull s e1 e2 ->
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e1;
+    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e2;
+    R_Ext (R_StoreNull s0_fr e1 e2) s0_fr s1_fr () () () ()
 
-  // | R_Frame : #p : stmt -> #s0 : state -> #m : term_mode -> #s1 : state ->
-  //   runsto p s0 m s1 -> h_fr : heap ->
-  //   (squash (heaps_disjoint (snd s0) h_fr)) ->
-  //   (squash (heaps_disjoint (snd s1) h_fr)) ->
-  //   runsto p (fst s0, heap_union (snd s0) h_fr) m (fst s1, heap_union (snd s1) h_fr)
 // definir operador * de logica de separacion
 unfold
 let sep_conj (p q : cond) : cond =
@@ -243,11 +345,14 @@ let emp : cond =
     forall l. hp l == Unknown \/ hp l == Empty
 
 let points_to (l : loc) (v : value) : cond =
-  fun (st, hp) -> hp l == Full v /\
+  fun (st, hp) -> 
+  l =!=0 /\
+  hp l == Full v /\
   forall l'. (l' <> l) ==> (hp l' == Unknown)
 
 let points_to_empty (l : loc) : cond =
   fun (st, hp) -> 
+    l =!= 0 /\
     hp l == Empty /\
     (forall l'. (l' <> l) ==> (hp l' == Unknown))
 
@@ -427,39 +532,6 @@ let lemma_exists_tuple (#a #b: Type) (p: a -> b -> prop) :
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
-let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state) 
-  (h_fr:heap) (r:runsto p s0 m s1) :
-  Lemma (requires (heaps_disjoint (snd s1) h_fr))
-        (ensures  (heaps_disjoint (snd s0) h_fr))
-        (decreases r) 
-  = match r with
-  | R_Ext r' _ _ _ _ _ _ ->
-    lemma_runsto_disjoint h_fr r'
-  | R_SeqEr r_p ->
-    lemma_runsto_disjoint h_fr r_p
-  | R_Seq r_p r_q ->
-    lemma_runsto_disjoint h_fr r_q;
-    lemma_runsto_disjoint h_fr r_p
-  | R_ChoiceL r_p ->
-    lemma_runsto_disjoint h_fr r_p
-  | R_ChoiceR r_q ->
-    lemma_runsto_disjoint h_fr r_q
-  | R_KleeneS r_seq ->
-    lemma_runsto_disjoint h_fr r_seq
-  | R_Local _ _ _ _ r' ->
-    lemma_runsto_disjoint h_fr r'
-  // | R_Frame r' _ _ _ ->
-  //   lemma_runsto_disjoint h_fr r'
-  | _ -> ()
-
-let rec lemma_eval_expr_store (st:store) (h1 h2:heap) (e:expr) :
-  Lemma (ensures eval_expr (st, h1) e == eval_expr (st, h2) e) (decreases e) =
-  match e with
-  | Var _ | Const _ -> ()
-  | Plus e1 e2 | Minus e1 e2 | Times e1 e2 | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 -> 
-    lemma_eval_expr_store st h1 h2 e1;
-    lemma_eval_expr_store st h1 h2 e2
-
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : isl_triple pre p post_ok post_er)
@@ -529,7 +601,7 @@ let rec soundness_ok
     assert (heaps_disjoint hp0 h_fr);
 
     let s0 : state = (st0, heap_union hp0 h_fr) in
-    let r_global = r_frame r_local h_fr in
+    let r_global = r_frame r_local h_fr #() #() in
 
     assert (p_pre (st0, hp0));
     assert (fr (st1, h_fr)); 
@@ -799,7 +871,7 @@ and soundness_er
     let (st0, hp0) = s0_local in
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, heap_union hp0 h_fr) in
-    let r = r_frame r_local h_fr in
+    let r = r_frame r_local h_fr #() #() in
     (|s0, r|)
 
   | ISL_Alloc1 #x -> unreachable ()

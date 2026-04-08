@@ -575,7 +575,7 @@ let rec soundness_ok
     let (st1, hp1) = s1 in
     assert ((p_ok ** fr) s1); 
 
-    let p_two (h1:heap) (h2:heap) : prop = 
+    let unfold p_two (h1:heap) (h2:heap) : prop = 
       heaps_disjoint h1 h2 /\ 
       hp1 == heap_union h1 h2 /\ 
       p_ok (st1, h1) /\ 
@@ -679,7 +679,7 @@ let rec soundness_ok
 
   | ISL_Alloc1 #x -> 
     let (st1, hp1) = s1 in
-    let p_lv (l_i : loc) (v_i : value) : prop =
+    let unfold p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
     in
     lemma_exists_tuple p_lv;
@@ -701,7 +701,7 @@ let rec soundness_ok
 
   | ISL_Alloc2 #x _ ->
     let (st1, hp1) = s1 in
-    let p_lv (l_i : loc) (v_i : value) : prop =
+    let unfold p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ points_to l_i v_i s1
     in
     lemma_exists_tuple p_lv;
@@ -740,7 +740,7 @@ let rec soundness_ok
 
   | ISL_Load #x #e ->
     let (st1, hp1) = s1 in
-    let p_lv (l_i : loc) (v_i : value) : prop =
+    let unfold p_lv (l_i : loc) (v_i : value) : prop =
       eval_expr s1 e == l_i /\ points_to l_i v_i s1 /\ st1 x == v_i
     in
     lemma_exists_tuple p_lv;
@@ -854,7 +854,7 @@ and soundness_er
 
   | ISL_Frame #pre #p #post_ok #post_er fr pf_p _ ->
     let (st1, hp1) = s1 in
-    let p_two (h1 : heap) (h2 : heap) : prop =
+    let unfold p_two (h1 : heap) (h2 : heap) : prop =
       heaps_disjoint h1 h2 /\
       hp1 == heap_union h1 h2 /\
       post_er (st1, h1) /\

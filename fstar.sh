@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# A helper to call F* with all the relevant flags to check a file in this repo.
+
+SNAME="$0"
+
+gcmd () {
+	cd $(dirname $0)
+	V=1 make -s echo-fstar
+}
+
+exec $(gcmd) "$@"

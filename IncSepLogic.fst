@@ -66,26 +66,27 @@ type state = store & heap
 
 type cond = state -> prop
 
-let rec eval_expr (s : state) (e : expr) : GTot nat =
-  let (st, hp) = s in
+let rec eval_expr' (s : store) (e : expr) : GTot nat =
   match e with
     | Var x -> (
-      match st x with
+      match s x with
         | Nat n -> n
         | Loc l -> l
       )
     | Const n -> n
-    | Plus e1 e2 -> eval_expr s e1 + eval_expr s e2
+    | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
     | Minus e1 e2 -> 
-      let res = eval_expr s e1 - eval_expr s e2 in
+      let res = eval_expr' s e1 - eval_expr' s e2 in
       if res >= 0 then res else 0
-    | Times e1 e2 -> eval_expr s e1 * eval_expr s e2
-    | Eq e1 e2 -> if eval_expr s e1 = eval_expr s e2
+    | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
+    | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
                   then 0 else 1
-    | Lt e1 e2 -> if eval_expr s e1 < eval_expr s e2
+    | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
                   then 0 else 1
-    | Gt e1 e2 -> if eval_expr s e1 > eval_expr s e2
+    | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
                   then 0 else 1
+
+let eval_expr (s : state) (e : expr) : GTot nat = eval_expr' (fst s) e
 
 let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
   fun z -> if z = x then y else f z
@@ -215,14 +216,6 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s Er s
 
-let rec lemma_eval_expr_store (st:store) (h1 h2:heap) (e:expr) :
-  Lemma (ensures eval_expr (st, h1) e == eval_expr (st, h2) e) (decreases e) =
-  match e with
-  | Var _ | Const _ -> ()
-  | Plus e1 e2 | Minus e1 e2 | Times e1 e2 | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 -> 
-    lemma_eval_expr_store st h1 h2 e1;
-    lemma_eval_expr_store st h1 h2 e2
-
 let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state) 
   (h_fr:heap) (r:runsto p s0 m s1) :
   Lemma (requires (heaps_disjoint (snd s1) h_fr))
@@ -265,12 +258,10 @@ let rec r_frame (#p:stmt) (#s0 : state) (#m : term_mode) (#s1 : state)
   | R_Error _ ->
     R_Ext (R_Error s0_fr) s0_fr s1_fr () () () ()
   | R_Assign x e s ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_Assign x e s0_fr) s0_fr s1_fr () () () ()
   | R_Nondet _ #x v ->
     R_Ext (R_Nondet s0_fr #x v) s0_fr s1_fr () () () ()
   | R_Assume _ #e _ ->
-    lemma_eval_expr_store (fst s0) (snd s0) (snd s0_fr) e;
     R_Ext (R_Assume s0_fr #e ()) s0_fr s1_fr () () () ()
   | R_SeqEr #p #q r_p ->
     let r_p_fr = r_frame r_p h_fr #() #() in
@@ -299,34 +290,22 @@ let rec r_frame (#p:stmt) (#s0 : state) (#m : term_mode) (#s1 : state)
   | R_Alloc _ #x l v ->
     R_Ext (R_Alloc s0_fr #x l v) s0_fr s1_fr () () () ()
   | R_Free s e l ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_Free s0_fr e l) s0_fr s1_fr () () () ()
   | R_FreeEr s e l ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_FreeEr s0_fr e l) s0_fr s1_fr () () () ()
   | R_FreeNull s e ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_FreeNull s0_fr e) s0_fr s1_fr () () () ()
   | R_Load s x e l v ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_Load s0_fr x e l v) s0_fr s1_fr () () () ()
   | R_LoadEr s x e l ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_LoadEr s0_fr x e l) s0_fr s1_fr () () () ()
   | R_LoadNull s x e ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e;
     R_Ext (R_LoadNull s0_fr x e) s0_fr s1_fr () () () ()
   | R_Store s e1 e2 l v ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e1;
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e2;
     R_Ext (R_Store s0_fr e1 e2 l v) s0_fr s1_fr () () () ()
   | R_StoreEr s e1 e2 l ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e1;
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e2;
     R_Ext (R_StoreEr s0_fr e1 e2 l) s0_fr s1_fr () () () ()
   | R_StoreNull s e1 e2 ->
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e1;
-    lemma_eval_expr_store (fst s) (snd s) (snd s0_fr) e2;
     R_Ext (R_StoreNull s0_fr e1 e2) s0_fr s1_fr () () () ()
 
 // definir operador * de logica de separacion
@@ -727,7 +706,6 @@ let rec soundness_ok
     let st0 = st1 in
     let hp0 = override hp1 l (Full v) in
     let s0 : state = (st0, hp0) in
-    lemma_eval_expr_store st0 hp1 hp0 e;
     Classical.exists_intro (fun v -> points_to (eval_expr s0 e) v s0) v;
     let r_free = R_Free s0 e l in
     let hp1' = override hp0 l Empty in
@@ -772,8 +750,6 @@ let rec soundness_ok
     let st0 = st1 in
     let hp0 = override hp1 l (Full v_old) in
     let s0 : state = (st0, hp0) in
-    lemma_eval_expr_store st0 hp1 hp0 e1;
-    lemma_eval_expr_store st0 hp1 hp0 e2;
     Classical.exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
     Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
     let r_store = R_Store s0 e1 e2 l v_old in

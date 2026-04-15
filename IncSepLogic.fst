@@ -340,8 +340,13 @@ let test1 (l:loc) (v1 v2:value) (s:state) :
         (ensures  ( False ))
 = ()
 
-let stack_independent (c : cond) : prop =
-  forall st1 st2 hp. c (st1, hp) <==> c (st2, hp)
+(* Los stores st1 y st2 son idénticos excepto por las variables en vars. *)
+let match_except_vars (vars : string -> prop) (st1 st2 : store) : prop =
+  forall x. ~(vars x) ==> st1 x == st2 x
+
+let independent_on_vars (vars : string -> prop) (c : cond) : prop =
+  forall st1 st2 hp.
+    match_except_vars vars st1 st2 ==> (c (st1, hp) <==> c (st2, hp))
 
 noeq
 type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : cond) -> Type =
@@ -412,9 +417,9 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   | ISL_Frame : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond -> fr : cond ->
     isl_triple pre p post_ok post_er ->
-    squash (stack_independent fr) ->
+    squash (independent_on_vars (fun _ -> True) fr) ->
     isl_triple (pre ** fr) p
-      (post_ok ** fr )
+      (post_ok ** fr)
       (post_er ** fr)
   
   | ISL_Alloc1 : x : var ->
@@ -585,6 +590,7 @@ let rec soundness_ok
 
     assert (p_pre (st0, hp0));
     assert (fr (st1, h_fr)); 
+    assert (match_except_vars (fun _ -> True) st0 st1);
     assert (fr (st0, h_fr));
     assert (snd s0 == heap_union hp0 h_fr);
     assert (heaps_disjoint hp0 h_fr /\ snd s0 == heap_union hp0 h_fr /\ p_pre (st0, hp0) /\ fr (st0, h_fr));
@@ -846,6 +852,7 @@ and soundness_er
     let h_fr = snd h_parts in
     let (|s0_local, r_local|) = soundness_er p pre post_ok post_er pf_p (st1, h_er) in
     let (st0, hp0) = s0_local in
+    assert (match_except_vars (fun _ -> True) st0 st1);
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, heap_union hp0 h_fr) in
     let r = r_frame r_local h_fr #() #() in
@@ -893,3 +900,23 @@ and soundness_er
     let s0 = s1 in
     let r = R_StoreNull s0 e1 e2 in
     (|s0, r|) 
+
+// type cond = state -> prop
+// type term_mode = | Ok | Er
+
+let soundness_ok2
+  (p : stmt) (pre : cond) (post : term_mode -> cond)
+  (pf : isl_triple pre p (post Ok) (post Er))
+  (m : term_mode)
+  (s1 : state { post m s1 })
+  : GTot (s0 : state { pre s0 } & runsto p s0 m s1) (decreases pf) 
+  = match m with
+    | Ok -> soundness_ok p pre (post Ok) (post Er) pf s1
+    | Er -> soundness_er p pre (post Ok) (post Er) pf s1
+
+// strongest pre
+let sp (p : stmt) (post : term_mode -> cond) : cond = magic()
+
+let wp_ok (p : stmt) (post : term_mode -> cond)
+  : isl_triple (sp p post) p (post Ok) (post Er)
+  = magic()

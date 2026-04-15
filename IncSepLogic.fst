@@ -340,6 +340,9 @@ let test1 (l:loc) (v1 v2:value) (s:state) :
         (ensures  ( False ))
 = ()
 
+let stack_independent (c : cond) : prop =
+  forall st1 st2 hp. c (st1, hp) <==> c (st2, hp)
+
 noeq
 type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
@@ -409,9 +412,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   | ISL_Frame : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond -> fr : cond ->
     isl_triple pre p post_ok post_er ->
-    squash (forall st0 hp0 st1 hp1 m h. 
-        runsto p (st0, hp0) m (st1, hp1) ==> 
-        fr (st1, h) ==> fr (st0, h)) ->
+    squash (stack_independent fr) ->
     isl_triple (pre ** fr) p
       (post_ok ** fr )
       (post_er ** fr)

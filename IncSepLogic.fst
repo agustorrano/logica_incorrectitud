@@ -1,6 +1,7 @@
 module IncSepLogic
 
 open FStar.Mul
+open FStar.Classical
 
 module S = FStar.StrongExcludedMiddle
 module FE = FStar.FunctionalExtensionality
@@ -348,6 +349,18 @@ let independent_on_vars (vars : string -> prop) (c : cond) : prop =
   forall st1 st2 hp.
     match_except_vars vars st1 st2 ==> (c (st1, hp) <==> c (st2, hp))
 
+let rec modifies (p : stmt) (x : var) : prop =
+  match p with
+  | Assign y _ -> x = y
+  | Nondet y -> x = y
+  | Local y s -> x <> y /\ modifies s x
+  | Seq s1 s2 -> modifies s1 x \/ modifies s2 x
+  | Choice s1 s2 -> modifies s1 x \/ modifies s2 x
+  | Kleene s -> modifies s x
+  | Alloc y -> x = y
+  | Load y _ -> x = y
+  | _ -> False
+
 noeq
 type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
@@ -417,7 +430,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   | ISL_Frame : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond -> fr : cond ->
     isl_triple pre p post_ok post_er ->
-    squash (independent_on_vars (fun _ -> True) fr) ->
+    squash (independent_on_vars (modifies p) fr) ->
     isl_triple (pre ** fr) p
       (post_ok ** fr)
       (post_er ** fr)
@@ -517,6 +530,10 @@ let lemma_exists_tuple (#a #b: Type) (p: a -> b -> prop) :
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
+let lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (#m : term_mode) (r: runsto p s0 m s1) 
+  : Lemma (ensures match_except_vars (modifies p) (fst s0) (fst s1)) =
+  admit()
+
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)
   (pf : isl_triple pre p post_ok post_er)
@@ -590,7 +607,8 @@ let rec soundness_ok
 
     assert (p_pre (st0, hp0));
     assert (fr (st1, h_fr)); 
-    assert (match_except_vars (fun _ -> True) st0 st1);
+    lemma_runsto_modifies r_local;
+    assert (match_except_vars (modifies p_cmd) st0 st1);
     assert (fr (st0, h_fr));
     assert (snd s0 == heap_union hp0 h_fr);
     assert (heaps_disjoint hp0 h_fr /\ snd s0 == heap_union hp0 h_fr /\ p_pre (st0, hp0) /\ fr (st0, h_fr));
@@ -856,6 +874,10 @@ and soundness_er
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, heap_union hp0 h_fr) in
     let r = r_frame r_local h_fr #() #() in
+
+    lemma_runsto_modifies r_local; 
+    assert (match_except_vars (modifies p) st0 st1);
+
     (|s0, r|)
 
   | ISL_Alloc1 #x -> unreachable ()
@@ -917,6 +939,5 @@ let soundness_ok2
 // strongest pre
 let sp (p : stmt) (post : term_mode -> cond) : cond = magic()
 
-let wp_ok (p : stmt) (post : term_mode -> cond)
-  : isl_triple (sp p post) p (post Ok) (post Er)
-  = magic()
+let sp_ok (p : stmt) (post : term_mode -> cond)
+  : isl_triple (sp p post) p (post Ok) (post Er) = magic()

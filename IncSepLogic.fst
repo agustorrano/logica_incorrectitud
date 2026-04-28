@@ -1,11 +1,12 @@
 module IncSepLogic
 
-open FStar.Mul
 open FStar.Classical
 
 module S = FStar.StrongExcludedMiddle
 module FE = FStar.FunctionalExtensionality
 open FStar.FunctionalExtensionality { (^->) }
+
+unfold let op_Star = Prims.op_Multiply
 
 unfold
 let p2b (p : prop) : GTot bool = S.strong_excluded_middle p
@@ -409,6 +410,14 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
     isl_triple pre (Seq (Kleene p) p) post_ok post_er ->
     isl_triple pre (Kleene p) post_ok post_er
   
+  | ISL_KleeneVariant : #variant : (nat -> cond) ->
+    #p : stmt -> step_proof : (n : nat ->
+      GTot (isl_triple (variant n) p (variant (n + 1)) (fun s -> false))) ->
+    isl_triple (variant 0) (Kleene p) (fun s -> exists n. variant n s) (fun _ -> false)
+  
+  | ISL_Empty : #p : stmt ->
+    isl_triple (fun s -> false) p (fun s -> false) (fun s -> false)
+
   | ISL_Consequence : #pre : cond -> #p : stmt ->
     #post_ok : cond -> #post_er : cond ->
     pre' : cond -> post_ok' : cond -> post_er' : cond ->
@@ -664,7 +673,29 @@ let rec soundness_ok
       soundness_ok (Seq (Kleene p) p) pre post_ok post_er pf_seq s1 in
     let r = R_KleeneS #p r_seq in
     (|s0, r|)
-
+  
+  | ISL_KleeneVariant #variant #p pf_var ->
+    let n = FStar.IndefiniteDescription.indefinite_description_ghost
+            _ (fun n -> variant n s1) in
+    let rec aux (m : nat) (t : state { variant m t })
+      : GTot (s0 : state { variant 0 s0 } & runsto (Kleene p) s0 Ok t) (decreases m) =
+      if m = 0 then
+        let s0 = t in
+        let r = R_Kleene0 #p in
+        (|s0, r|)
+      else
+        let m' = m - 1 in
+        let pf_p = pf_var m' in
+        let (|s_mid, r_p|) = 
+          soundness_ok p (variant m') (variant (m' + 1)) (fun _ -> false) pf_p t in
+        let (|s0, r_kleene|) = aux m' s_mid in
+        let r = R_KleeneS #p (R_Seq r_kleene r_p) in
+        (|s0, r|)
+    in
+    aux n s1
+  
+  | ISL_Empty #p -> unreachable ()
+  
   | ISL_Consequence #pre #p #post_ok #post_er
     pre' post_ok' post_er' pf_p _ _ _ ->
     let (|s0, r|) = soundness_ok p pre post_ok post_er pf_p s1 in
@@ -836,6 +867,10 @@ and soundness_er
       soundness_er (Seq (Kleene p) p) pre post_ok post_er pf_seq s1 in
     let r = R_KleeneS #p r_seq in
     (|s0, r|)
+  
+  | ISL_KleeneVariant _ -> unreachable ()
+  
+  | ISL_Empty #p -> unreachable ()
 
   | ISL_Consequence #pre #p #post_ok #post_er
     pre' post_ok' post_er' pf_p _ _ _ ->

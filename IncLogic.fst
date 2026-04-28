@@ -1,6 +1,6 @@
 module IncLogic
 
-open FStar.Mul
+unfold let op_Star = Prims.op_Multiply
 
 module S = FStar.StrongExcludedMiddle
 module FE = FStar.FunctionalExtensionality

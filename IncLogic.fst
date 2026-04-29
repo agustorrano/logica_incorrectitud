@@ -62,7 +62,7 @@ let rec eval_expr (s : state) (e : expr) : GTot int =
     | Const n -> n
     | Plus e1 e2 -> eval_expr s e1 + eval_expr s e2
     | Minus e1 e2 -> eval_expr s e1 - eval_expr s e2
-    | Times e1 e2 -> Prims.op_Multiply (eval_expr s e1) (eval_expr s e2)
+    | Times e1 e2 -> eval_expr s e1 * eval_expr s e2
     | Eq e1 e2 -> if eval_expr s e1 = eval_expr s e2
                   then 0 else 1
     | Lt e1 e2 -> if eval_expr s e1 < eval_expr s e2

@@ -46,7 +46,7 @@ type expr =
 type stmt =
   | Assign : var -> expr -> stmt
   | Nondet : var -> stmt
-  | Local : var -> stmt -> stmt
+  // | Local : var -> stmt -> stmt
   | Skip : stmt
   | Error : stmt
   | Assume : expr -> stmt
@@ -152,10 +152,10 @@ type runsto : (p : stmt) -> (s0 : state) -> (m : term_mode) -> (s1 : state) -> T
     #m : term_mode -> #t : state ->
     runsto (Seq (Kleene p) p) s m t ->
     runsto (Kleene p) s m t
-  | R_Local : s : state -> #x : var -> #p : stmt -> 
-    m : term_mode -> t : state -> v : value ->
-    runsto p ((override (fst s) x v), (snd s)) m t ->
-    runsto (Local x p) s m ((fun y -> if x = y then (fst s) y else (fst t) y), (snd t))
+  // | R_Local : s : state -> #x : var -> #p : stmt -> 
+  //   m : term_mode -> t : state -> v : value ->
+  //   runsto p ((override (fst s) x v), (snd s)) m t ->
+  //   runsto (Local x p) s m ((fun y -> if x = y then (fst s) y else (fst t) y), (snd t))
 
   // No hay comando Frame en los programas!
   // | R_Frame : #p : stmt -> #s0 : state -> #m : term_mode -> #s1 : state ->
@@ -235,8 +235,8 @@ let rec lemma_runsto_disjoint (#p:stmt) (#s0:state) (#m:term_mode) (#s1:state)
     lemma_runsto_disjoint h_fr r_q
   | R_KleeneS r_seq ->
     lemma_runsto_disjoint h_fr r_seq
-  | R_Local _ _ _ _ r' ->
-    lemma_runsto_disjoint h_fr r'
+  // | R_Local _ _ _ _ r' ->
+  //   lemma_runsto_disjoint h_fr r'
   // | R_Frame r' _ _ _ ->
   //   lemma_runsto_disjoint h_fr r'
   | _ -> ()
@@ -282,11 +282,11 @@ let rec r_frame (#p:stmt) (#s0 : state) (#m : term_mode) (#s1 : state)
   | R_KleeneS r_seq ->
     let r_seq_fr = r_frame r_seq h_fr #() #() in
     R_Ext (R_KleeneS r_seq_fr) s0_fr s1_fr () () () ()
-  | R_Local s #x #p m t v r_inner ->
-    let r_inner_fr = r_frame r_inner h_fr #() #() in
-    let t_fr = (fst t, heap_union (snd t) h_fr) in
-    let r0 = R_Local s0_fr #x #p m t_fr v r_inner_fr in
-    R_Ext r0 s0_fr s1_fr () () () ()
+  // | R_Local s #x #p m t v r_inner ->
+  //   let r_inner_fr = r_frame r_inner h_fr #() #() in
+  //   let t_fr = (fst t, heap_union (snd t) h_fr) in
+  //   let r0 = R_Local s0_fr #x #p m t_fr v r_inner_fr in
+  //   R_Ext r0 s0_fr s1_fr () () () ()
   | R_Alloc _ #x l v ->
     R_Ext (R_Alloc s0_fr #x l v) s0_fr s1_fr () () () ()
   | R_Free s e l ->
@@ -352,7 +352,7 @@ let rec modifies (p : stmt) (x : var) : prop =
   match p with
   | Assign y _ -> x = y
   | Nondet y -> x = y
-  | Local y s -> x <> y /\ modifies s x
+  // | Local y s -> x <> y /\ modifies s x
   | Seq s1 s2 -> modifies s1 x \/ modifies s2 x
   | Choice s1 s2 -> modifies s1 x \/ modifies s2 x
   | Kleene s -> modifies s x
@@ -537,9 +537,24 @@ let lemma_exists_tuple (#a #b: Type) (p: a -> b -> prop) :
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
-let lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (#m : term_mode) (r: runsto p s0 m s1) 
-  : Lemma (ensures match_except_vars (modifies p) (fst s0) (fst s1)) =
-  admit()
+let rec lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (#m : term_mode) (r: runsto p s0 m s1) 
+  : Lemma (ensures match_except_vars (modifies p) (fst s0) (fst s1))
+          (decreases r)=
+  match r with
+  | R_Ext r' _ _ _ _ _ _ ->
+    lemma_runsto_modifies r'
+  | R_Seq r_p r_q ->
+    lemma_runsto_modifies r_p;
+    lemma_runsto_modifies r_q
+  | R_SeqEr r_p ->
+    lemma_runsto_modifies r_p
+  | R_ChoiceL r_p ->
+    lemma_runsto_modifies r_p
+  | R_ChoiceR r_q ->
+    lemma_runsto_modifies r_q
+  | R_KleeneS r_seq ->
+    lemma_runsto_modifies r_seq
+  | _ -> ()
 
 let rec soundness_ok
   (p : stmt) (pre : cond) (post_ok : cond) (post_er : cond)

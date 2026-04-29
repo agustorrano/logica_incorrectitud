@@ -2,12 +2,8 @@ module IncSepLogic
 
 open FStar.Classical
 
-module S = FStar.StrongExcludedMiddle
 module FE = FStar.FunctionalExtensionality
 open FStar.FunctionalExtensionality { (^->) }
-
-unfold
-let p2b (p : prop) : GTot bool = S.strong_excluded_middle p
 
 let unreachable #a (_ : squash False) : a = coerce_eq () ()
 
@@ -716,7 +712,7 @@ let rec soundness_ok
 
   | ISL_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
     #post_er1 #post_er2 pf_p1 pf_p2 ->
-    if p2b (post_ok1 s1) then
+    if t2b (post_ok1 s1) then
       let (|s0, r|) = soundness_ok p pre1 post_ok1 post_er1 pf_p1 s1 in
       (|s0, r|)
     else (
@@ -850,7 +846,7 @@ and soundness_er
   | ISL_Assume #pre #e -> unreachable ()
 
   | ISL_Seq #p #q #pre #mid_ok #mid_er #post_ok #post_er pf_p pf_q ->
-    if p2b (mid_er s1) then
+    if t2b (mid_er s1) then
       let (| s0, r |) = soundness_er p pre mid_ok mid_er pf_p s1 in
       (| s0, R_SeqEr #p #q r |)
     else (
@@ -892,7 +888,7 @@ and soundness_er
 
   | ISL_Disjunction #pre1 #pre2 #p #post_ok1 #post_ok2
     #post_er1 #post_er2 pf_p1 pf_p2 ->
-    if p2b (post_er1 s1) then
+    if t2b (post_er1 s1) then
       let (|s0, r|) = soundness_er p pre1 post_ok1 post_er1 pf_p1 s1 in
       (|s0, r|)
     else (

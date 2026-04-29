@@ -357,6 +357,7 @@ let rec modifies (p : stmt) (x : var) : prop =
   | _ -> False
 
 noeq
+[@@erasable]
 type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
     isl_triple pre (Assign x e) 
@@ -406,7 +407,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post_ok : cond) -> (post_er : c
   
   | ISL_KleeneVariant : #variant : (nat -> cond) ->
     #p : stmt -> step_proof : (n : nat ->
-      GTot (isl_triple (variant n) p (variant (n + 1)) (fun s -> false))) ->
+      isl_triple (variant n) p (variant (n + 1)) (fun s -> false)) ->
     isl_triple (variant 0) (Kleene p) (fun s -> exists n. variant n s) (fun _ -> false)
   
   | ISL_Empty : #p : stmt ->

@@ -72,9 +72,7 @@ let lemma_p_i_consequence (k:nat{k < 1000000}) (s:state)
   let st_init = fun y -> if y = "i" then Nat k else st y in
   let s_init = (st_init, hp) in
   
-  assert (eval_expr s_init (Var "i") == k);
-  assert (eval_expr s_init (Const 1) == 1);
-  assert (eval_expr s_init (Plus (Var "i") (Const 1)) == k + 1)
+  assert (eval_expr s_init (Var "i") == k)
 
 let lemma_p_j_consequence (k:nat{k < 1000000}) (s:state)
   : Lemma (requires variant (k + 1) s)
@@ -86,11 +84,8 @@ let lemma_p_j_consequence (k:nat{k < 1000000}) (s:state)
   let st_init = fun y -> if y = "j" then Nat k else st y in
   let s_init = (st_init, hp) in
 
-  assert (eval_expr s_init (Var "j") == k);
-  assert (eval_expr s_init (Const 1) == 1);
-  assert (eval_expr s_init (Plus (Var "j") (Const 1)) == k + 1)
+  assert (eval_expr s_init (Var "j") == k)
 
-// El Teorema Puente: Demuestra que un bucle acotado satisface el axioma de Kleene
 let lemma_bounded_kleene (#variant : nat -> cond) (#bound : nat) (#p : stmt)
   (bounded_step : (k:nat{k < bound} -> GTot (isl_triple (variant k) p (variant (k + 1)) cond_false)))
   : GTot (isl_triple (variant 0) (Kleene p) (fun s -> exists (k:nat{k <= bound}). variant k s) cond_false) =

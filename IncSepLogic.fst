@@ -966,20 +966,7 @@ and soundness_er
   | ISL_StoreNull #e1 #e2 ->
     let s0 = s1 in
     let r = R_StoreNull s0 e1 e2 in
-    (|s0, r|) 
-
-// type cond = state -> prop
-// type term_mode = | Ok | Er
-
-let soundness_ok2
-  (p : stmt) (pre : cond) (post : term_mode -> cond)
-  (pf : isl_triple pre p (post Ok) (post Er))
-  (m : term_mode)
-  (s1 : state { post m s1 })
-  : GTot (s0 : state { pre s0 } & runsto p s0 m s1) (decreases pf) 
-  = match m with
-    | Ok -> soundness_ok p pre (post Ok) (post Er) pf s1
-    | Er -> soundness_er p pre (post Ok) (post Er) pf s1
+    (|s0, r|)
 
 // strongest pre
 let sp (p : stmt) (post : term_mode -> cond) : cond = magic()

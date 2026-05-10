@@ -1,9 +1,10 @@
-ROOTS := $(wildcard *.fst)
+ROOTS := $(wildcard *.fst proofs/*.fst)
 
 FSTAR = fstar.exe $(SIL) $(FSTAR_FLAGS)
 FSTAR_FLAGS += --cache_dir obj
 FSTAR_FLAGS += --odir obj
 FSTAR_FLAGS += --warn_error -274
+FSTAR_FLAGS += --include proofs
 
 KRML = krml -skip-compilation -skip-makefiles $(KSIL)
 

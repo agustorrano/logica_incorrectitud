@@ -455,11 +455,14 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         l =!= 0 /\
         points_to l v s)
   
-  | ISL_Free : e : expr ->
+  | ISL_Free : #pre : cond -> e : expr ->
     isl_triple
-      (fun s -> exists v. points_to (eval_expr s e) v s)
+      pre
       (Free e)
-      (fun s -> s._3 == Ok /\ points_to_empty (eval_expr s e) s)
+      (fun s -> exists (v : value).
+        s._3 == Ok /\ 
+        points_to_empty (eval_expr s e) s /\
+        pre (s._1, override s._2 (eval_expr s e) (Full v), s._3))
 
   | ISL_FreeEr : e : expr ->
     isl_triple
@@ -502,17 +505,23 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         s._3 == Ok /\
         points_to (eval_expr s e1) (Nat (eval_expr s e2)) s)
 
-  | ISL_StoreEr : e1 : expr -> e2 : expr ->
+  | ISL_StoreEr : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
-      (fun s -> s._3 == Ok /\ points_to_empty (eval_expr s e1) s)
+      pre
       (Store e1 e2)
-      (fun s -> s._3 == Er /\ points_to_empty (eval_expr s e1) s)
+      (fun s -> 
+        s._3 == Er /\ 
+        points_to_empty (eval_expr s e1) s /\
+        pre (s._1, s._2, Ok))
 
-  | ISL_StoreNull : e1 : expr -> e2 : expr ->
+  | ISL_StoreNull : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
-      (fun s -> s._3 == Ok /\ eval_expr s e1 == 0)
+      pre
       (Store e1 e2)
-      (fun s -> s._3 == Er /\ eval_expr s e1 == 0)
+      (fun s -> 
+        s._3 == Er /\ 
+        eval_expr s e1 == 0 /\
+        pre (s._1, s._2, Ok))
 
 let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
   Lemma (requires (exists (x : a) (y : b). p x y))
@@ -746,16 +755,17 @@ let rec soundness
     let r = R_Ext r_alloc s0 s1 () () in
     (|s0, r|)
 
-  | ISL_Free #e -> 
+  | ISL_Free #pre e -> 
     let (st1, hp1, m1) = s1 in
     let l = eval_expr s1 e in
-    let v = Nat 0 in
+    let p_v (v_i : value) : prop = 
+      m1 == Ok /\ points_to_empty l s1 /\ pre (st1, override hp1 l (Full v_i), Ok) 
+    in
+    let v = FStar.IndefiniteDescription.indefinite_description_ghost value p_v in
     let st0 = st1 in
     let hp0 = override hp1 l (Full v) in
     let s0 : state = (st0, hp0, Ok) in
-    Classical.exists_intro (fun v -> points_to (eval_expr s0 e) v s0) v;
     let r_free = R_Free s0 e l in
-    let hp1' = override hp0 l Empty in
     let r = R_Ext r_free s0 s1 () () in
     (|s0, r|)
 
@@ -822,14 +832,14 @@ let rec soundness
     let r = R_Ext r_store s0 s1 () () in
     (|s0, r|)
 
-  | ISL_StoreEr #e1 #e2 ->
+  | ISL_StoreEr #pre e1 e2 ->
     let (st, hp, m1) = s1 in
     let s0 : state = (st, hp, Ok) in
     let l = eval_expr s0 e1 in
     let r = R_StoreEr s0 e1 e2 l in
     (|s0, r|)
 
-  | ISL_StoreNull #e1 #e2 ->
+  | ISL_StoreNull #pre #e1 #e2 ->
     let (st, hp, m1) = s1 in
     let s0 : state = (st, hp, Ok) in
     let r = R_StoreNull s0 e1 e2 in

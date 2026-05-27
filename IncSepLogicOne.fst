@@ -436,14 +436,15 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
     isl_triple (pre ** fr) p
       (post ** fr)
   
-  | ISL_Alloc1 : x : var ->
-    isl_triple emp
+  | ISL_Alloc1 : #pre : cond -> x : var ->
+    isl_triple pre
       (Alloc x)
       (fun s -> exists l v.
         s._3 == Ok /\
         s._1 x == Loc l /\
         l =!= 0 /\
-        points_to l v s)
+        points_to l v s /\
+        (exists x_old. pre (override s._1 x x_old, override s._2  l Empty, Ok)))
 
   | ISL_Alloc2 : x : var -> l : loc ->
     isl_triple 
@@ -476,14 +477,16 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
       (Free e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0)
   
-  | ISL_Load : x : var -> e : expr ->
+  | ISL_Load : #pre : cond -> x : var -> e : expr ->
     isl_triple
-      (fun s -> exists v. points_to (eval_expr s e) v s)
+      pre
       (Load x e)
-      (fun s -> exists v. 
+      (fun s -> exists l v x_old. 
         s._3 == Ok /\
-        points_to (eval_expr s e) v s /\
-        s._1 x == v)
+        eval_expr (override s._1 x x_old, s._2, Ok) e == l /\
+        points_to l v s /\
+        s._1 x == v /\
+        pre (override s._1 x x_old, s._2, Ok))
 
   | ISL_LoadEr : x : var -> e : expr ->
     isl_triple
@@ -497,13 +500,14 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
       (Load x e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0)
   
-  | ISL_Store : e1 : expr -> e2 : expr ->
+  | ISL_Store : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
-      (fun s -> exists v. points_to (eval_expr s e1) v s)
+      pre
       (Store e1 e2)
       (fun s -> 
         s._3 == Ok /\
-        points_to (eval_expr s e1) (Nat (eval_expr s e2)) s)
+        points_to (eval_expr s e1) (Nat (eval_expr s e2)) s /\
+        (exists v_old. pre (s._1, override s._2 (eval_expr s e1) (Full v_old), Ok)))
 
   | ISL_StoreEr : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
@@ -715,7 +719,7 @@ let rec soundness
       (|s0, r|)
     )
 
-  | ISL_Alloc1 #x -> 
+  | ISL_Alloc1 #pre #x -> 
     let (st1, hp1, m1) = s1 in
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
@@ -727,8 +731,11 @@ let rec soundness
     let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
-    assert (Full? (hp1 l));
-    let st0 = st1 in
+    let p_xold (x_o : value) : prop =
+      pre (override st1 x x_o, override hp1 l Empty, Ok)
+    in
+    let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
+    let st0 = override st1 x x_old in
     let hp0 = override hp1 l Empty in
     let s0 : state = (st0, hp0, Ok) in
     let r_alloc = R_Alloc s0 #x l v #() in
@@ -782,21 +789,29 @@ let rec soundness
     let r = R_FreeNull s0 e in
     (|s0, r|)
 
-  | ISL_Load #x #e ->
+  | ISL_Load #pre #x #e ->
     let (st1, hp1, m1) = s1 in
+    let p_xold (x_o : value) : prop =
+      exists (l_i : loc) (v_i : value).
+        eval_expr (override st1 x x_o, hp1, Ok) e == l_i /\
+        points_to l_i v_i s1 /\ st1 x = v_i /\
+        pre (override st1 x x_o, hp1, Ok)
+    in
+    let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
-      eval_expr s1 e == l_i /\ points_to l_i v_i s1 /\ st1 x == v_i
+      eval_expr (override st1 x x_old, hp1, Ok) e == l_i /\ 
+      points_to l_i v_i s1 /\ st1 x == v_i /\
+      pre (override st1 x x_old, hp1, Ok)
     in
     lemma_exists_tuple p_lv;
     let logic_parts (lv : loc & value) : prop = p_lv (fst lv) (snd lv) in
     let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
-    let st0 = st1 in
+    let st0 = override st1 x x_old in
     let hp0 = hp1 in
     let s0 : state = (st0, hp0, Ok) in
-    Classical.exists_intro (fun v_i -> eval_expr s0 e == l /\ points_to l v_i s0) v;
-    Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e == l_i /\ points_to l_i v_i s0) l;
+    Classical.exists_intro (fun v_i -> points_to l v_i s0) v;
     let r_load = R_Load s0 x e l v in
     let st1' = override st0 x v in
     let r = R_Ext r_load s0 s1 () () in
@@ -815,13 +830,16 @@ let rec soundness
     let r = R_LoadNull s0 x e in
     (|s0, r|)
 
-  | ISL_Store #e1 #e2 -> 
+  | ISL_Store #pre #e1 #e2 -> 
     let (st1, hp1, m1) = s1 in
     let p_l (l_i : loc) : prop =
       eval_expr s1 e1 == l_i /\ points_to l_i (Nat (eval_expr s1 e2)) s1
     in
     let l = FStar.IndefiniteDescription.indefinite_description_ghost loc p_l in
-    let v_old = Nat 0 in
+    let p_vold (v_o : value) : prop =
+      pre (st1, override hp1 l (Full v_o), Ok)
+    in
+    let v_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_vold in
     let st0 = st1 in
     let hp0 = override hp1 l (Full v_old) in
     let s0 : state = (st0, hp0, Ok) in

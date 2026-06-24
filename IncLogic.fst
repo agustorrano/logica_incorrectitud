@@ -48,7 +48,7 @@ type term_mode =
   | Ok
   | Er
 
-type state = var -> int
+type state = var -> value
 
 type cond = state -> prop
 

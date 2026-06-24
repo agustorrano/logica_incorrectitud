@@ -332,10 +332,8 @@ let match_except_vars (vars : string -> prop) (st1 st2 : store) : prop =
   forall x. ~(vars x) ==> st1 x == st2 x
 
 let independent_on_vars (vars : string -> prop) (c : cond) : prop =
-  forall s1 s2.
-    let (st1, _, _) = s1 in
-    let (st2, _, _) = s2 in
-    match_except_vars vars st1 st2 ==> (c s1 <==> c s2)
+  forall (st1 st2 : store) (hp : heap) (m1 m2 : term_mode).
+    match_except_vars vars st1 st2 ==> (c (st1, hp, m1) <==> c (st2, hp, m2))
 
 let rec modifies (p : stmt) (x : var) : prop =
   match p with

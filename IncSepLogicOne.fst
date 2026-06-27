@@ -346,9 +346,11 @@ let rec modifies (p : stmt) (x : var) : prop =
   | Load y _ -> x = y
   | _ -> False
 
+unfold let is_ok (c : cond) : cond = fun s -> c s /\ s._3 == Ok
+
 unfold
 let kleene_pre (variant : nat -> cond) : cond =
-  fun s -> variant 0 s /\ s._3 == Ok
+  is_ok (variant 0)
 
 unfold
 let kleene_post (variant : nat -> cond) : cond =
@@ -358,158 +360,148 @@ noeq
 [@@erasable]
 type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
-    isl_triple pre (Assign x e) 
-      (fun s -> s._3 == Ok /\ exists x_init. 
+    isl_triple (is_ok pre) (Assign x e) 
+      (is_ok (fun s -> exists x_init. 
         pre (x_init, s._2, s._3) /\ (s._1 x == Nat (eval_expr (x_init, s._2, s._3) e) /\
-        (forall y. (y <> x) ==> s._1 y == x_init y)))
+        (forall y. (y <> x) ==> s._1 y == x_init y))))
   
   | ISL_Nondet : #pre : cond -> x : var -> 
-    isl_triple pre (Nondet x)
-      (fun s -> s._3 == Ok /\ exists v.
-        pre (override s._1 x v, s._2, s._3))
+    isl_triple (is_ok pre) (Nondet x)
+      (is_ok (fun s -> exists v.
+        pre (override s._1 x v, s._2, s._3)))
   
   | ISL_Skip : #pre : cond ->
-    isl_triple pre Skip
-      (fun s -> s._3 == Ok /\ pre s)
+    isl_triple (is_ok pre) Skip (is_ok pre)
   
   | ISL_Error : #pre : cond ->
-    isl_triple pre Error
+    isl_triple (is_ok pre) Error
       (fun s -> let (st, hp, m) = s in m == Er /\ pre (st, hp, Ok))
   
   | ISL_Assume : #pre : cond -> e : expr ->
-    isl_triple pre (Assume e)
-      (fun s -> s._3 == Ok /\ pre s /\ (eval_expr s e == 0))
+    isl_triple (is_ok pre) (Assume e)
+      (is_ok (fun s -> pre s /\ (eval_expr s e == 0)))
   
   | ISL_Seq : #p : stmt -> #q : stmt ->
     #pre : cond -> #mid : cond -> #post : cond ->
-    isl_triple pre p mid ->
-    isl_triple (fun s -> s._3 == Ok /\ mid s) q post ->
-    isl_triple pre (Seq p q) 
+    isl_triple (is_ok pre) p mid ->
+    isl_triple (is_ok mid) q post ->
+    isl_triple (is_ok pre) (Seq p q) 
       (fun s -> post s \/ (s._3 == Er /\ mid s))
   
   | ISL_ChoiceL : #p : stmt -> #q : stmt ->
     #pre : cond -> #post : cond ->
-    isl_triple pre p post ->
-    isl_triple pre (Choice p q) post
+    isl_triple (is_ok pre) p post ->
+    isl_triple (is_ok pre) (Choice p q) post
   
   | ISL_ChoiceR : #p : stmt -> #q : stmt ->
     #pre : cond -> #post : cond ->
-    isl_triple pre q post ->
-    isl_triple pre (Choice p q) post
+    isl_triple (is_ok pre) q post ->
+    isl_triple (is_ok pre) (Choice p q) post
   
   | ISL_Kleene0 : #p : stmt -> #pre : cond ->
-    isl_triple pre (Kleene p)
-      (fun s -> s._3 == Ok /\ pre s)
+    isl_triple (is_ok pre) (Kleene p) (is_ok pre)
   
   | ISL_KleeneS : #p : stmt -> #pre : cond -> #post : cond ->
-    isl_triple pre (Seq (Kleene p) p) post ->
-    isl_triple pre (Kleene p) post
+    isl_triple (is_ok pre) (Seq (Kleene p) p) post ->
+    isl_triple (is_ok pre) (Kleene p) post
   
   | ISL_KleeneVariant : #variant : (nat -> cond) -> #p : stmt ->
     step_proof : (n : nat ->
-      isl_triple (fun s -> variant n s /\ s._3 == Ok) p (variant (n + 1))) ->
+      isl_triple (is_ok (variant n)) p (variant (n + 1))) ->
     isl_triple (kleene_pre variant) (Kleene p) (kleene_post variant)
-  
-  | ISL_Empty : #p : stmt ->
-    isl_triple (fun s -> false) p (fun s -> false)
 
   | ISL_Consequence : #pre : cond -> #p : stmt ->
     #post : cond -> pre' : cond -> post' : cond ->
-    isl_triple pre p post ->
+    isl_triple (is_ok pre) p post ->
     squash (forall x. pre x ==> pre' x) ->
     squash (forall x. post' x ==> post x) ->
-    isl_triple pre' p post'
+    isl_triple (is_ok pre') p post'
 
   | ISL_Disjunction : #pre1 : cond -> #pre2 : cond ->
     #p : stmt -> #post1 : cond -> #post2 : cond ->
-    isl_triple pre1 p post1 ->
-    isl_triple pre2 p post2 ->
-    isl_triple (fun s -> pre1 s \/ pre2 s) p
+    isl_triple (is_ok pre1) p post1 ->
+    isl_triple (is_ok pre2) p post2 ->
+    isl_triple (is_ok (fun s -> pre1 s \/ pre2 s)) p
       (fun s -> post1 s \/ post2 s)
 
   | ISL_Frame : #pre : cond -> #p : stmt ->
     #post : cond -> fr : cond ->
-    isl_triple pre p post ->
+    isl_triple (is_ok pre) p post ->
     squash (independent_on_vars (modifies p) fr) ->
-    isl_triple (pre ** fr) p
+    isl_triple (is_ok (pre ** fr)) p
       (post ** fr)
   
   | ISL_Alloc1 : #pre : cond -> x : var ->
-    isl_triple pre
+    isl_triple (is_ok pre)
       (Alloc x)
-      (fun s -> exists l v.
-        s._3 == Ok /\
+      (is_ok (fun s -> exists l v.
         s._1 x == Loc l /\
         l =!= 0 /\
         points_to l v s /\
-        (exists x_old. pre (override s._1 x x_old, override s._2  l Empty, Ok)))
+        (exists x_old. pre (override s._1 x x_old, override s._2  l Empty, Ok))))
 
   | ISL_Alloc2 : x : var -> l : loc ->
     isl_triple 
-      (fun s0 -> points_to_empty l s0)
+      (is_ok (fun s0 -> points_to_empty l s0))
       (Alloc x)
-      (fun s -> exists v.
-        s._3 == Ok /\
+      (is_ok (fun s -> exists v.
         s._1 x == Loc l /\
         l =!= 0 /\
-        points_to l v s)
+        points_to l v s))
   
   | ISL_Free : #pre : cond -> e : expr ->
     isl_triple
-      pre
+      (is_ok pre)
       (Free e)
-      (fun s -> exists (v : value).
-        s._3 == Ok /\ 
+      (is_ok (fun s -> exists (v : value).
         points_to_empty (eval_expr s e) s /\
-        pre (s._1, override s._2 (eval_expr s e) (Full v), s._3))
+        pre (s._1, override s._2 (eval_expr s e) (Full v), s._3)))
 
   | ISL_FreeEr : e : expr ->
     isl_triple
-      (fun s -> s._3 == Ok /\ points_to_empty (eval_expr s e) s)
+      (is_ok (fun s -> points_to_empty (eval_expr s e) s))
       (Free e)
       (fun s -> s._3 == Er /\ points_to_empty (eval_expr s e) s)
 
   | ISL_FreeNull : e : expr ->
     isl_triple
-      (fun s -> s._3 == Ok /\ eval_expr s e == 0)
+      (is_ok (fun s -> eval_expr s e == 0))
       (Free e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0)
   
   | ISL_Load : #pre : cond -> x : var -> e : expr ->
     isl_triple
-      pre
+      (is_ok pre)
       (Load x e)
-      (fun s -> exists l v x_old. 
-        s._3 == Ok /\
+      (is_ok (fun s -> exists l v x_old.
         eval_expr (override s._1 x x_old, s._2, Ok) e == l /\
         points_to l v s /\
         s._1 x == v /\
-        pre (override s._1 x x_old, s._2, Ok))
+        pre (override s._1 x x_old, s._2, Ok)))
 
   | ISL_LoadEr : x : var -> e : expr ->
     isl_triple
-      (fun s -> s._3 == Ok /\ points_to_empty (eval_expr s e) s)
+      (is_ok (fun s -> points_to_empty (eval_expr s e) s))
       (Load x e)
       (fun s -> s._3 == Er /\ points_to_empty (eval_expr s e) s)
 
   | ISL_LoadNull : x : var -> e : expr ->
     isl_triple
-      (fun s -> s._3 == Ok /\ eval_expr s e == 0)
+      (is_ok (fun s -> eval_expr s e == 0))
       (Load x e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0)
   
   | ISL_Store : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
-      pre
+      (is_ok pre)
       (Store e1 e2)
-      (fun s -> 
-        s._3 == Ok /\
+      (is_ok (fun s ->
         points_to (eval_expr s e1) (Nat (eval_expr s e2)) s /\
-        (exists v_old. pre (s._1, override s._2 (eval_expr s e1) (Full v_old), Ok)))
+        (exists v_old. pre (s._1, override s._2 (eval_expr s e1) (Full v_old), Ok))))
 
   | ISL_StoreEr : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
-      pre
+      (is_ok pre)
       (Store e1 e2)
       (fun s -> 
         s._3 == Er /\ 
@@ -518,7 +510,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
 
   | ISL_StoreNull : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
-      pre
+      (is_ok pre)
       (Store e1 e2)
       (fun s -> 
         s._3 == Er /\ 
@@ -559,7 +551,7 @@ let rec soundness
   (p : stmt) (pre : cond) (post : cond)
   (pf : isl_triple pre p post)
   (s1 : state { post s1 })
-  : GTot (s0 : state { pre s0 /\ s0._3 == Ok } & runsto p s0 s1) (decreases pf) 
+  : GTot (s0 : state { pre s0 } & runsto p s0 s1) (decreases pf) 
   = match pf with
   | ISL_Assign #pre #x #e ->
     let (st1, hp1, m) = s1 in
@@ -610,7 +602,7 @@ let rec soundness
     let h_ok = fst h_parts in
     let h_fr = snd h_parts in
     let (|s0_local, r_local|) = 
-      soundness p_cmd p_pre p_post pf_p (st1, h_ok, m) in
+      soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_ok, m) in
     let (st0, hp0, m0) = s0_local in
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, heap_union hp0 h_fr, m0) in
@@ -639,27 +631,27 @@ let rec soundness
   | ISL_Seq #p #q #pre #mid #post pf_p pf_q ->
     if t2b (post s1) then
       let (|s_mid, r_q|) = 
-        soundness q (fun s -> s._3 == Ok /\ mid s) post pf_q s1 in
+        soundness q (is_ok mid) post pf_q s1 in
       let (|s0, r_p|) =
-        soundness p pre mid pf_p s_mid in
+        soundness p (is_ok pre) mid pf_p s_mid in
       let r = R_Seq #p #q #s0 #s_mid #s1 r_p r_q in
       (|s0, r|)
     else (
       let (|s0, r_p|) =
-        soundness p pre mid pf_p s1 in
+        soundness p (is_ok pre) mid pf_p s1 in
       let r = R_SeqEr #p #q #s0 #s1 r_p in
       (|s0, r|)
     )
 
   | ISL_ChoiceL #p #q #pre #post pf_p ->
     let (|s0, r_p|) =
-      soundness p pre post pf_p s1 in
+      soundness p (is_ok pre) post pf_p s1 in
     let r = R_ChoiceL #p #q #s0 #s1 r_p in
     (|s0, r|)
 
   | ISL_ChoiceR #p #q #pre #post pf_q -> 
     let (|s0, r_q|) =
-      soundness q pre post pf_q s1 in
+      soundness q (is_ok pre) post pf_q s1 in
     let r = R_ChoiceR #p #q #s0 #s1 r_q in
     (|s0, r|)
 
@@ -670,7 +662,7 @@ let rec soundness
 
   | ISL_KleeneS #p #pre #post pf_seq ->
     let (|s0, r_seq|) =
-      soundness (Seq (Kleene p) p) pre post pf_seq s1 in
+      soundness (Seq (Kleene p) p) (is_ok pre) post pf_seq s1 in
     let r = R_KleeneS #p #s0 #s1 r_seq in
     (|s0, r|)
   
@@ -689,7 +681,7 @@ let rec soundness
         let m' = m - 1 in
         let pf_p = pf_var m' in
         let (|s_mid, r_p|) = 
-          soundness p (fun s -> variant m' s /\ s._3 == Ok) (variant (m' + 1)) pf_p t in
+          soundness p (is_ok (variant m')) (variant (m' + 1)) pf_p t in
         let (|s0, r_kleene|) = aux m' s_mid in
         let s_mid_ok : state = (s_mid._1, s_mid._2, Ok) in
         let r_kl_ok = R_Ext r_kleene s0 s_mid () () in
@@ -701,19 +693,17 @@ let rec soundness
     in
     aux n s1
   
-  | ISL_Empty #p -> unreachable ()
-  
   | ISL_Consequence #pre #p #post pre' post' pf_p _ _ ->
-    let (|s0, r|) = soundness p pre post pf_p s1 in
+    let (|s0, r|) = soundness p (is_ok pre) post pf_p s1 in
     (|s0, r|)
 
   | ISL_Disjunction #pre1 #pre2 #p #post1 #post2 pf_p1 pf_p2 ->
     if t2b (post1 s1) then
-      let (|s0, r|) = soundness p pre1 post1 pf_p1 s1 in
+      let (|s0, r|) = soundness p (is_ok pre1) post1 pf_p1 s1 in
       (|s0, r|)
     else (
       assert (post2 s1);
-      let (|s0, r|) = soundness p pre2 post2 pf_p2 s1 in
+      let (|s0, r|) = soundness p (is_ok pre2) post2 pf_p2 s1 in
       (|s0, r|)
     )
 

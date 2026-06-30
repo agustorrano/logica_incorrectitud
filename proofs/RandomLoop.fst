@@ -39,7 +39,7 @@ let prog1 =
             (Seq (Assume (Eq (Var "i") (Var "n"))) assert_stmt)))
 
 // Estados y condiciones
-let pre_vacia : cond =
+let pre_init : cond =
   fun _ -> true
 
 let post_er_bug : cond =
@@ -130,16 +130,16 @@ let mid_n (s : state) : prop =
   s._3 == Ok /\ s._1 "n" == Nat 1000000
 
 // Demostraciones formales
-let proof_init : isl_triple (is_ok pre_vacia) init_vars (kleene_pre variant) =
-  let p_n_raw = ISL_Assign #pre_vacia "n" (Const 1000000) in
-  let p_n = ISL_Consequence pre_vacia mid_n p_n_raw () () in
+let proof_init : isl_triple (is_ok pre_init) init_vars (kleene_pre variant) =
+  let p_n_raw = ISL_Assign #pre_init "n" (Const 1000000) in
+  let p_n = ISL_Consequence pre_init mid_n p_n_raw () () in
 
   let p_i = ISL_Assign #_ "i" (Const 0) in
   let p_j = ISL_Assign #_ "j" (Const 0) in
   
   let p_ij = ISL_Seq p_i p_j in
   let p_init = ISL_Seq p_n p_ij in
-  ISL_Consequence pre_vacia (kleene_pre variant) p_init () ()
+  ISL_Consequence pre_init (kleene_pre variant) p_init () ()
 
 let proof_assert : isl_triple (is_ok pre_assert) (Seq (Assume (Eq (Var "i") (Var "n"))) assert_stmt) post_er_bug =
   let p_exit_raw = ISL_Assume #pre_assert (Eq (Var "i") (Var "n")) in
@@ -157,10 +157,10 @@ let proof_assert : isl_triple (is_ok pre_assert) (Seq (Assume (Eq (Var "i") (Var
   let p_raw = ISL_Seq p_exit p_assert in
   ISL_Consequence pre_assert post_er_bug p_raw () ()
 
-let proof_prog1 : isl_triple (is_ok pre_vacia) prog1 post_er_bug =
+let proof_prog1 : isl_triple (is_ok pre_init) prog1 post_er_bug =
   let adapted_assert = ISL_Consequence (kleene_post variant) post_er_bug proof_assert () () in
   let p_kleene_assert_raw = ISL_Seq lemma_kleene adapted_assert in
   let p_kleene_assert = ISL_Consequence (kleene_pre variant) post_er_bug p_kleene_assert_raw () () in
   
   let p_raw = ISL_Seq proof_init p_kleene_assert in
-  ISL_Consequence pre_vacia post_er_bug p_raw () ()
+  ISL_Consequence pre_init post_er_bug p_raw () ()

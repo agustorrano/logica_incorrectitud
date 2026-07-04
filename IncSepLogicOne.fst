@@ -112,99 +112,97 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
              s1._3 == s1'._3)) ->
     runsto p s0' s1'
 
-  | R_Skip : s : state -> 
-    runsto Skip (s._1, s._2, Ok) (s._1, s._2, Ok)
+  | R_Skip : s : state{s._3 == Ok} -> 
+    runsto Skip s s
   
-  | R_Error : s : state -> 
-    runsto Error (s._1, s._2, Ok) (s._1, s._2, Er)
+  | R_Error : s : state{s._3 == Ok} -> 
+    runsto Error s (s._1, s._2, Er)
   
-  | R_Assign : x : var -> e : expr -> s : state -> 
-    runsto (Assign x e) (s._1, s._2, Ok) (override s._1 x (Nat (eval_expr s e)), s._2, Ok)
+  | R_Assign : x : var -> e : expr -> s : state{s._3 == Ok} -> 
+    runsto (Assign x e) s (override s._1 x (Nat (eval_expr s e)), s._2, s._3)
   
-  | R_Nondet : s : state -> #x : var -> v : value ->
-    runsto (Nondet x) (s._1, s._2, Ok) (override s._1 x v, s._2, Ok)
+  | R_Nondet : s : state{s._3 == Ok} -> #x : var -> v : value ->
+    runsto (Nondet x) s (override s._1 x v, s._2, s._3)
   
-  | R_Assume : s : state -> #e : expr -> 
+  | R_Assume : s : state{s._3 == Ok} -> #e : expr -> 
     squash (eval_expr s e == 0) ->
-    runsto (Assume e) (s._1, s._2, Ok) (s._1, s._2, Ok)
+    runsto (Assume e) s s
   
   | R_SeqEr : #p : stmt -> #q : stmt ->
-    #s : state -> #t : state ->
-    runsto p (s._1, s._2, Ok) (t._1, t._2, Er) -> 
-    runsto (Seq p q) (s._1, s._2, Ok) (t._1, t._2, Er)
+    #s : state{s._3 == Ok} -> #t : state{t._3 == Er} ->
+    runsto p s t -> 
+    runsto (Seq p q) s t
   
   | R_Seq : #p : stmt -> #q : stmt ->
-    #s : state -> #t : state -> #u : state ->
-    runsto p (s._1, s._2, Ok) (t._1, t._2, Ok) -> 
-    runsto q (t._1, t._2, Ok) u ->
-    runsto (Seq p q) (s._1, s._2, Ok) u
+    #s : state{s._3 == Ok} -> #t : state{t._3 == Ok} -> #u : state ->
+    runsto p s t -> runsto q t u ->
+    runsto (Seq p q) s u
   
   | R_ChoiceL : #p : stmt -> #q : stmt ->
-    #s : state -> #t : state ->
-    runsto p (s._1, s._2, Ok) t -> 
-    runsto (Choice p q) (s._1, s._2, Ok) t
+    #s : state{s._3 == Ok} -> #t : state ->
+    runsto p s t -> runsto (Choice p q) s t
   
   | R_ChoiceR : #p : stmt -> #q : stmt ->
-    #s: state -> #t : state ->
-    runsto q (s._1, s._2, Ok) t -> 
-    runsto (Choice p q) (s._1, s._2, Ok) t
+    #s: state{s._3 == Ok} -> #t : state ->
+    runsto q s t -> runsto (Choice p q) s t
   
   | R_Kleene0 : #p : stmt -> #s : state{s._3 == Ok} -> 
     runsto (Kleene p) s s
   
-  | R_KleeneS : #p : stmt -> #s : state -> #t : state ->
-    runsto (Seq (Kleene p) p) (s._1, s._2, Ok) t ->
-    runsto (Kleene p) (s._1, s._2, Ok) t
+  | R_KleeneS : #p : stmt -> #s : state{s._3 == Ok} -> #t : state ->
+    runsto (Seq (Kleene p) p) s t ->
+    runsto (Kleene p) s t
 
-  | R_Alloc : s : state -> #x : var -> l : loc{l =!= 0} -> v : value ->
+  | R_Alloc : s : state{s._3 == Ok} -> #x : var -> 
+    l : loc{l =!= 0} -> v : value ->
     #(squash (s._2 l == Empty)) ->
-    runsto (Alloc x) (s._1, s._2, Ok) (override s._1 x (Loc l), override s._2 l (Full v), Ok)
+    runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
   
-  | R_Free : s : state -> e : expr -> l : loc ->
+  | R_Free : s : state{s._3 == Ok} -> e : expr -> l : loc ->
     #(squash (eval_expr s e == l /\ l =!= 0)) ->
     #(squash (Full? (s._2 l))) ->
-    runsto (Free e) (s._1, s._2, Ok) (s._1, override s._2 l Empty, Ok)
+    runsto (Free e) s (s._1, override s._2 l Empty, s._3)
 
-  | R_FreeEr : s : state -> e : expr -> l : loc ->
+  | R_FreeEr : s : state{s._3 == Ok} -> e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
     #(squash (l == 0 \/ s._2 l == Empty)) ->
-    runsto (Free e) (s._1, s._2, Ok) (s._1, s._2, Er)
+    runsto (Free e) s (s._1, s._2, Er)
   
-  | R_FreeNull : s : state -> e : expr ->
+  | R_FreeNull : s : state{s._3 == Ok} -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
-    runsto (Free e) (s._1, s._2, Ok) (s._1, s._2, Er)
+    runsto (Free e) s (s._1, s._2, Er)
 
-  | R_Load : s : state -> x : var -> e : expr ->
+  | R_Load : s : state{s._3 == Ok} -> x : var -> e : expr ->
     l : loc -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e == l)) ->
-    runsto (Load x e) (s._1, s._2, Ok) (override s._1 x v, s._2, Ok)
+    runsto (Load x e) s (override s._1 x v, s._2, s._3)
 
-  | R_LoadEr : s : state -> x : var -> 
+  | R_LoadEr : s : state{s._3 == Ok} -> x : var -> 
     e : expr -> l : loc ->
     #(squash (eval_expr s e == l)) ->
     #(squash (l == 0 \/ s._2 l == Empty)) ->
-    runsto (Load x e) (s._1, s._2, Ok) (s._1, s._2, Er)
+    runsto (Load x e) s (s._1, s._2, Er)
 
-  | R_LoadNull : s : state -> x : var -> e : expr ->
+  | R_LoadNull : s : state{s._3 == Ok} -> x : var -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
-    runsto (Load x e) (s._1, s._2, Ok) (s._1, s._2, Er)
+    runsto (Load x e) s (s._1, s._2, Er)
 
-  | R_Store : s : state -> e1 : expr -> e2 : expr ->
+  | R_Store : s : state{s._3 == Ok} -> e1 : expr -> e2 : expr ->
     l : loc -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
-    runsto (Store e1 e2) (s._1, s._2, Ok) (s._1, override s._2 l (Full (Nat (eval_expr s e2))), Ok)
+    runsto (Store e1 e2) s (s._1, override s._2 l (Full (Nat (eval_expr s e2))), s._3)
 
-  | R_StoreEr : s : state -> e1 : expr ->
+  | R_StoreEr : s : state{s._3 == Ok} -> e1 : expr ->
     e2 : expr -> l : loc ->
     #(squash (eval_expr s e1 == l)) ->
     #(squash (l == 0 \/ s._2 l == Empty)) ->
-    runsto (Store e1 e2) (s._1, s._2, Ok) (s._1, s._2, Er)
+    runsto (Store e1 e2) s (s._1, s._2, Er)
   
-  | R_StoreNull : s : state -> e1 : expr -> e2 : expr ->
+  | R_StoreNull : s : state{s._3 == Ok} -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr s e1 == 0)) ->
-    runsto (Store e1 e2) (s._1, s._2, Ok) (s._1, s._2, Er)
+    runsto (Store e1 e2) s (s._1, s._2, Er)
 
 let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state) 
   (h_fr : heap) (r : runsto p s0 s1) :
@@ -306,7 +304,7 @@ let points_to_empty (l : loc) : cond =
   fun (st, hp, m) -> 
     l =!= 0 /\
     hp l == Empty /\
-    (forall l'. (l' <> l) ==> (hp l' == Unknown))
+    forall l'. (l' <> l) ==> (hp l' == Unknown)
   
 let points_to (l : loc) (v : value) : cond =
   fun (st, hp, m) -> 
@@ -316,7 +314,7 @@ let points_to (l : loc) (v : value) : cond =
 
 let emp : cond =
   fun (st, hp, m) ->
-    forall l. hp l == Unknown \/ hp l == Empty
+    forall l. hp l == Unknown
 
 unfold
 let sep_conj (p q : cond) : cond =

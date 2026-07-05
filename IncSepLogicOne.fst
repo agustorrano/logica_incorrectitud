@@ -155,7 +155,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
 
   | R_Alloc : s : state{s._3 == Ok} -> #x : var -> 
     l : loc{l =!= 0} -> v : value ->
-    #(squash (s._2 l == Empty)) ->
+    #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
     runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
   
   | R_Free : s : state{s._3 == Ok} -> e : expr -> l : loc ->
@@ -436,16 +436,17 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         s._1 x == Loc l /\
         l =!= 0 /\
         points_to l v s /\
-        (exists x_old. pre (override s._1 x x_old, override s._2  l Empty, Ok))))
+        (exists x_old. pre (override s._1 x x_old, override s._2 l Unknown, Ok))))
 
-  | ISL_Alloc2 : x : var -> l : loc ->
+  | ISL_Alloc2 : #pre : cond -> x : var -> l : loc ->
     isl_triple 
-      (is_ok (fun s0 -> points_to_empty l s0))
+      (is_ok (fun s -> pre s /\ points_to_empty l s))
       (Alloc x)
-      (is_ok (fun s -> exists v.
+      (is_ok (fun s -> exists (v x_old : value).
         s._1 x == Loc l /\
         l =!= 0 /\
-        points_to l v s))
+        points_to l v s /\
+        pre (override s._1 x x_old, override s._2 l Empty, Ok)))
   
   | ISL_Free : #pre : cond -> e : expr ->
     isl_triple
@@ -455,17 +456,20 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         points_to_empty (eval_expr s e) s /\
         pre (s._1, override s._2 (eval_expr s e) (Full v), s._3)))
 
-  | ISL_FreeEr : e : expr ->
+  | ISL_FreeEr : #pre : cond -> e : expr ->
     isl_triple
-      (is_ok (fun s -> points_to_empty (eval_expr s e) s))
+      (is_ok pre)
       (Free e)
-      (fun s -> s._3 == Er /\ points_to_empty (eval_expr s e) s)
+      (fun s ->
+        s._3 == Er /\
+        points_to_empty (eval_expr s e) s /\
+        pre (s._1, s._2, Ok))
 
-  | ISL_FreeNull : e : expr ->
+  | ISL_FreeNull : #pre : cond -> e : expr ->
     isl_triple
-      (is_ok (fun s -> eval_expr s e == 0))
+      (is_ok pre)
       (Free e)
-      (fun s -> s._3 == Er /\ eval_expr s e == 0)
+      (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ pre (s._1, s._2, Ok))
   
   | ISL_Load : #pre : cond -> x : var -> e : expr ->
     isl_triple
@@ -477,17 +481,20 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         s._1 x == v /\
         pre (override s._1 x x_old, s._2, Ok)))
 
-  | ISL_LoadEr : x : var -> e : expr ->
+  | ISL_LoadEr : #pre : cond -> x : var -> e : expr ->
     isl_triple
-      (is_ok (fun s -> points_to_empty (eval_expr s e) s))
+      (is_ok pre)
       (Load x e)
-      (fun s -> s._3 == Er /\ points_to_empty (eval_expr s e) s)
+      (fun s ->
+        s._3 == Er /\
+        points_to_empty (eval_expr s e) s /\
+        pre (s._1, s._2, Ok))
 
-  | ISL_LoadNull : x : var -> e : expr ->
+  | ISL_LoadNull : #pre : cond -> x : var -> e : expr ->
     isl_triple
-      (is_ok (fun s -> eval_expr s e == 0))
+      (is_ok pre)
       (Load x e)
-      (fun s -> s._3 == Er /\ eval_expr s e == 0)
+      (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ pre (s._1, s._2, Ok))
   
   | ISL_Store : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple
@@ -718,21 +725,21 @@ let rec soundness
     let l = fst lv_w in
     let v = snd lv_w in
     let p_xold (x_o : value) : prop =
-      pre (override st1 x x_o, override hp1 l Empty, Ok)
+      pre (override st1 x x_o, override hp1 l Unknown, Ok)
     in
     let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
     let st0 = override st1 x x_old in
-    let hp0 = override hp1 l Empty in
+    let hp0 = override hp1 l Unknown in
     let s0 : state = (st0, hp0, Ok) in
     let r_alloc = R_Alloc s0 #x l v #() in
     let r = R_Ext r_alloc s0 s1 () () in
     assert pre s0;
     (|s0, r|)
 
-  | ISL_Alloc2 #x _ ->
+  | ISL_Alloc2 #pre #x _ ->
     let (st1, hp1, m1) = s1 in
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
-      st1 x == Loc l_i /\ points_to l_i v_i s1
+      st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
     in
     lemma_exists_tuple p_lv;
     let logic_parts (lv : loc & value) : prop =
@@ -741,7 +748,11 @@ let rec soundness
     let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
-    let st0 = st1 in
+    let p_xold (x_o : value) : prop =
+      pre (override st1 x x_o, override hp1 l Empty, Ok)
+    in
+    let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
+    let st0 = override st1 x x_old in
     let hp0 = override hp1 l Empty in
     let s0 : state = (st0, hp0, Ok) in
     let r_alloc = R_Alloc s0 #x l v in
@@ -762,14 +773,14 @@ let rec soundness
     let r = R_Ext r_free s0 s1 () () in
     (|s0, r|)
 
-  | ISL_FreeEr #e ->
+  | ISL_FreeEr #pre #e ->
     let (st, hp, m1) = s1 in
     let s0 : state = (st, hp, Ok) in
     let l = eval_expr s0 e in
     let r = R_FreeEr s0 e l in
     (|s0, r|)
 
-  | ISL_FreeNull #e ->
+  | ISL_FreeNull #pre #e ->
     let (st, hp, m1) = s1 in
     let s0 : state = (st, hp, Ok) in
     let r = R_FreeNull s0 e in
@@ -803,14 +814,14 @@ let rec soundness
     let r = R_Ext r_load s0 s1 () () in
     (|s0, r|)
 
-  | ISL_LoadEr #x #e ->
+  | ISL_LoadEr #pre #x #e ->
     let (st, hp, m1) = s1 in
     let s0 : state = (st, hp, Ok) in
     let l = eval_expr s0 e in
     let r = R_LoadEr s0 x e l in
     (|s0, r|)
 
-  | ISL_LoadNull #x #e ->
+  | ISL_LoadNull #pre #x #e ->
     let (st, hp, m1) = s1 in
     let s0 : state = (st, hp, Ok) in
     let r = R_LoadNull s0 x e in

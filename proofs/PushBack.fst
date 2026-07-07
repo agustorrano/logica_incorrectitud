@@ -46,7 +46,7 @@ let post_alloc_y (ptr : var) (s : state) : prop =
     s._3 == Ok /\ s._1 "y" == Loc l /\ l =!= 0 /\
     points_to l v s /\
     (exists (x_old : value).
-      post_free_y ptr (override s._1 "y" x_old, override s._2 l Empty, Ok))
+      post_free_y ptr (override s._1 "y" x_old, override s._2 l Unknown, Ok))
 
 let post_store_v (ptr : var) (s : state) : prop =
   s._3 == Ok /\

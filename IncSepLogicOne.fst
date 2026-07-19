@@ -859,3 +859,193 @@ let rec soundness
     let s0 : state = (st, hp, Ok) in
     let r = R_StoreNull s0 e1 e2 in
     (|s0, r|)
+
+let empty_heap : heap = fun _ -> Unknown
+
+let singleton_empty_heap (l : loc) : heap =
+  fun l' -> if l' = l then Empty else Unknown
+
+let singleton_full_heap (l : loc) (v : value) : heap =
+  fun l' -> if l' = l then Full v else Unknown
+
+noeq
+type footprint : stmt -> state -> state -> Type0 =
+  | F_Skip : st : store ->
+    footprint Skip (st, empty_heap, Ok) (st, empty_heap, Ok)
+  
+  | F_Assign : st : store -> x : var -> e : expr ->
+    footprint (Assign x e) (st, empty_heap, Ok) 
+    (override st x (Nat (eval_expr (st, empty_heap, Ok) e)), empty_heap, Ok)
+  
+  | F_Nondet : st : store -> x : var -> v : value ->
+    footprint (Nondet x) (st, empty_heap, Ok)
+    (override st x v, empty_heap, Ok)
+  
+  | F_Assume : st : store -> e : expr ->
+    #(squash (eval_expr (st, empty_heap, Ok) e == 0)) ->
+    footprint (Assume e) (st, empty_heap, Ok) (st, empty_heap, Ok)
+  
+  | F_Error : st : store ->
+    footprint Error (st, empty_heap, Ok) (st, empty_heap, Er)
+  
+  | F_Seq : p : stmt -> q : stmt -> s : state {s._3 == Ok} -> 
+    t : state {t._3 == Ok} -> u : state ->
+    footprint p s t -> footprint q t u ->
+    footprint (Seq p q) s u
+  
+  | F_SeqEr : p : stmt -> q : stmt -> 
+    s : state {s._3 == Ok} -> t : state {t._3 == Er} ->
+    footprint p s t ->
+    footprint (Seq p q) s t
+  
+  | F_ChoiceL : p : stmt -> q : stmt -> s : state {s._3 == Ok} -> t : state ->
+    footprint p s t ->
+    footprint (Choice p q) s t
+  
+  | F_ChoiceR : p : stmt -> q : stmt -> s : state {s._3 == Ok} -> t : state ->
+    footprint q s t ->
+    footprint (Choice p q) s t
+  
+  | F_Kleene0 : st : store -> p : stmt ->
+    footprint (Kleene p) (st, empty_heap, Ok) (st, empty_heap, Ok)
+  
+  | F_KleeneS : p : stmt -> s : state {s._3 == Ok} -> t : state ->
+    footprint (Seq (Kleene p) p) s t ->
+    footprint (Kleene p) s t
+  
+  | F_AllocFresh : st : store -> x : var -> l : loc {l =!= 0} -> v : value ->
+    footprint (Alloc x) (st, empty_heap, Ok) 
+    (override st x (Loc l), singleton_full_heap l v, Ok)
+  
+  | F_AllocReuse : st : store -> x : var -> l : loc {l =!= 0} -> v : value ->
+    footprint (Alloc x) (st, singleton_empty_heap l, Ok)
+    (override st x (Loc l), singleton_full_heap l v, Ok)
+  
+  | F_Free : st : store -> e : expr -> l : loc {l =!= 0} -> v : value ->
+    #(squash (eval_expr' st e == l)) ->
+    footprint (Free e) (st, singleton_full_heap l v, Ok)
+    (st, singleton_empty_heap l, Ok)
+  
+  | F_FreeEr : st : store -> e : expr -> l : loc {l =!= 0} -> v : value ->
+    #(squash (eval_expr' st e == l)) ->
+    footprint (Free e) (st, singleton_empty_heap l, Ok)
+    (st, singleton_empty_heap l, Er)
+  
+  | F_FreeNull : st : store -> e : expr ->
+    #(squash (eval_expr' st e == 0)) ->
+    footprint (Free e) (st, empty_heap, Ok) (st, empty_heap, Er)
+  
+  | F_Load : st : store -> x : var -> e : expr -> l : loc {l =!= 0} -> v : value ->
+    #(squash (eval_expr' st e == l)) ->
+    footprint (Load x e) (st, singleton_full_heap l v, Ok)
+    (override st x v, singleton_full_heap l v, Ok)
+  
+  | F_LoadEr : st : store -> x : var -> e : expr -> l : loc {l =!= 0} ->
+    #(squash (eval_expr' st e == l)) ->
+    footprint (Load x e) (st, singleton_empty_heap l, Ok)
+    (st, singleton_empty_heap l, Er)
+  
+  | F_LoadNull : st : store -> x : var -> e : expr ->
+    #(squash (eval_expr' st e == 0)) ->
+    footprint (Load x e) (st, empty_heap, Ok) (st, empty_heap, Er)
+  
+  | F_Store : st : store -> e1 : expr -> e2 : expr -> l : loc {l =!= 0} -> v : value ->
+    #(squash (eval_expr' st e1 == l)) ->
+    footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
+    (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok)
+  
+  | F_StoreEr : st : store -> e1 : expr -> e2 : expr -> l : loc {l =!= 0} ->
+    #(squash (eval_expr' st e1 == l)) ->
+    footprint (Store e1 e2) (st, singleton_empty_heap l, Ok)
+    (st, singleton_empty_heap l, Er)
+  
+  | F_StoreNull : st : store -> e1 : expr -> e2 : expr ->
+    #(squash (eval_expr' st e1 == 0)) ->
+    footprint (Store e1 e2) (st, empty_heap, Ok) (st, empty_heap, Er)
+
+let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0 s1) 
+  : GTot (runsto p s0 s1) (decreases f) =
+  match f with
+  | F_Skip st ->
+    R_Skip (st, empty_heap, Ok)
+
+  | F_Assign st x e ->
+    R_Assign x e (st, empty_heap, Ok)
+
+  | F_Nondet st x v ->
+    R_Nondet (st, empty_heap, Ok) #x v
+
+  | F_Assume st e ->
+    R_Assume (st, empty_heap, Ok) #e ()
+
+  | F_Error st ->
+    R_Error (st, empty_heap, Ok)
+
+  | F_Seq p q s t u f_p f_q ->
+    let r_p = footprint_sound p s t f_p in
+    let r_q = footprint_sound q t u f_q in
+    R_Seq r_p r_q
+  
+  | F_SeqEr p q s t f_p ->
+    let r_p = footprint_sound p s t f_p in
+    R_SeqEr #p #q #s #t r_p
+
+  | F_ChoiceL p q s t f_p ->
+    let r_p = footprint_sound p s t f_p in
+    R_ChoiceL #p #q #s #t r_p
+  
+  | F_ChoiceR p q s t f_q ->
+    let r_q = footprint_sound q s t f_q in
+    R_ChoiceR #p #q #s #t r_q
+  
+  | F_Kleene0 st p ->
+    R_Kleene0 #p #(st, empty_heap, Ok)
+
+  | F_KleeneS p s t f_p ->
+    let r_p = footprint_sound (Seq (Kleene p) p) s t f_p in
+    R_KleeneS #p #s #t r_p
+
+  | F_AllocFresh st x l v ->
+    let s0 = (st, empty_heap, Ok) in
+    let s1 = (override st x (Loc l), singleton_full_heap l v, Ok) in
+    let r = R_Alloc s0 #x l v in
+    R_Ext r s0 s1 () ()
+
+  | F_AllocReuse st x l v ->
+    let s0 = (st, singleton_empty_heap l, Ok) in
+    let s1 = (override st x (Loc l), singleton_full_heap l v, Ok) in
+    let r = R_Alloc s0 #x l v in
+    R_Ext r s0 s1 () ()
+
+  | F_Free st e l v ->
+    let s0 = (st, singleton_full_heap l v, Ok) in
+    let s1 = (st, override (singleton_full_heap l v) l Empty, Ok) in
+    let r = R_Free s0 e l in
+    R_Ext r s0 (st, singleton_empty_heap l, Ok) () ()
+
+  | F_FreeEr st e l v ->
+    R_FreeEr (st, singleton_empty_heap l, Ok) e l
+
+  | F_FreeNull st e ->
+    R_FreeNull (st, empty_heap, Ok) e
+
+  | F_Load st x e l v -> 
+    R_Load (st, singleton_full_heap l v, Ok) x e l v
+
+  | F_LoadEr st x e l ->
+    R_LoadEr (st, singleton_empty_heap l, Ok) x e l
+
+  | F_LoadNull st x e ->
+    R_LoadNull (st, empty_heap, Ok) x e
+
+  | F_Store st e1 e2 l v ->
+    let s0 = (st, singleton_full_heap l v, Ok) in
+    let s1 = (st, override (singleton_full_heap l v) l (Full (Nat (eval_expr' st e2))), Ok) in
+    let r = R_Store s0 e1 e2 l v in
+    R_Ext r s0 (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok) () ()
+
+  | F_StoreEr st e1 e2 l ->
+    R_StoreEr (st, singleton_empty_heap l, Ok) e1 e2 l
+
+  | F_StoreNull st e1 e2 ->
+    R_StoreNull (st, empty_heap, Ok) e1 e2

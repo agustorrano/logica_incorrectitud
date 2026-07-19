@@ -38,9 +38,9 @@ let proof_uaf : isl_triple (is_ok emp) prog_uaf post_uaf_err =
   let p_alloc = ISL_Consequence emp post_alloc p_alloc_raw () () in
 
   let p_free_raw = ISL_Free #post_alloc (Var "x") in
-  let p_store = ISL_StoreEr #post_free (Var "x") (Const 1) in
-
   let p_free = ISL_Consequence post_alloc post_free p_free_raw () () in
+  
+  let p_store = ISL_StoreEr #post_free (Var "x") (Const 1) in
 
   let p_seq1 = ISL_Seq p_free p_store in
   let p_seq2 = ISL_Seq p_alloc p_seq1 in

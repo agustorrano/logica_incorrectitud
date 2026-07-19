@@ -6,11 +6,11 @@ open FStar.FunctionalExtensionality { (^->) }
 let unreachable #a (_ : squash False) : a = coerce_eq () ()
 
 type var = string
-type value = int
+type value = nat
 
 type expr =
   | Var : var -> expr
-  | Const : int -> expr
+  | Const : nat -> expr
   | Plus : expr -> expr -> expr
   | Minus : expr -> expr -> expr
   | Times : expr -> expr -> expr
@@ -37,22 +37,24 @@ type store = var -> value
 type state = store & term_mode
 type cond = state -> prop
 
-let rec eval_expr' (s : store) (e : expr) : GTot int =
+let rec eval_expr' (s : store) (e : expr) : GTot nat =
   match e with
     | Var x -> s x
     | Const n -> n
     | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
-    | Minus e1 e2 -> eval_expr' s e1 - eval_expr' s e2
+    | Minus e1 e2 -> 
+      let res = eval_expr' s e1 - eval_expr' s e2 in
+      if res >= 0 then res else 0
     | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
     | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
-                  then 0 else 1
+                  then 1 else 0
     | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
-                  then 0 else 1
+                  then 1 else 0
     | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
-                  then 0 else 1
+                  then 1 else 0
 
 let eval_expr (s : state) (e : expr)
-  : GTot int = eval_expr' s._1 e
+  : GTot nat = eval_expr' s._1 e
 
 let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
   fun z -> if z = x then y else f z
@@ -80,7 +82,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
   | R_Error : s : state{s._2 == Ok} -> runsto Error s (s._1, Er)
 
   | R_Assume : s : state{s._2 == Ok} -> #e : expr -> 
-    squash (eval_expr s e == 0) ->
+    squash (eval_expr s e =!= 0) ->
     runsto (Assume e) s s
 
   | R_SeqEr : #p : stmt -> #q : stmt ->
@@ -142,7 +144,7 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
 
   | I_Assume : pre : cond -> #e : expr ->
     il_triple (is_ok pre) (Assume e)
-      (is_ok (fun s -> pre s /\ eval_expr s e == 0))
+      (is_ok (fun s -> pre s /\ eval_expr s e =!= 0))
 
   | I_Seq : #p : stmt -> #q : stmt ->
     #pre : cond -> #mid : cond -> #post : cond ->
@@ -245,7 +247,7 @@ let rec soundness
     (|s0, r|)
 
   | I_Assume pre #e ->
-    assert (pre s1 /\ eval_expr s1 e == 0);
+    assert (pre s1 /\ eval_expr s1 e =!= 0);
     let s0 = s1 in
     let r = R_Assume s0 #e () in
     (|s0, r|)

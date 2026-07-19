@@ -12,7 +12,7 @@ let ge (x y : expr) : expr = enot (Lt x y)
 (*
 n := 1000000;
 i, j := 0;
-while (i <= n){
+while (i < n){
   i++;
   if (random()) j++;
 }
@@ -48,8 +48,8 @@ let post_er_bug : cond =
 let mid_i (k : nat) : cond =
   fun (st, _, m) -> k < 1000000 /\ st "n" == Nat 1000000 /\ st "i" == Nat (k + 1) /\ st "j" == Nat k /\ m == Ok
 
-let variant (n : nat) : cond = 
-  fun (st, _, m) -> n <= 1000000 /\ st "n" == Nat 1000000 /\ st "i" == Nat n /\ st "j" == Nat n /\ m == Ok
+let variant (k : nat) : cond = 
+  fun (st, _, m) -> k <= 1000000 /\ st "n" == Nat 1000000 /\ st "i" == Nat k /\ st "j" == Nat k /\ m == Ok
 
 let pre_assign (k : nat) : cond = 
   fun s -> variant k s /\ eval_expr s (Lt (Var "i") (Var "n")) == 0 /\ s._3 == Ok

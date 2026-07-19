@@ -1049,3 +1049,18 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
 
   | F_StoreNull st e1 e2 ->
     R_StoreNull (st, empty_heap, Ok) e1 e2
+
+noeq
+type framed_footprint : stmt -> state -> state -> Type0 =
+  | F_Frame : p : stmt -> s0 : state -> s1 : state -> h_fr : heap ->
+      fp : footprint p s0 s1 -> 
+      d0 : squash (heaps_disjoint s0._2 h_fr) ->
+      d1 : squash (heaps_disjoint s1._2 h_fr) ->
+      framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3) (s1._1, heap_union s1._2 h_fr, s1._3)
+
+let framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) (ff : framed_footprint p s0 s1)
+  : GTot (runsto p s0 s1) =
+  match ff with
+  | F_Frame p s0 s1 h_fr f_p _ _ ->
+    let r_p = footprint_sound p s0 s1 f_p in
+    r_frame r_p h_fr #() #()

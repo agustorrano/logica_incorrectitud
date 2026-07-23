@@ -1,7 +1,5 @@
 module IncLogicOne
 
-module FE = FStar.FunctionalExtensionality
-
 type var = string
 type value = nat
 

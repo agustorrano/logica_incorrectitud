@@ -2,9 +2,6 @@ module IncSepLogicOne
 
 open FStar.Classical
 
-module FE = FStar.FunctionalExtensionality
-open FStar.FunctionalExtensionality { (^->) }
-
 // ============================================================
 // 1. Syntax and states
 // ============================================================
@@ -24,9 +21,9 @@ type store = var -> value
 type heap = loc -> cell
 
 let heap_is_complete (h : heap) : prop =
-  forall l. ~ (Unknown? (h l))
+  forall l. ~(Unknown? (h l))
 
-let complete_heap : Type = h : heap{heap_is_complete h}
+let complete_heap : Type = h : heap { heap_is_complete h }
 
 let initial_heap : complete_heap =
   fun _ -> Empty
@@ -76,11 +73,11 @@ let rec eval_expr' (s : store) (e : expr) : GTot nat =
       if res >= 0 then res else 0
     | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
     | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
-                  then 0 else 1
+                  then 1 else 0
     | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
-                  then 0 else 1
+                  then 1 else 0
     | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
-                  then 0 else 1
+                  then 1 else 0
 
 let eval_expr (s : state) (e : expr) 
   : GTot nat = eval_expr' s._1 e
@@ -100,7 +97,7 @@ unfold let state_equiv (s1 s2 : state) : prop =
 let cell_disjoint (c1 c2 : cell) : prop =
   c1 == Unknown \/ c2 == Unknown
 
-let cell_union (c1 c2 : cell{cell_disjoint c1 c2}) : cell =
+let cell_union (c1 c2 : cell { cell_disjoint c1 c2 }) : cell =
   match c1 with
     | Unknown -> c2
     | _ -> c1
@@ -108,7 +105,7 @@ let cell_union (c1 c2 : cell{cell_disjoint c1 c2}) : cell =
 let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
 
-let heap_union (h1 h2 : heap{heaps_disjoint h1 h2}) : heap =
+let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
   fun l -> cell_union (h1 l) (h2 l)
 
 let empty_heap : heap = fun _ -> Unknown
@@ -130,101 +127,101 @@ let heap_without (h : heap) (l : loc) : heap =
 
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
-  | R_Ext : #p:stmt -> #s0 : state -> #s1 : state ->
+  | R_Ext : #p : stmt -> #s0 : state -> #s1 : state ->
     runsto p s0 s1 -> s0' : state -> s1' : state ->
     (squash (state_equiv s0 s0')) ->
     (squash (state_equiv s1 s1')) ->
     runsto p s0' s1'
 
-  | R_Skip : s : state{s._3 == Ok} -> 
+  | R_Skip : s : state { s._3 == Ok } -> 
     runsto Skip s s
   
-  | R_Error : s : state{s._3 == Ok} -> 
+  | R_Error : s : state { s._3 == Ok } -> 
     runsto Error s (s._1, s._2, Er)
   
-  | R_Assign : x : var -> e : expr -> s : state{s._3 == Ok} -> 
+  | R_Assign : x : var -> e : expr -> s : state { s._3 == Ok } -> 
     runsto (Assign x e) s (override s._1 x (Nat (eval_expr s e)), s._2, s._3)
   
-  | R_Nondet : s : state{s._3 == Ok} -> #x : var -> v : value ->
+  | R_Nondet : s : state { s._3 == Ok } -> #x : var -> v : value ->
     runsto (Nondet x) s (override s._1 x v, s._2, s._3)
   
-  | R_Assume : s : state{s._3 == Ok} -> #e : expr -> 
-    squash (eval_expr s e == 0) ->
+  | R_Assume : s : state { s._3 == Ok } -> #e : expr -> 
+    squash (eval_expr s e =!= 0) ->
     runsto (Assume e) s s
   
   | R_SeqEr : #p : stmt -> #q : stmt ->
-    #s : state{s._3 == Ok} -> #t : state{t._3 == Er} ->
+    #s : state { s._3 == Ok } -> #t : state { t._3 == Er } ->
     runsto p s t -> 
     runsto (Seq p q) s t
   
   | R_Seq : #p : stmt -> #q : stmt ->
-    #s : state{s._3 == Ok} -> #t : state{t._3 == Ok} -> #u : state ->
+    #s : state { s._3 == Ok } -> #t : state { t._3 == Ok } -> #u : state ->
     runsto p s t -> runsto q t u ->
     runsto (Seq p q) s u
   
   | R_ChoiceL : #p : stmt -> #q : stmt ->
-    #s : state{s._3 == Ok} -> #t : state ->
+    #s : state { s._3 == Ok } -> #t : state ->
     runsto p s t -> runsto (Choice p q) s t
   
   | R_ChoiceR : #p : stmt -> #q : stmt ->
-    #s: state{s._3 == Ok} -> #t : state ->
+    #s: state { s._3 == Ok } -> #t : state ->
     runsto q s t -> runsto (Choice p q) s t
   
-  | R_Kleene0 : #p : stmt -> #s : state{s._3 == Ok} -> 
+  | R_Kleene0 : #p : stmt -> #s : state { s._3 == Ok } -> 
     runsto (Kleene p) s s
   
-  | R_KleeneS : #p : stmt -> #s : state{s._3 == Ok} -> #t : state ->
+  | R_KleeneS : #p : stmt -> #s : state { s._3 == Ok } -> #t : state ->
     runsto (Seq (Kleene p) p) s t ->
     runsto (Kleene p) s t
 
-  | R_Alloc : s : state{s._3 == Ok} -> #x : var -> 
-    l : loc{l =!= 0} -> v : value ->
+  | R_Alloc : s : state { s._3 == Ok } -> #x : var -> 
+    l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
     runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
   
-  | R_Free : s : state{s._3 == Ok} -> e : expr -> l : loc -> v : value ->
+  | R_Free : s : state { s._3 == Ok } -> e : expr -> l : loc -> v : value ->
     #(squash (eval_expr s e == l /\ l =!= 0)) ->
     #(squash (s._2 l == Full v)) ->
     runsto (Free e) s (s._1, override s._2 l Empty, s._3)
 
-  | R_FreeEr : s : state{s._3 == Ok} -> e : expr -> l : loc {l =!= 0} ->
+  | R_FreeEr : s : state { s._3 == Ok } -> e : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr s e == l)) ->
     #(squash (s._2 l == Empty)) ->
     runsto (Free e) s (s._1, s._2, Er)
   
-  | R_FreeNull : s : state{s._3 == Ok} -> e : expr ->
+  | R_FreeNull : s : state { s._3 == Ok } -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Free e) s (s._1, s._2, Er)
 
-  | R_Load : s : state{s._3 == Ok} -> x : var -> e : expr ->
-    l : loc {l =!= 0} -> v : value ->
+  | R_Load : s : state { s._3 == Ok } -> x : var -> e : expr ->
+    l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e == l)) ->
     runsto (Load x e) s (override s._1 x v, s._2, s._3)
 
-  | R_LoadEr : s : state{s._3 == Ok} -> x : var -> 
-    e : expr -> l : loc {l =!= 0} ->
+  | R_LoadEr : s : state { s._3 == Ok } -> x : var -> 
+    e : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr s e == l)) ->
     #(squash (s._2 l == Empty)) ->
     runsto (Load x e) s (s._1, s._2, Er)
 
-  | R_LoadNull : s : state{s._3 == Ok} -> x : var -> e : expr ->
+  | R_LoadNull : s : state { s._3 == Ok } -> x : var -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Load x e) s (s._1, s._2, Er)
 
-  | R_Store : s : state{s._3 == Ok} -> e1 : expr -> e2 : expr ->
-    l : loc {l =!= 0} -> v : value ->
+  | R_Store : s : state { s._3 == Ok } -> e1 : expr -> e2 : expr ->
+    l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
     runsto (Store e1 e2) s (s._1, override s._2 l (Full (Nat (eval_expr s e2))), s._3)
 
-  | R_StoreEr : s : state{s._3 == Ok} -> e1 : expr ->
-    e2 : expr -> l : loc {l =!= 0} ->
+  | R_StoreEr : s : state { s._3 == Ok } -> e1 : expr ->
+    e2 : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr s e1 == l)) ->
     #(squash (s._2 l == Empty)) ->
     runsto (Store e1 e2) s (s._1, s._2, Er)
   
-  | R_StoreNull : s : state{s._3 == Ok} -> e1 : expr -> e2 : expr ->
+  | R_StoreNull : s : state { s._3 == Ok } -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s (s._1, s._2, Er)
 
@@ -428,7 +425,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   
   | ISL_Assume : #pre : cond -> e : expr ->
     isl_triple (is_ok pre) (Assume e)
-      (is_ok (fun s -> pre s /\ (eval_expr s e == 0)))
+      (is_ok (fun s -> pre s /\ (eval_expr s e =!= 0)))
   
   | ISL_Seq : #p : stmt -> #q : stmt ->
     #pre : cond -> #mid : cond -> #post : cond ->
@@ -579,8 +576,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
 
 let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
   Lemma (requires (exists (x : a) (y : b). p x y))
-        (ensures (exists (tup : a & b). p (fst tup) (snd tup))) 
-  = 
+        (ensures (exists (tup : a & b). p (fst tup) (snd tup))) = 
   let x = FStar.IndefiniteDescription.indefinite_description_ghost 
     a (fun x -> exists y. p x y) in
   let y = FStar.IndefiniteDescription.indefinite_description_ghost 
@@ -659,12 +655,12 @@ let rec soundness
   
   | ISL_Error ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let r = R_Error s0 in
     (|s0, r|)
 
   | ISL_Assume #pre #e ->
-    assert (pre s1 /\ eval_expr s1 e == 0);
+    assert (pre s1 /\ eval_expr s1 e =!= 0);
     let s0 = s1 in
     let r = R_Assume s0 #e () in
     (|s0, r|)
@@ -708,8 +704,8 @@ let rec soundness
     (|s0, r|)
   
   | ISL_KleeneVariant #variant #p pf_var ->
-    let p_n (n:nat) : prop = variant n s1 /\ (n == 0 ==> s1._3 == Ok) in
-    assert (exists (n:nat). p_n n);
+    let p_n (n : nat) : prop = variant n s1 /\ (n == 0 ==> s1._3 == Ok) in
+    assert (exists n. p_n n);
     let n = FStar.IndefiniteDescription.indefinite_description_ghost
             _ p_n in
     let rec aux (m : nat) (t : state { variant m t /\ (m == 0 ==> t._3 == Ok) })
@@ -811,14 +807,14 @@ let rec soundness
 
   | ISL_FreeEr #pre #e ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let l = eval_expr s0 e in
     let r = R_FreeEr s0 e l in
     (|s0, r|)
 
   | ISL_FreeNull #pre #e ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let r = R_FreeNull s0 e in
     (|s0, r|)
 
@@ -852,14 +848,14 @@ let rec soundness
 
   | ISL_LoadEr #pre #x #e ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let l = eval_expr s0 e in
     let r = R_LoadEr s0 x e l in
     (|s0, r|)
 
   | ISL_LoadNull #pre #x #e ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let r = R_LoadNull s0 x e in
     (|s0, r|)
 
@@ -875,7 +871,7 @@ let rec soundness
     let v_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_vold in
     let st0 = st1 in
     let hp0 = override hp1 l (Full v_old) in
-    let s0 : state = (st0, hp0, Ok) in
+    let s0 = (st0, hp0, Ok) in
     Classical.exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
     Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
     let r_store = R_Store s0 e1 e2 l v_old in
@@ -885,14 +881,14 @@ let rec soundness
 
   | ISL_StoreEr #pre e1 e2 ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let l = eval_expr s0 e1 in
     let r = R_StoreEr s0 e1 e2 l in
     (|s0, r|)
 
   | ISL_StoreNull #pre #e1 #e2 ->
     let (st, hp, m1) = s1 in
-    let s0 : state = (st, hp, Ok) in
+    let s0 = (st, hp, Ok) in
     let r = R_StoreNull s0 e1 e2 in
     (|s0, r|)
 
@@ -914,7 +910,7 @@ type footprint : stmt -> state -> state -> Type0 =
     (override st x v, empty_heap, Ok)
   
   | F_Assume : st : store -> e : expr ->
-    #(squash (eval_expr (st, empty_heap, Ok) e == 0)) ->
+    #(squash (eval_expr (st, empty_heap, Ok) e =!= 0)) ->
     footprint (Assume e) (st, empty_heap, Ok) (st, empty_heap, Ok)
   
   | F_Error : st : store ->
@@ -922,48 +918,48 @@ type footprint : stmt -> state -> state -> Type0 =
   
   | F_Seq : p : stmt -> q : stmt -> st0 : store -> stm : store ->
     st1 : store -> h_common : heap -> 
-    h_p : heap {heaps_disjoint h_common h_p} -> 
-    h_q : heap {heaps_disjoint h_common h_q /\ heaps_disjoint h_p h_q} -> 
-    h0 : heap {heaps_disjoint h0 h_q} -> h1 : heap {heaps_disjoint h1 h_p} -> 
+    h_p : heap { heaps_disjoint h_common h_p } -> 
+    h_q : heap { heaps_disjoint h_common h_q /\ heaps_disjoint h_p h_q } -> 
+    h0 : heap { heaps_disjoint h0 h_q } -> h1 : heap { heaps_disjoint h1 h_p } -> 
     m1 : term_mode ->
     footprint p (st0, h0, Ok) (stm, heap_union h_common h_p, Ok) ->
     footprint q (stm, heap_union h_common h_q, Ok) (st1, h1, m1) ->
     footprint (Seq p q) (st0, heap_union h0 h_q, Ok) (st1, heap_union h1 h_p, m1)
   
   | F_SeqEr : p : stmt -> q : stmt -> 
-    s : state {s._3 == Ok} -> t : state {t._3 == Er} ->
+    s : state { s._3 == Ok } -> t : state { t._3 == Er } ->
     footprint p s t ->
     footprint (Seq p q) s t
   
-  | F_ChoiceL : p : stmt -> q : stmt -> s : state {s._3 == Ok} -> t : state ->
+  | F_ChoiceL : p : stmt -> q : stmt -> s : state { s._3 == Ok } -> t : state ->
     footprint p s t ->
     footprint (Choice p q) s t
   
-  | F_ChoiceR : p : stmt -> q : stmt -> s : state {s._3 == Ok} -> t : state ->
+  | F_ChoiceR : p : stmt -> q : stmt -> s : state { s._3 == Ok } -> t : state ->
     footprint q s t ->
     footprint (Choice p q) s t
   
   | F_Kleene0 : st : store -> p : stmt ->
     footprint (Kleene p) (st, empty_heap, Ok) (st, empty_heap, Ok)
   
-  | F_KleeneS : p : stmt -> s : state {s._3 == Ok} -> t : state ->
+  | F_KleeneS : p : stmt -> s : state { s._3 == Ok } -> t : state ->
     footprint (Seq (Kleene p) p) s t ->
     footprint (Kleene p) s t
   
-  | F_AllocFresh : st : store -> x : var -> l : loc {l =!= 0} -> v : value ->
+  | F_AllocFresh : st : store -> x : var -> l : loc { l =!= 0 } -> v : value ->
     footprint (Alloc x) (st, empty_heap, Ok) 
     (override st x (Loc l), singleton_full_heap l v, Ok)
   
-  | F_AllocReuse : st : store -> x : var -> l : loc {l =!= 0} -> v : value ->
+  | F_AllocReuse : st : store -> x : var -> l : loc { l =!= 0 } -> v : value ->
     footprint (Alloc x) (st, singleton_empty_heap l, Ok)
     (override st x (Loc l), singleton_full_heap l v, Ok)
   
-  | F_Free : st : store -> e : expr -> l : loc {l =!= 0} -> v : value ->
+  | F_Free : st : store -> e : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (eval_expr' st e == l)) ->
     footprint (Free e) (st, singleton_full_heap l v, Ok)
     (st, singleton_empty_heap l, Ok)
   
-  | F_FreeEr : st : store -> e : expr -> l : loc {l =!= 0} ->
+  | F_FreeEr : st : store -> e : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr' st e == l)) ->
     footprint (Free e) (st, singleton_empty_heap l, Ok)
     (st, singleton_empty_heap l, Er)
@@ -972,12 +968,12 @@ type footprint : stmt -> state -> state -> Type0 =
     #(squash (eval_expr' st e == 0)) ->
     footprint (Free e) (st, empty_heap, Ok) (st, empty_heap, Er)
   
-  | F_Load : st : store -> x : var -> e : expr -> l : loc {l =!= 0} -> v : value ->
+  | F_Load : st : store -> x : var -> e : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (eval_expr' st e == l)) ->
     footprint (Load x e) (st, singleton_full_heap l v, Ok)
     (override st x v, singleton_full_heap l v, Ok)
   
-  | F_LoadEr : st : store -> x : var -> e : expr -> l : loc {l =!= 0} ->
+  | F_LoadEr : st : store -> x : var -> e : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr' st e == l)) ->
     footprint (Load x e) (st, singleton_empty_heap l, Ok)
     (st, singleton_empty_heap l, Er)
@@ -986,12 +982,12 @@ type footprint : stmt -> state -> state -> Type0 =
     #(squash (eval_expr' st e == 0)) ->
     footprint (Load x e) (st, empty_heap, Ok) (st, empty_heap, Er)
   
-  | F_Store : st : store -> e1 : expr -> e2 : expr -> l : loc {l =!= 0} -> v : value ->
+  | F_Store : st : store -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (eval_expr' st e1 == l)) ->
     footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
     (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok)
   
-  | F_StoreEr : st : store -> e1 : expr -> e2 : expr -> l : loc {l =!= 0} ->
+  | F_StoreEr : st : store -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr' st e1 == l)) ->
     footprint (Store e1 e2) (st, singleton_empty_heap l, Ok)
     (st, singleton_empty_heap l, Er)

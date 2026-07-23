@@ -1,9 +1,6 @@
 module IncLogicOne
 
 module FE = FStar.FunctionalExtensionality
-open FStar.FunctionalExtensionality { (^->) }
-
-let unreachable #a (_ : squash False) : a = coerce_eq () ()
 
 type var = string
 type value = nat
@@ -21,7 +18,6 @@ type expr =
 type stmt =
   | Assign : var -> expr -> stmt
   | Nondet : var -> stmt
-  | Local : var -> stmt -> stmt
   | Skip : stmt
   | Error : stmt
   | Assume : expr -> stmt
@@ -59,53 +55,55 @@ let eval_expr (s : state) (e : expr)
 let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
   fun z -> if z = x then y else f z
 
+unfold let state_equiv (s1 s2 : state) : prop =
+  (forall x. s1._1 x == s2._1 x) /\
+  s1._2 == s2._2
+
 // Semántica del lenguaje
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
-  | R_Ext : #p:stmt -> #s0:state -> #s1:state ->
+  | R_Ext : #p : stmt -> #s0 : state -> #s1 : state ->
     runsto p s0 s1 -> s0' : state -> s1' : state ->
-    (#_ : squash (forall x. s0._1 x == s0'._1 x /\
-                  s0._2 == s0'._2)) ->
-    (#_ : squash (forall x. s1._1 x == s1'._1 x /\
-                  s1._2 == s1'._2)) ->
+    (#_ : squash (state_equiv s0 s0')) ->
+    (#_ : squash (state_equiv s1 s1')) ->
     runsto p s0' s1'
     
-  | R_Assign : s : state{s._2 == Ok} ->
+  | R_Assign : s : state { s._2 == Ok } ->
     #x : var -> #e : expr ->
     runsto (Assign x e) s (override s._1 x (eval_expr s e), s._2)
 
-  | R_Nondet : s : state{s._2 == Ok} -> #x : var -> v : value ->
+  | R_Nondet : s : state { s._2 == Ok } -> #x : var -> v : value ->
     runsto (Nondet x) s (override s._1 x v, s._2)
 
-  | R_Skip : s : state{s._2 == Ok} -> runsto Skip s s
+  | R_Skip : s : state { s._2 == Ok } -> runsto Skip s s
 
-  | R_Error : s : state{s._2 == Ok} -> runsto Error s (s._1, Er)
+  | R_Error : s : state { s._2 == Ok } -> runsto Error s (s._1, Er)
 
-  | R_Assume : s : state{s._2 == Ok} -> #e : expr -> 
+  | R_Assume : s : state { s._2 == Ok } -> #e : expr -> 
     squash (eval_expr s e =!= 0) ->
     runsto (Assume e) s s
 
   | R_SeqEr : #p : stmt -> #q : stmt ->
-    #s : state{s._2 == Ok} -> #t : state{t._2 == Er} ->
+    #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
     runsto p s t -> runsto (Seq p q) s t
 
   | R_Seq : #p : stmt -> #q : stmt ->
-    #s : state{s._2 == Ok} -> #t : state{t._2 == Ok} -> #u : state ->
+    #s : state { s._2 == Ok } -> #t : state { t._2 == Ok } -> #u : state ->
     runsto p s t -> runsto q t u ->
     runsto (Seq p q) s u
 
   | R_ChoiceL : #p : stmt -> #q : stmt ->
-    #s : state{s._2 == Ok} -> #t : state ->
+    #s : state { s._2 == Ok } -> #t : state ->
     runsto p s t -> runsto (Choice p q) s t
 
   | R_ChoiceR : #p : stmt -> #q : stmt ->
-    #s: state{s._2 == Ok} -> #t : state ->
+    #s: state { s._2 == Ok } -> #t : state ->
     runsto q s t -> runsto (Choice p q) s t
 
-  | R_Kleene0 : #p : stmt -> #s : state{s._2 == Ok} -> 
+  | R_Kleene0 : #p : stmt -> #s : state { s._2 == Ok } -> 
     runsto (Kleene p) s s
   
-  | R_KleeneS : #p : stmt -> #s : state{s._2 == Ok} -> #t : state ->
+  | R_KleeneS : #p : stmt -> #s : state { s._2 == Ok } -> #t : state ->
     runsto (Seq (Kleene p) p) s t ->
     runsto (Kleene p) s t
 
@@ -214,8 +212,8 @@ let rec soundness
     assert (pre s0);
     let pf0 = R_Assign s0 #x #e in
     assert (forall y. override st0 x (eval_expr s0 e) y == st1 y);
-    let pf1 : runsto (Assign x e) s0 s1 = R_Ext pf0 s0 s1 in
-    (| s0, pf1 |)
+    let pf1 = R_Ext pf0 s0 s1 in
+    (|s0, pf1|)
 
   | I_Nondet #x #pre ->
     let (st1, m) = s1 in
@@ -291,7 +289,7 @@ let rec soundness
     (|s0, r|)
 
   | I_KleeneVariant #variant #p pf_var ->
-    let p_n (n:nat) : prop = variant n s1 /\ (n == 0 ==> s1._2 == Ok) in
+    let p_n (n : nat) : prop = variant n s1 /\ (n == 0 ==> s1._2 == Ok) in
     assert (exists n. p_n n);
     let n = FStar.IndefiniteDescription.indefinite_description_ghost
               _ p_n in
@@ -301,18 +299,17 @@ let rec soundness
       if m = 0 then
         let s0 = t in
         let r = R_Kleene0 #p in
-        (| s0, r |)
+        (|s0, r|)
       else 
         let m' = m - 1 in
         let pf_p = pf_var m' in
-        let (| s_mid, r_p |) =
+        let (|s_mid, r_p|) =
           soundness p (is_ok (variant m')) (variant (m' + 1)) pf_p t in
-        let (| s0, r_kleene |) = aux m' s_mid in
+        let (|s0, r_kleene|) = aux m' s_mid in
         let r = R_KleeneS #p (R_Seq r_kleene r_p) in
-        (| s0, r |)
+        (|s0, r|)
     in
     aux n s1
-
 
   | I_Consequence #pre #p #post pre' post' pf_p _ _ -> 
     let (|s0, r|) = soundness p (is_ok pre) post pf_p s1 in

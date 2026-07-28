@@ -1,6 +1,6 @@
 module RandomLoop
 
-open IncSepLogicOne
+open IncSepLogic
 open FStar.Classical
 
 // Utils

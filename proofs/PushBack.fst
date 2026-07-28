@@ -1,6 +1,6 @@
 module PushBack
 
-open IncSepLogicOne
+open IncSepLogic
 
 let push_back (ptr : var) : stmt =
   Choice

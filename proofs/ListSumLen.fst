@@ -1,6 +1,6 @@
 module ListSumLen
 
-open IncSepLogicOne
+open IncSepLogic
 open FStar.List.Tot
 open FStar.Classical
 

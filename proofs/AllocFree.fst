@@ -1,6 +1,6 @@
 module AllocFree
 
-open IncSepLogicOne
+open IncSepLogic
 
 // Def del programa a verificar
 (*

@@ -1,4 +1,8 @@
-module IncLogicOne
+module IncLogic
+
+// ============================================================
+// 1. Sintaxis y estados
+// ============================================================
 
 type var = string
 type value = nat
@@ -57,7 +61,10 @@ unfold let state_equiv (s1 s2 : state) : prop =
   (forall x. s1._1 x == s2._1 x) /\
   s1._2 == s2._2
 
-// Semántica del lenguaje
+// ============================================================
+// 2. Semántica operacional
+// ============================================================
+
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
   | R_Ext : #p : stmt -> #s0 : state -> #s1 : state ->
@@ -105,6 +112,10 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
     runsto (Seq (Kleene p) p) s t ->
     runsto (Kleene p) s t
 
+// ============================================================
+// 3. Lógica de Incorrectitud
+// ============================================================
+
 let init : state = ((fun _ -> 0), Ok)
 
 unfold let is_ok (c : cond) : cond = fun s -> c s /\ s._2 == Ok
@@ -117,7 +128,6 @@ unfold
 let kleene_post (variant : nat -> cond) : cond =
   fun s -> exists (n : nat). variant n s /\ (n == 0 ==> s._2 == Ok)
 
-// Lógica de incorrectitud
 noeq
 type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | I_Assign : #pre : cond -> #x : var -> #e : expr ->
@@ -187,6 +197,10 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
     il_triple (is_ok pre2) p post2 ->
     il_triple (is_ok (fun s -> pre1 s \/ pre2 s)) p 
       (fun s -> post1 s \/ post2 s)
+
+// ============================================================
+// 4. Soundness de la IL
+// ============================================================
 
 let rec soundness
   (p : stmt) (pre : cond) (post : cond)

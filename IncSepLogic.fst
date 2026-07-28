@@ -1,9 +1,9 @@
-module IncSepLogicOne
+module IncSepLogic
 
 open FStar.Classical
 
 // ============================================================
-// 1. Syntax and states
+// 1. Sintaxis y estados
 // ============================================================
 
 type var = string
@@ -91,7 +91,7 @@ unfold let state_equiv (s1 s2 : state) : prop =
   s1._3 == s2._3
 
 // ============================================================
-// 2. Heap model and heap algebra
+// 2. Modelo y álgebra del heap
 // ============================================================
 
 let cell_disjoint (c1 c2 : cell) : prop =
@@ -122,7 +122,7 @@ let heap_without (h : heap) (l : loc) : heap =
     else h l'
 
 // ============================================================
-// 3. Operational semantics
+// 3. Semántica operacional
 // ============================================================
 
 noeq
@@ -226,7 +226,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
     runsto (Store e1 e2) s (s._1, s._2, Er)
 
 // ============================================================
-// 4. Operational metatheory
+// 4. Metateoría operacional
 // ============================================================
 
 let match_except_vars (vars : string -> prop) (st1 st2 : store) : prop =
@@ -359,7 +359,7 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
     R_Ext (R_StoreNull s0_fr e1 e2) s0_fr s1_fr () ()
 
 // ============================================================
-// 5. Incorrectness Separation Logic
+// 5. Lógica de Incorrectitud de Separación
 // ============================================================
 
 let points_to_empty (l : loc) : cond =
@@ -571,7 +571,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         pre (s._1, s._2, Ok))
 
 // ============================================================
-// 6. Soundness of ISL
+// 6. Soundness de la ISL
 // ============================================================
 
 let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
@@ -1003,7 +1003,7 @@ type footprint : stmt -> state -> state -> Type0 =
     footprint p s0' s1'
 
 // ============================================================
-// 8. Soundness of footprints
+// 8. Soundness de footprints
 // ============================================================
 
 let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0 s1) 
@@ -1110,7 +1110,7 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     R_Ext r s0' s1' e0 e1
 
 // ============================================================
-// 9. Frame closure of footprints
+// 9. Clausura por marcos de footprints
 // ============================================================
 
 noeq
@@ -1139,7 +1139,7 @@ let rec framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) (ff : framed
     R_Ext r_p s0' s1' _ _
 
 // ============================================================
-// 10. Cross-split and decomposition helpers
+// 10. Lemas auxiliares para cross-split y descomposición
 // ============================================================
 
 let state_equiv_preserves_mode (s1 s2 : state) (#_ : squash (state_equiv s1 s2))
@@ -1201,14 +1201,14 @@ let heaps_pairwise_disjoint (h13 h14 h23 h24 : heap) : prop =
   heaps_disjoint h23 h24
 
 noeq
-type cross_split_witness (h1 h2 h3 h4 : heap) =
-  | CrossSplit : h13 : heap -> h14 : heap -> h23 : heap -> h24 : heap ->
-    squash (heaps_pairwise_disjoint h13 h14 h23 h24) ->
-    squash (forall l. heap_merge h13 h14 l == h1 l) ->
-    squash (forall l. heap_merge h23 h24 l == h2 l) ->
-    squash (forall l. heap_merge h13 h23 l == h3 l) ->
-    squash (forall l. heap_merge h14 h24 l == h4 l) ->
-    cross_split_witness h1 h2 h3 h4
+type cross_split_witness (h1 h2 h3 h4 : heap) = {
+  h13 : heap; h14 : heap; h23 : heap; h24 : heap;
+  pairwise_disjoint : squash (heaps_pairwise_disjoint h13 h14 h23 h24);
+  split_h1 : squash (forall l. heap_merge h13 h14 l == h1 l);
+  split_h2 : squash (forall l. heap_merge h23 h24 l == h2 l);
+  split_h3 : squash (forall l. heap_merge h13 h23 l == h3 l);
+  split_h4 : squash (forall l. heap_merge h14 h24 l == h4 l)
+}
 
 let heap_cross_split (h1 h2 h3 h4 : heap)
   (#_ : squash (heaps_disjoint h1 h2)) (#_ : squash (heaps_disjoint h3 h4))
@@ -1224,47 +1224,70 @@ let heap_cross_split (h1 h2 h3 h4 : heap)
   let h24 = cross_heap h2 h4 in
 
   let pointwise (l : loc)
-    : Lemma (ensures (
-              let c13 = h13 l in
-              let c14 = h14 l in
-              let c23 = h23 l in
-              let c24 = h24 l in
-              cell_disjoint c13 c14 /\
-              cell_disjoint c13 c23 /\
-              cell_disjoint c13 c24 /\
-              cell_disjoint c14 c23 /\
-              cell_disjoint c14 c24 /\
-              cell_disjoint c23 c24 /\
-              cell_merge c13 c14 == h1 l /\
-              cell_merge c23 c24 == h2 l /\
-              cell_merge c13 c23 == h3 l /\
-              cell_merge c14 c24 == h4 l
-            )) =
+    : Lemma 
+      (ensures (
+        let c13 = h13 l in
+        let c14 = h14 l in
+        let c23 = h23 l in
+        let c24 = h24 l in
+        cell_disjoint c13 c14 /\
+        cell_disjoint c13 c23 /\
+        cell_disjoint c13 c24 /\
+        cell_disjoint c14 c23 /\
+        cell_disjoint c14 c24 /\
+        cell_disjoint c23 c24 /\
+        cell_merge c13 c14 == h1 l /\
+        cell_merge c23 c24 == h2 l /\
+        cell_merge c13 c23 == h3 l /\
+        cell_merge c14 c24 == h4 l
+      )) =
     cell_cross_split (h1 l) (h2 l) (h3 l) (h4 l)
   in
-  CrossSplit h13 h14 h23 h24 () () () () ()
+  {
+    h13 = h13; h14 = h14; h23 = h23; h24 = h24;
+    pairwise_disjoint = ();
+    split_h1 = (); split_h2 = ();
+    split_h3 = (); split_h4 = ()
+  }
 
 noeq
-type frame_parts (p : stmt) (s0 : state) (s1 : state) =
-  | Parts : sl0 : state -> sl1 : state -> h_fr : heap -> fp : footprint p sl0 sl1 ->
-    d0 : squash (heaps_disjoint sl0._2 h_fr) ->
-    d1 : squash (heaps_disjoint sl1._2 h_fr) ->
-    e0 : squash (state_equiv (sl0._1, heap_union sl0._2 h_fr, sl0._3) s0) ->
-    e1 : squash (state_equiv (sl1._1, heap_union sl1._2 h_fr, sl1._3) s1) ->
-    frame_parts p s0 s1
+type frame_parts (p : stmt) (s0 : state) (s1 : state) = {
+  local_start : state; local_end : state; frame_heap : heap;
+  local_footprint : footprint p local_start local_end;
+  frame_disjoint_start : squash (heaps_disjoint local_start._2 frame_heap);
+  frame_disjoint_end : squash (heaps_disjoint local_end._2 frame_heap);
+  rebuild_start : squash (state_equiv
+    (local_start._1, heap_union local_start._2 frame_heap, local_start._3) s0);
+  rebuild_end : squash (state_equiv
+    (local_end._1, heap_union local_end._2 frame_heap, local_end._3) s1)
+}
 
 let rec flatten_framed (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (frame_parts p s0 s1) (decreases ff) =
   match ff with
   | F_Frame _ sl0 sl1 h_fr fp d0 d1 ->
-    Parts sl0 sl1 h_fr fp d0 d1 () ()
+    {
+      local_start = sl0; local_end = sl1; 
+      frame_heap = h_fr; local_footprint = fp;
+      frame_disjoint_start = d0;
+      frame_disjoint_end = d1;
+      rebuild_start = (); rebuild_end = ()
+    }
 
   | F_Ext _ sb0 sb1 ff_base s0' s1' e0 e1 ->
-    match flatten_framed ff_base with
-    | Parts sl0 sl1 h_fr fp d0 d1 e0' e1' ->
-      let sf0 = (sl0._1, heap_union sl0._2 h_fr, sl0._3) in
-      let sf1 = (sl1._1, heap_union sl1._2 h_fr, sl1._3) in
-      Parts sl0 sl1 h_fr fp d0 d1 () ()
+    let parts = flatten_framed ff_base in
+    let sl0 = parts.local_start in
+    let sl1 = parts.local_end in
+    let h_fr = parts.frame_heap in
+    let sf0 = (sl0._1, heap_union sl0._2 h_fr, sl0._3) in
+    let sf1 = (sl1._1, heap_union sl1._2 h_fr, sl1._3) in
+    {
+      local_start = sl0; local_end = sl1;
+      frame_heap = h_fr; local_footprint = parts.local_footprint;
+      frame_disjoint_start = parts.frame_disjoint_start;
+      frame_disjoint_end = parts.frame_disjoint_end;
+      rebuild_start = (); rebuild_end = ()
+    }
 
 let rec map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
   (transform : (#sl0 : state -> #sl1 : state -> footprint p sl0 sl1 -> GTot (footprint q sl0 sl1)))
@@ -1294,7 +1317,7 @@ let rec framed_seq_er (#p #q : stmt) (#s0 : state) (#s1 : state { s1._3 == Er })
     F_Ext (Seq p q) s0_base s1_base ff_seq_base s0' s1' e0 e1
 
 // ============================================================
-// 11. Completeness of footprint decomposition
+// 11. Completitud de la descomposición en huellas
 // ============================================================
 
 let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
@@ -1362,16 +1385,23 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let parts_p = flatten_framed ff_p in
     let parts_q = flatten_framed ff_q in
 
-    (match parts_p, parts_q with
-    | Parts p0 p1 fr_p fp_p dp0 dp1 ep0 ep1,
-      Parts q0 q1 fr_q fp_q dq0 dq1 eq0 eq1 ->
+    let p0 = parts_p.local_start in
+    let p1 = parts_p.local_end in
+    let fr_p = parts_p.frame_heap in
+    let fp_p = parts_p.local_footprint in
+    let dp1 = parts_p.frame_disjoint_end in
+    let q0 = parts_q.local_start in
+    let q1 = parts_q.local_end in
+    let fr_q = parts_q.frame_heap in
+    let fp_q = parts_q.local_footprint in
+    let dq0 = parts_q.frame_disjoint_start in
       let p_mid = (p1._1, heap_union p1._2 fr_p, p1._3) in
       let q_mid = (q0._1, heap_union q0._2 fr_q, q0._3) in
       let cs = heap_cross_split p1._2 fr_p q0._2 fr_q #dp1 #dq0 #() in
-
-        (match cs with
-        | CrossSplit h_common h_p h_q h_ext pairwise split_p split_fr_p 
-          split_q split_fr_q ->
+      let h_common = cs.h13 in
+      let h_p = cs.h14 in
+      let h_q = cs.h23 in
+      let h_ext = cs.h24 in
           let st0 = p0._1 in
           let stm = p1._1 in
           let st1 = q1._1 in
@@ -1392,7 +1422,7 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
           let ff_seq = F_Frame (Seq p q) seq0_local seq1_local h_ext fp_seq () () in
           let p0_framed = (st0, heap_union h0 fr_p, Ok) in
           let q1_framed = (st1, heap_union h1 fr_q, m1) in
-          F_Ext (Seq p q) seq0_framed seq1_framed ff_seq s u () ()))
+          F_Ext (Seq p q) seq0_framed seq1_framed ff_seq s u () ()
   
   | R_ChoiceL #p #q r_p ->
     let ff_p = runsto_decompose r_p in

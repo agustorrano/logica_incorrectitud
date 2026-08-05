@@ -1,0 +1,10 @@
+comment.cut
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.synctex*
+*.fdb_latexmk
+*.fls

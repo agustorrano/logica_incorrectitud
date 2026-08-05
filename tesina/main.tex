@@ -3246,7 +3246,7 @@ Además de las reglas para las operaciones primitivas, se formalizó la Regla de
 
 Sobre esta formalización se mecanizó el Teorema de Soundness de la ISL.
 Al igual que en el caso anterior, el resultado relaciona cada estado final descrito por su derivación con un estado inicial y una ejecución operacional concreta.
-La demostración del caso de la Regla del Marco requirió probar que una ejecución local puede extenderse con un \emph{heap} disjunto que no es modificado, propiedad que expresa la función \texttt{r\_frame}.
+La demostración del caso de la Regla del Marco requirió probar que una ejecución local puede extenderse con un \emph{heap} disjunto que no es modificado.
 
 También se formalizó una relación inductiva denominada \texttt{footprint}, cuyos constructores describen ejecuciones sobre los fragmentos locales de memoria requeridos por cada comando.
 A partir de esta definición se introdujo la relación \texttt{framed\_footprint}, que representa la clausura de las huellas locales con marcos disjuntos y equivalencias.
@@ -3262,12 +3262,12 @@ El desarrollo obtenido constituye un núcleo lógico mecanizado y la formalizaci
 
 \section{Trabajo relacionado}
 \label{sec:relacionado}
-Existen distintos trabajos sobre lógicas de programas, análisis estático y razonamiento sobre la presencia de errores.
+Existen distintos trabajos relacionados con esta tesina.
 Los presentamos a continuación, comparándolos con el desarrollo realizado en esta tesina.
 
 \subsection*{Mecanización de la HL para código máquina}
 \citet{mchoare} presentan un framework mecanizado de estilo Hoare para razonar sobre programas escritos en código máquina.
-La lógica se construye sobre una semántica operacional que representa características propias de máquinas reales, como la memoria finita, la coexistencia de código y datos en un mismo espacio de direcciones, los registros de estado y el riesgo de modificar registros especiales, entre ellos el contador de programa, el puntero de pila y el registro de retorno.
+La lógica se construye sobre una semántica operacional que representa características propias de máquinas reales, como la memoria finita, la coexistencia de código y datos en un mismo espacio de direcciones, los registros de estado y el riesgo de modificar registros como el contador de programa, el puntero de pila y el registro de retorno.
 El desarrollo fue formalizado en lógica de orden superior y mecanizado en HOL4~\cite{hol4}.
 
 El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales y de uso de recursos directamente sobre programas de bajo nivel.
@@ -3290,8 +3290,7 @@ El trabajo redefine Cminor para facilitar el razonamiento con la HL y da una sem
 Esta elección se encuentra motivada por la posibilidad de extender luego el lenguaje con concurrencia.
 
 El desarrollo incluye una demostración mecanizada en Coq~\cite{coq} de la solidez de la SL respecto de esa semántica.
-Los autores presentan el resultado como la primera demostración mecanizada de gran escala de una SL respecto de una semántica de paso pequeño.
-Además, relacionan la nueva semántica con la semántica usada por el compilador, con el objetivo de conservar las garantías de corrección de punto a punto.
+Los autores presentan el resultado como la primera demostración mecanizada de una SL respecto de una semántica de paso pequeño.
 
 Este trabajo es cercano a esta tesina por su metodología.
 En los dos desarrollos se define una semántica operacional, se formaliza un sistema de razonamiento espacial y se demuestra que las reglas de la lógica son sólidas respecto de dicha semántica.
@@ -3301,7 +3300,7 @@ Sin embargo, las lógicas formalizadas tienen interpretaciones diferentes.
 Appel y Blazy usan la SL para demostrar propiedades de correctitud y seguridad de programas Cminor.
 Esta tesina formaliza la ISL, cuyo objetivo es demostrar la existencia de ejecuciones que alcanzan determinadas postcondiciones, incluidos estados de error.
 Esta diferencia se refleja en los teoremas de \emph{soundness}.
-En el razonamiento de correctitud, la prueba debe garantizar que toda ejecución considerada respete la postcondición.
+En el razonamiento de correctitud, la prueba debe garantizar que toda ejecución respete la postcondición.
 En la interpretación sub-aproximada, debe demostrarse que cada estado descrito por la postcondición tiene al menos una ejecución que lo alcanza desde algún estado que satisface la presunción.
 
 Otra diferencia es la incorporación de \emph{heaps} negativos.
@@ -3351,6 +3350,9 @@ En esta tesina, las derivaciones de \texttt{isl\_triple} se construyen de forma 
 
 Por otra parte, VeriFast es una herramienta destinada a la verificación de programas concretos, mientras que el objetivo de la tesina es mecanizar el núcleo de una lógica y demostrar sus propiedades metateóricas.
 La comparación permite mostrar una posible línea de investigación futura, usar las definiciones y los teoremas mecanizados como fundamento de un procedimiento que automatice la construcción de derivaciones de ISL.
+
+\subsection*{Mecanización de la CISL}
+\citet{mizzle}
 
 \subsection*{Resumen}
 La formalización propuesta en este trabajo se encuentra de alguna forma entre todos los desarrollos antes mencionados.

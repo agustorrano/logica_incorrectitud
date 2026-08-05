@@ -1,0 +1,189 @@
+% ---------------- Packages ----------------
+%\usepackage{hyphenat}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+% \usepackage[fleqn]{amsmath}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+% \usepackage{dtsyntax}
+% \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+\usepackage[normalem]{ulem}
+\usepackage{pdflscape}
+\usepackage{amssymb}
+\usepackage{longtable}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, babel, shapes.multipart, decorations.pathreplacing}
+%\usepackage{algorithm}
+\usepackage[numbers]{natbib}
+\usepackage{mathpartir}
+\usepackage{multicol}
+\usepackage{centernot}
+\usepackage{hyperref}
+\renewcommand{\chapterautorefname}{Capítulo}
+\renewcommand{\sectionautorefname}{Sección}
+\renewcommand{\figureautorefname}{Figura}
+\renewcommand{\tableautorefname}{Tabla}
+
+\usepackage{placeins}
+
+\usepackage[a4paper,top=2.5cm,bottom=3cm,inner=2.5cm,outer=2.5cm]{geometry}
+
+
+\usepackage{multirow}
+% For \includegraphics with valign
+\usepackage[export]{adjustbox}
+
+\usepackage{tablefootnote}
+
+% M: Tabla en vez de Cuadro
+\usepackage[spanish,es-tabla]{babel}
+
+\usepackage{xargs} % Use more than one optional parameter in a new commands
+
+% Algorithms boxes
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% For \qtyrange and \hertz
+\usepackage{siunitx}
+\usepackage{textcomp}
+\DeclareSIUnit{\pixel}{px}
+\DeclareSIUnit{\fps}{fps}
+
+\usepackage{subfig}
+% \usepackage{subcaption}
+
+% Code c++
+\usepackage{listings}
+\usepackage{xcolor}
+\renewcommand{\lstlistingname}{Código}
+
+\definecolor{fstarblue}{RGB}{0,92,153}
+\definecolor{fstarpurple}{RGB}{126,47,142}
+\definecolor{fstargreen}{RGB}{40,120,70}
+\definecolor{fstargray}{RGB}{110,110,110}
+\definecolor{fstarred}{RGB}{170,50,50}
+
+\lstdefinelanguage{FStar}{
+  sensitive=true,
+  morekeywords={
+    module,open,include,
+    let,rec,and,in,
+    type,noeq,unfold,
+    match,with,when,
+    if,then,else,
+    fun,function,
+    forall,exists,
+    val,assume,
+    requires,ensures,decreases,
+    Lemma,Tot,GTot,Type,Type0,prop,
+    squash
+  },
+  %morekeywords=[2]{
+  %  nat,int,string,bool,
+  %  True,False,
+  %  Some,None
+  %},
+  morecomment=[l]{//},
+  morecomment=[s]{(*}{*)},
+  morestring=[b]"
+}
+
+\lstdefinestyle{fstar}{
+  language=FStar,
+  basicstyle=\ttfamily\small,
+  breakindent=1.5em,
+  keywordstyle=\color{fstarpurple},
+  keywordstyle=[2]\color{fstarblue},
+  keywordstyle=[3]\color{fstarred},
+  commentstyle=\color{fstargreen}\itshape,
+  stringstyle=\color{fstarpurple},
+  %numbers=left,
+  %numberstyle=\tiny\color{fstargray},
+  %numbersep=10pt,
+  %stepnumber=1,
+  frame=none,
+  breaklines=true,
+  breakatwhitespace=false,
+  showstringspaces=false,
+  keepspaces=true,
+  columns=fullflexible,
+  tabsize=2,
+  xleftmargin=1.8em,
+  framexleftmargin=1.8em,
+  captionpos=b
+}
+
+\mdfdefinestyle{barraizquierda}{
+  hidealllines=true,
+  leftline=true,
+  linecolor=black,
+  linewidth=0.8pt,
+  innerleftmargin=10pt,
+  innerrightmargin=0pt,
+  innertopmargin=3pt,
+  innerbottommargin=3pt,
+  skipabove=10pt,
+  skipbelow=10pt
+}
+
+% ---------------- Macros / Custom commands ----------------
+\newcommand{\fstar}[0]{\texorpdfstring{F$^\star$}{F*}}
+\newcommand{\nmapsto}{\centernot \mapsto}
+
+% Title page
+\newcommand*{\titleGP}{\begingroup
+    \centering
+    \vspace*{\baselineskip}
+    \thispagestyle{empty}
+
+    \rule{\textwidth}{1.6pt}\vspace*{-\baselineskip}\vspace*{2pt}
+    \rule{\textwidth}{0.4pt}\\[\baselineskip]
+
+    {\LARGE Formalización de Lógica de Incorrectitud de Separación en \fstar } \\[0.2\baselineskip]
+
+    \rule{\textwidth}{0.4pt}\vspace*{-\baselineskip}\vspace{3.2pt}
+    \rule{\textwidth}{1.6pt}\\[\baselineskip]
+
+    \vspace*{2\baselineskip}
+
+    \includegraphics[width=0.3\textwidth]{img/logo-unr.png}
+
+    \vspace*{2\baselineskip}
+
+    \scshape
+    Tesina de Grado\\[\baselineskip]
+    Licenciatura en Ciencias de la Computación\par
+
+    \vspace*{2\baselineskip}
+
+    {\Large Autora: María Agustina Torrano \\}
+    {Legajo: T-2989/1 }
+    \vspace*{2\baselineskip}
+    {\Large \\ Director: Guido Martínez } \vfill
+
+    \vspace*{2\baselineskip}
+    {\scshape \today} \\[0.3\baselineskip]
+
+\endgroup}
+
+\newcommand{\triple}[3]{ \left\{ #1 \right\}~#2~\left\{ #3 \right\} }
+\newcommand{\itriple}[3]{ \left\lbrack #1 \right\rbrack~#2~\left\lbrack #3 \right\rbrack }
+\theoremstyle{definition}
+\newtheorem{definicion}{Definición}[chapter]
+\theoremstyle{plain}
+\newtheorem{teorema}[definicion]{Teorema}
+\newtheorem{lema}[definicion]{Lema}
+\newtheorem{corolario}[definicion]{Corolario}
+\newtheorem{ejemplo}{Ejemplo}[chapter]
+\newtheorem{observacion}[definicion]{Observación}
+\surroundwithmdframed[style=barraizquierda]{definicion}
+\surroundwithmdframed[style=barraizquierda]{teorema}
+\surroundwithmdframed[style=barraizquierda]{lema}
+\surroundwithmdframed[style=barraizquierda]{corolario}

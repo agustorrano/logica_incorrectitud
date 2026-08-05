@@ -1,0 +1,455 @@
+@article{
+    hoare,
+    author     = {Hoare, C. A. R.},
+    title      = {An axiomatic basis for computer programming},
+    year       = {1969},
+    issue_date = {Oct. 1969},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {12},
+    number     = {10},
+    issn       = {0001-0782},
+    url        = {https://doi.org/10.1145/363235.363259},
+    doi        = {10.1145/363235.363259},
+    abstract   = {In this paper an attempt is made to explore the logical foundations of computer programming by use of techniques which were first applied in the study of geometry and have later been extended to other branches of mathematics. This involves the elucidation of sets of axioms and rules of inference which can be used in proofs of the properties of computer programs. Examples are given of such axioms and rules, and a formal proof of a simple theorem is displayed. Finally, it is argued that important advantage, both theoretical and practical, may follow from a pursuance of these topics.},
+    journal    = {Commun. ACM},
+    month      = oct,
+    pages      = {576–580},
+    numpages   = {5},
+    keywords   = {axiomatic method, formal language definition, machine-independent programming, program documentation, programming language design, theory of programming' proofs of programs}
+}
+
+@book{
+    fstar,
+    title     = {Proof-Oriented Programming in F*},
+    author    = {Nikhil Swamy and Guido Mart{\'i}nez and Aseem Rastogi},
+    year      = {2025},
+    publisher = {F* Project},
+    url       = {https://fstar-lang.org/tutorial/proof-oriented-programming-in-fstar.pdf}
+}
+
+
+@article{
+    outclog,
+    author     = {Zilberstein, Noam and Dreyer, Derek and Silva, Alexandra},
+    title      = {Outcome Logic: A Unifying Foundation for Correctness and Incorrectness Reasoning},
+    year       = {2023},
+    issue_date = {April 2023},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {7},
+    number     = {OOPSLA1},
+    url        = {https://doi.org/10.1145/3586045},
+    doi        = {10.1145/3586045},
+    abstract   = {Program logics for bug-finding (such as the recently introduced Incorrectness Logic) have framed correctness and incorrectness as dual concepts requiring different logical foundations. In this paper, we argue that a single unified theory can be used for both correctness and incorrectness reasoning. We present Outcome Logic (OL), a novel generalization of Hoare Logic that is both monadic (to capture computational effects) and monoidal (to reason about outcomes and reachability). OL expresses true positive bugs, while retaining correctness reasoning abilities as well. To formalize the applicability of OL to both correctness and incorrectness, we prove that any false OL specification can be disproven in OL itself. We also use our framework to reason about new types of incorrectness in nondeterministic and probabilistic programs. Given these advances, we advocate for OL as a new foundational theory of correctness and incorrectness.},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = apr,
+    articleno  = {93},
+    numpages   = {29},
+    keywords   = {Program Logics, Incorrectness Reasoning, Hoare Logic}
+}
+
+@article{
+    inclog, 
+    author     = {O'Hearn, Peter W.},
+    title      = {Incorrectness logic},
+    year       = {2019},
+    issue_date = {January 2020},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {4},
+    number     = {POPL},
+    url        = {https://doi.org/10.1145/3371078},
+    doi        = {10.1145/3371078},
+    abstract   = {Program correctness and incorrectness are two sides of the same coin. As a programmer, even if you would like to have correctness, you might find yourself spending most of your time reasoning about incorrectness. This includes informal reasoning that people do while looking at or thinking about their code, as well as that supported by automated testing and static analysis tools. This paper describes a simple logic for program incorrectness which is, in a sense, the other side of the coin to Hoare's logic of correctness.},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = dec,
+    articleno  = {10},
+    numpages   = {32},
+    keywords   = {none}
+}
+
+@inproceedings{
+    isl,
+    author    = "Raad, Azalea and Berdine, Josh and Dang, Hoang-Hai and Dreyer, Derek and O'Hearn, Peter and Villard, Jules",
+    editor    = "Lahiri, Shuvendu K. and Wang, Chao",
+    title     = "Local Reasoning About the Presence of Bugs: Incorrectness Separation Logic",
+    booktitle = "Computer Aided Verification",
+    year="2020",
+    publisher = "Springer International Publishing",
+    address   = "Cham",
+    pages     = "225--252",
+    abstract  = "There has been a large body of work on local reasoning for proving the absence of bugs, but none for proving their presence. We present a new formal framework for local reasoning about the presence of bugs, building on two complementary foundations: 1) separation logic and 2) incorrectness logic. We explore the theory of this new incorrectness separation logic (ISL), and use it to derive a begin-anywhere, intra-procedural symbolic execution analysis that has no false positives by construction. In so doing, we take a step towards transferring modular, scalable techniques from the world of program verification to bug catching.",
+    isbn      = "978-3-030-53291-8"
+}
+
+@inproceedings{
+    sl,
+    author    = {Reynolds, J.C.},
+    booktitle = {Proceedings 17th Annual IEEE Symposium on Logic in Computer Science}, 
+    title     = {Separation logic: a logic for shared mutable data structures}, 
+    year      = {2002},
+    volume    = {},
+    number    = {},
+    pages     = {55-74},
+    keywords  = {Data structures;Computer science;Programmable logic arrays;Reflection;Logic programming;Computer languages;Logic arrays;Arithmetic;Artificial intelligence;Bibliographies},
+    doi       = {10.1109/LICS.2002.1029817}
+}
+
+@article{
+    bugs,
+    author     = {Le, Quang Loc and Raad, Azalea and Villard, Jules and Berdine, Josh and Dreyer, Derek and O'Hearn, Peter W.},
+    title      = {Finding real bugs in big programs with incorrectness logic},
+    year       = {2022},
+    issue_date = {April 2022},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {6},
+    number     = {OOPSLA1},
+    url        = {https://doi.org/10.1145/3527325},
+    doi        = {10.1145/3527325},
+    abstract   = {Incorrectness Logic (IL) has recently been advanced as a logical theory for compositionally proving the presence of bugs—dual to Hoare Logic, which is used to compositionally prove their absence. Though IL was motivated in large part by the aim of providing a logical foundation for bug-catching program analyses, it has remained an open question: is IL useful only retrospectively (to explain existing analyses), or can it actually be useful in developing new analyses which can catch real bugs in big programs?  In this work, we develop Pulse-X, a new, automatic program analysis for catching memory errors, based on ISL, a recent synthesis of IL and separation logic. Using Pulse-X, we have found 15 new real bugs in OpenSSL, which we have reported to OpenSSL maintainers and have since been fixed. In order not to be overwhelmed with potential but false error reports, we develop a compositional bug-reporting criterion based on a distinction between latent and manifest errors, which references the under-approximate ISL abstractions computed by Pulse-X, and we investigate the fix rate resulting from application of this criterion. Finally, to probe the potential practicality of our bug-finding method, we conduct a comparison to Infer, a widely used analyzer which has proven useful in industrial engineering practice.},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = apr,
+    articleno  = {81},
+    numpages   = {27},
+    keywords   = {bug catching, compositionality, incorrectness logic, incorrectness proving}
+}
+
+@article{
+    floyd67,
+    added-at    = {2009-01-27T21:07:57.000+0100},
+    author      = {Floyd, Robert W.},
+    biburl      = {https://www.bibsonomy.org/bibtex/22fa3c50b3386ec2f640eb8bfaedaa7db/tmcphillips},
+    description = {A formal grammar for flowcharts.},
+    interhash   = {bd9dee412b9a403b9fa1f1b2f0032f36},
+    intrahash   = {2fa3c50b3386ec2f640eb8bfaedaa7db},
+    journal     = {Proceedings of Symposium on Applied Mathematics},
+    keywords    = {FormalLanguages},
+    pages       = {19-32},
+    timestamp   = {2009-01-27T22:39:35.000+0100},
+    title       = {Assigning Meanings to Programs},
+    url         = {http://laser.cs.umass.edu/courses/cs521-621.Spr06/papers/Floyd.pdf},
+    volume      = 19,
+    year        = 1967
+}
+
+@article{
+    sanalyzer,
+    author     = {Blanchet, Bruno and Cousot, Patrick and Cousot, Radhia and Feret, J\'{e}rome and Mauborgne, Laurent and Min\'{e}, Antoine and Monniaux, David and Rival, Xavier},
+    title      = {A static analyzer for large safety-critical software},
+    year       = {2003},
+    issue_date = {May 2003},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {38},
+    number     = {5},
+    issn       = {0362-1340},
+    url        = {https://doi.org/10.1145/780822.781153},
+    doi        = {10.1145/780822.781153},
+    abstract   = {We show that abstract interpretation-based static program analysis can be made efficient and precise enough to formally verify a class of properties for a family of large programs with few or no false alarms. This is achieved by refinement of a general purpose static analyzer and later adaptation to particular programs of the family by the end-user through parametrization. This is applied to the proof of soundness of data manipulation operations at the machine level for periodic synchronous safety critical embedded software.The main novelties are the design principle of static analyzers by refinement and adaptation through parametrization (Sect. 3 and 7), the symbolic manipulation of expressions to improve the precision of abstract transfer functions (Sect. 6.3), the octagon (Sect. 6.2.2), ellipsoid (Sect. 6.2.3), and decision tree (Sect. 6.2.4) abstract domains, all with sound handling of rounding errors in oating point computations, widening strategies (with thresholds: Sect. 7.1.2, delayed: Sect. 7.1.3) and the automatic determination of the parameters (parametrized packing: Sect. 7.2).},
+    journal    = {SIGPLAN Not.},
+    month      = may,
+    pages      = {196–207},
+    numpages   = {12},
+    keywords   = {abstract domains, abstract interpretation, embedded, floating point, reactive, real-time, safety-critical software, static analysis, verification}
+}
+
+@article{
+    explosion,
+    author     = {Flanagan, Cormac and Saxe, James B.},
+    title      = {Avoiding exponential explosion: generating compact verification conditions},
+    year       = {2001},
+    issue_date = {March 2001},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {36},
+    number     = {3},
+    issn       = {0362-1340},
+    url        = {https://doi.org/10.1145/373243.360220},
+    doi        = {10.1145/373243.360220},
+    abstract   = {Current verification condition (VC) generation algorithms, such as weakest preconditions, yield a VC whose size may be exponential in the size of the code fragment being checked. This paper describes a two-stage VC generation algorithm that generates compact VCs whose size is worst-case quadratic in the size of the source fragment, and is close to linear in practice.This two-stage VC generation algorithm has been implemented as part of the Extended Static Checker for Java. It has allowed us to check large and complex methods that would otherwise be impossible to check due to time and space constraints.},
+    journal    = {SIGPLAN Not.},
+    month      = jan,
+    pages      = {193–205},
+    numpages   = {13}
+}
+
+@article{
+    biabd,
+    author     = {Calcagno, Cristiano and Distefano, Dino and O’Hearn, Peter W. and Yang, Hongseok},
+    title      = {Compositional Shape Analysis by Means of Bi-Abduction},
+    year       = {2011},
+    issue_date = {December 2011},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {58},
+    number     = {6},
+    issn       = {0004-5411},
+    url        = {https://doi.org/10.1145/2049697.2049700},
+    doi        = {10.1145/2049697.2049700},
+    abstract   = {The accurate and efficient treatment of mutable data structures is one of the outstanding problem areas in automatic program verification and analysis. Shape analysis is a form of program analysis that attempts to infer descriptions of the data structures in a program, and to prove that these structures are not misused or corrupted. It is one of the more challenging and expensive forms of program analysis, due to the complexity of aliasing and the need to look arbitrarily deeply into the program heap. This article describes a method of boosting shape analyses by defining a compositional method, where each procedure is analyzed independently of its callers. The analysis algorithm uses a restricted fragment of separation logic, and assigns a collection of Hoare triples to each procedure; the triples provide an over-approximation of data structure usage. Our method brings the usual benefits of compositionality---increased potential to scale, ability to deal with incomplete programs, graceful way to deal with imprecision---to shape analysis, for the first time.The analysis rests on a generalized form of abduction (inference of explanatory hypotheses), which we call bi-abduction. Bi-abduction displays abduction as a kind of inverse to the frame problem: it jointly infers anti-frames (missing portions of state) and frames (portions of state not touched by an operation), and is the basis of a new analysis algorithm. We have implemented our analysis and we report case studies on smaller programs to evaluate the quality of discovered specifications, and larger code bases (e.g., sendmail, an imap server, a Linux distribution) to illustrate the level of automation and scalability that we obtain from our compositional method.This article makes number of specific technical contributions on proof procedures and analysis algorithms, but in a sense its more important contribution is holistic: the explanation and demonstration of how a massive increase in automation is possible using abductive inference.},
+    journal    = {J. ACM},
+    month      = dec,
+    articleno  = {26},
+    numpages   = {66},
+    keywords   = {static analysis, separation logic, program proving, compositionality, Abstract interpretation}
+}
+
+@inproceedings{
+    dafny,
+    author    = {Leino, Rustan},
+    title     = {Dafny: An Automatic Program Verifier For Functional Correctness},
+    booktitle = {LPAR-16, Dakar, Senegal},
+    year      = {2010},
+    month     = {April},
+    abstract  = {Full functional-correctness verification is becoming more automatic Interaction is moving closer to the problem domain A well-designed language and verifier, plus a great SMT solver, go a long way},
+    publisher = {Microsoft Research},
+    url       = {https://www.microsoft.com/en-us/research/publication/dafny-automatic-program-verifier-functional-correctness/},
+}
+
+@article{
+    dijkstra,
+    author     = {Dijkstra, Edsger W.},
+    title      = {Guarded commands, nondeterminacy and formal derivation of programs},
+    year       = {1975},
+    issue_date = {Aug. 1975},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {18},
+    number     = {8},
+    issn       = {0001-0782},
+    url        = {https://doi.org/10.1145/360933.360975},
+    doi        = {10.1145/360933.360975},
+    abstract   = {So-called “guarded commands” are introduced as a building block for alternative and repetitive constructs that allow nondeterministic program components for which at least the activity evoked, but possibly even the final state, is not necessarily uniquely determined by the initial state. For the formal derivation of programs expressed in terms of these constructs, a calculus will be be shown.},
+    journal    = {Commun. ACM},
+    month      = aug,
+    pages      = {453–457},
+    numpages   = {5},
+    keywords   = {case-construction, correctness proof, derivation of programs, nondeterminancy, program semantics, programming language semantics, programming languages, programming methodology, repetition, sequencing primitives, termination}
+}
+
+@article{
+    sl2,
+    author     = {O'Hearn, Peter},
+    title      = {Separation logic},
+    year       = {2019},
+    issue_date = {February 2019},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {62},
+    number     = {2},
+    issn       = {0001-0782},
+    url        = {https://doi.org/10.1145/3211968},
+    doi        = {10.1145/3211968},
+    abstract   = {Separation logic is a key development in formal reasoning about programs, opening up new lines of attack on longstanding problems.},
+    journal    = {Commun. ACM},
+    month      = jan,
+    pages      = {86–95},
+    numpages   = {10}
+}
+
+@article{
+    facebook,
+    author     = {Distefano, Dino and F\"{a}hndrich, Manuel and Logozzo, Francesco and O'Hearn, Peter W.},
+    title      = {Scaling static analyses at Facebook},
+    year       = {2019},
+    issue_date = {August 2019},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {62},
+    number     = {8},
+    issn       = {0001-0782},
+    url        = {https://doi.org/10.1145/3338112},
+    doi        = {10.1145/3338112},
+    abstract   = {Key lessons for designing static analyses tools deployed to find bugs in hundreds of millions of lines of code.},
+    journal    = {Commun. ACM},
+    month      = jul,
+    pages      = {62–70},
+    numpages   = {9}
+}
+
+@inproceedings{
+    fast,
+    author    = "Calcagno, Cristiano and Distefano, Dino and Dubreil, Jeremy and Gabi, Dominik and Hooimeijer, Pieter and Luca, Martino and O'Hearn, Peter and Papakonstantinou, Irene and Purbrick, Jim and Rodriguez, Dulma",
+    editor    = "Havelund, Klaus and Holzmann, Gerard and Joshi, Rajeev",
+    title     = "Moving Fast with Software Verification",
+    booktitle = "NASA Formal Methods",
+    year      = "2015",
+    publisher = "Springer International Publishing",
+    address   = "Cham",
+    pages     = "3--11",
+    abstract  = "For organisations like Facebook, high quality software is important. However, the pace of change and increasing complexity of modern code makes it difficult to produce error-free software. Available tools are often lacking in helping programmers develop more reliable and secure applications.",
+    isbn      = "978-3-319-17524-9"
+}
+
+@inproceedings{
+    lean,
+    author    = {de Moura, Leonardo and Kong, Soonho and Avigad, Jeremy and van Doorn, Floris and von Raumer, Jakob},
+    title     = {The Lean Theorem Prover (System Description)},
+    booktitle = {Conference on Automated Deduction},
+    year      = {2015},
+    month     = {July},
+    abstract  = {Lean is a new open source theorem prover being developed at Microsoft Research and Carnegie Mellon University, with a small trusted kernel based on dependent type theory. It aims to bridge the gap between interactive and automated theorem proving, by situating automated tools and methods in a framework that supports user interaction and the construction of fully specified axiomatic proofs. Lean is an ongoing and long-term effort, but it already provides many useful components, integrated development environments, and a rich API which can be used to embed it into other systems. It is currently being used to formalize category theory, homotopy type theory, and abstract algebra. We describe the project goals, system architecture, and main features, and we discuss applications and continuing work.},
+    publisher = {Springer, Cham},
+    url       = {https://www.microsoft.com/en-us/research/publication/the-lean-theorem-prover-system-description/},
+    pages     = {378-388},
+}
+
+@book{
+    coq,
+    author    = {Bertot, Yves and Castéran, Pierre},
+    year      = {2004},
+    month     = {01},
+    pages     = {},
+    publisher = {Springer Berlin Heidelberg},
+    title     = {Interactive theorem proving and program development. Coq'Art: The Calculus of inductive constructions.},
+    isbn      = {3540208542},
+    doi       = {10.1007/978-3-662-07964-5}
+}
+
+@article{
+    isabelle,
+    author     = {Paulson, L. C.},
+    title      = {The foundation of a generic theorem prover},
+    year       = {1989},
+    issue_date = {September 1989},
+    publisher  = {Springer-Verlag},
+    address    = {Berlin, Heidelberg},
+    volume     = {5},
+    number     = {3},
+    issn       = {0168-7433},
+    url        = {https://doi.org/10.1007/BF00248324},
+    doi        = {10.1007/BF00248324},
+    journal    = {J. Autom. Reason.},
+    month      = sep,
+    pages      = {363–397},
+    numpages   = {35}
+}
+
+@incollection{
+    howard,
+	author    = {William Alvin Howard},
+	booktitle = {To H. B. Curry: Essays on Combinatory Logic, Lambda Calculus, and Formalism},
+	editor    = {Haskell Curry and Hindley B. and Seldin J. Roger and P. Jonathan},
+	publisher = {Academic Press},
+	title     = {The Formulae-as-Types Notion of Construction},
+	year      = {1980}
+}
+
+@inproceedings{
+    mchoare,
+    author    = {Myreen, Magnus O. and Gordon, Michael J. C.},
+    title     = {Hoare logic for realistically modelled machine code},
+    year      = {2007},
+    isbn      = {9783540712084},
+    publisher = {Springer-Verlag},
+    address   = {Berlin, Heidelberg},
+    abstract  = {This paper presents a mechanised Hoare-style programming logic framework for assembly level programs. The framework has been designed to fit on top of operational semantics of realistically modelled machine code. Many ad hoc restrictions and features present in real machine-code are handled, including finite memory, data and code in the same memory space, the behavior of status registers and hazards of corrupting special purpose registers (e.g. the program counter, procedure return register and stack pointer). Despite accurately modeling such low level details, the approach yields concise specifications for machine-code programs without using common simplifying assumptions (like an unbounded state space). The framework is based on a flexible state representation in which functional and resource usage specifications are written in a style inspired by separation logic. The presented work has been formalised in higher-order logic, mechanised in the HOL4 system and is currently being used to verify ARM machine-code implementations of arithmetic and cryptographic operations.},
+    booktitle = {Proceedings of the 13th International Conference on Tools and Algorithms for the Construction and Analysis of Systems},
+    pages     = {568–582},
+    numpages  = {15},
+    location  = {Braga, Portugal},
+    series    = {TACAS'07}
+}
+
+@inproceedings{
+    verifast,
+    author    = {Jacobs, Bart and Smans, Jan and Philippaerts, Pieter and Vogels, Fr{\'e}d{\'e}ric and Penninckx, Willem and Piessens, Frank},
+    title     = {VeriFast: a powerful, sound, predictable, fast verifier for C and java},
+    year      = {2011},
+    isbn      = {9783642203978},
+    publisher = {Springer-Verlag},
+    address   = {Berlin, Heidelberg},
+    abstract  = {VeriFast is a prototype verification tool for single-threaded and multithreaded C and Java programs. In this paper, we first describe the basic symbolic execution approach in some formal detail. Then we zoom in on two technical aspects: the approach to permission accounting, including fractional permissions, precise predicates, and counting permissions; and the approach to lemma function termination in the presence of dynamically-bound lemma function calls. Finally, we describe three ongoing efforts: application to JavaCard programs, integration of shape analysis, and application to Linux device drivers.},
+    booktitle = {Proceedings of the Third International Conference on NASA Formal Methods},
+    pages     = {41–55},
+    numpages  = {15},
+    location  = {Pasadena, CA},
+    series    = {NFM'11}
+}
+
+@InProceedings{
+    cminor,
+    author    = "Appel, Andrew W.
+    and Blazy, Sandrine",
+    editor    = "Schneider, Klaus
+    and Brandt, Jens",
+    title     = "Separation Logic for Small-Step cminor",
+    booktitle = "Theorem Proving in Higher Order Logics",
+    year      = "2007",
+    publisher = "Springer Berlin Heidelberg",
+    address   = "Berlin, Heidelberg",
+    pages     = "5--21",
+    abstract  = "cminor is a mid-level imperative programming language; there are proved-correct optimizing compilers from C to cminor and from cminor to machine language. We have redesigned cminor so that it is suitable for Hoare Logic reasoning and we have designed a Separation Logic for cminor. In this paper, we give a small-step semantics (instead of the big-step of the proved-correct compiler) that is motivated by the need to support future concurrent extensions. We detail a machine-checked proof of soundness of our Separation Logic. This is the first large-scale machine-checked proof of a Separation Logic w.r.t. a small-step semantics. The work presented in this paper has been carried out in the Coq proof assistant. It is a first step towards an environment in which concurrent cminor programs can be verified using Separation Logic and also compiled by a proved-correct compiler with formal end-to-end correctness guarantees.",
+    isbn      = "978-3-540-74591-4"
+}
+
+@inbook{
+    hol4,
+    author    = {Gordon, Mike},
+    title     = {From LCF to HOL: a short history},
+    year      = {2000},
+    isbn      = {0262161885},
+    publisher = {MIT Press},
+    address   = {Cambridge, MA, USA},
+    booktitle = {Proof, Language, and Interaction: Essays in Honour of Robin Milner},
+    pages     = {169–185},
+    numpages  = {17}
+}
+
+@InProceedings{
+    isabil,
+    author    = {Griffin, Matt and Dongol, Brijesh and Raad, Azalea},
+    title     =	{{IsaBIL: A Framework for Verifying (In)correctness of Binaries in Isabelle/HOL}},
+    booktitle =	{39th European Conference on Object-Oriented Programming (ECOOP 2025)},
+    pages     =	{14:1--14:30},
+    series    =	{Leibniz International Proceedings in Informatics (LIPIcs)},
+    ISBN      =	{978-3-95977-373-7},
+    ISSN      =	{1868-8969},
+    year      =	{2025},
+    volume    =	{333},
+    editor    =	{Aldrich, Jonathan and Silva, Alexandra},
+    publisher =	{Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik},
+    address   =	{Dagstuhl, Germany},
+    URL       =	{https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ECOOP.2025.14},
+    URN       =	{urn:nbn:de:0030-drops-233070},
+    doi       =	{10.4230/LIPIcs.ECOOP.2025.14},
+    annote    =	{Keywords: Binary Analysis Platform, Isabelle/HOL, Hoare Logic, Incorrectness Logic}
+}
+
+@inproceedings{
+    bap,
+    author    = {Brumley, David and Jager, Ivan and Avgerinos, Thanassis and Schwartz, Edward J.},
+    title     = {BAP: a binary analysis platform},
+    year      = {2011},
+    isbn      = {9783642221095},
+    publisher = {Springer-Verlag},
+    address   = {Berlin, Heidelberg},
+    abstract  = {BAP is a publicly available infrastructure for performing program verification and analysis tasks on binary (i.e., executable) code. In this paper, we describe BAP as well as lessons learned from previous incarnations of binary analysis platforms. BAP explicitly represents all side effects of instructions in an intermediate language (IL), making syntaxdirected analysis possible. We have used BAP to routinely generate and solve verification conditions that are hundreds of megabytes in size and encompass 100,000's of assembly instructions.},
+    booktitle = {Proceedings of the 23rd International Conference on Computer Aided Verification},
+    pages     = {463–469},
+    numpages  = {7},
+    location  = {Snowbird, UT},
+    series    = {CAV'11}
+}
+
+@article{
+    cisl,
+    author     = {Raad, Azalea and Berdine, Josh and Dreyer, Derek and O'Hearn, Peter W.},
+    title      = {Concurrent incorrectness separation logic},
+    year       = {2022},
+    issue_date = {January 2022},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {6},
+    number     = {POPL},
+    url        = {https://doi.org/10.1145/3498695},
+    doi        = {10.1145/3498695},
+    abstract   = {Incorrectness separation logic (ISL) was recently introduced as a theory of under-approximate reasoning, with the goal of proving that compositional bug catchers find actual bugs. However, ISL only considers sequential programs. Here, we develop concurrent incorrectness separation logic (CISL), which extends ISL to account for bug catching in concurrent programs. Inspired by the work on Views, we design CISL as a parametric framework, which can be instantiated for a number of bug catching scenarios, including race detection, deadlock detection, and memory safety error detection. For each instance, the CISL meta-theory ensures the soundness of incorrectness reasoning for free, thereby guaranteeing that the bugs detected are true positives.},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = jan,
+    articleno  = {34},
+    numpages   = {29},
+    keywords   = {Concurrency, bug catching, program logics, separation logic}
+}

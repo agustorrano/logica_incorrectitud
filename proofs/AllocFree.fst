@@ -15,7 +15,7 @@ let post_alloc (s : state) : prop =
     s._1 "x" == Loc l /\ 
     l =!= 0 /\ 
     points_to l v s /\
-    (exists x_old. emp (override s._1 "x" x_old, override s._2 l Empty, Ok))
+    (exists x_old. emp (override s._1 "x" x_old, override s._2 l Unknown, Ok))
 
 let post_free (s : state) : prop =
   exists (v : value). 

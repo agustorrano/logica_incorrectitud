@@ -52,7 +52,7 @@ let variant (k : nat) : cond =
   fun (st, _, m) -> k <= 1000000 /\ st "n" == Nat 1000000 /\ st "i" == Nat k /\ st "j" == Nat k /\ m == Ok
 
 let pre_assign (k : nat) : cond = 
-  fun s -> variant k s /\ eval_expr s (Lt (Var "i") (Var "n")) == 0 /\ s._3 == Ok
+  fun s -> variant k s /\ eval_expr s (Lt (Var "i") (Var "n")) =!= 0 /\ s._3 == Ok
 
 let pre_assert : cond = 
   fun s -> exists (k : nat). variant k s
@@ -106,7 +106,7 @@ let proof_loop_step (k : nat) : isl_triple (is_ok (variant k)) loop_body (varian
   let p_j = ISL_ChoiceL p_j_branch in
   let p_ij = ISL_Seq p_i p_j in
 
-  let mid_assumed : cond = fun s -> variant k s /\ eval_expr s (Lt (Var "i") (Var "n")) == 0 in
+  let mid_assumed : cond = fun s -> variant k s /\ eval_expr s (Lt (Var "i") (Var "n")) =!= 0 in
   let expected_post_ij : cond = fun s -> variant (k + 1) s \/ s._3 == Er /\ mid_i k s in
 
   let p_ij_adapted = 
@@ -146,7 +146,7 @@ let proof_assert : isl_triple (is_ok pre_assert) (Seq (Assume (Eq (Var "i") (Var
   let p_exit = ISL_Consequence pre_assert (variant 1000000) p_exit_raw () () in
   
   let p_cond_err_raw = ISL_Assume #(variant 1000000) (Eq (Var "j") (Var "n")) in
-  let pre_error_state : cond = fun s -> variant 1000000 s /\ eval_expr s (Eq (Var "j") (Var "n")) == 0 in
+  let pre_error_state : cond = fun s -> variant 1000000 s /\ eval_expr s (Eq (Var "j") (Var "n")) =!= 0 in
   let p_cond_err = ISL_Consequence (variant 1000000) pre_error_state p_cond_err_raw () () in
   let p_err_raw = ISL_Error #pre_error_state in
   

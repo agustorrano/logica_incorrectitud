@@ -1,0 +1,35 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {chapter}{Resumen}{4}{chapter*.2}%
+\contentsline {chapter}{Agradecimientos}{5}{chapter*.3}%
+\contentsline {chapter}{Preliminares}{6}{chapter*.4}%
+\contentsline {chapter}{\numberline {1}Introducción}{8}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Motivación}{8}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Objetivos del trabajo}{9}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Estructura de la tesina}{9}{section.1.3}%
+\contentsline {chapter}{\numberline {2}Conceptos previos}{10}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Lógica de Incorrectitud (IL)}{10}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Lógica de Separación (SL)}{17}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Lógica de Incorrectitud de Separación (ISL)}{21}{section.2.3}%
+\contentsline {section}{\numberline {2.4}El lenguaje F$^\star ${}}{26}{section.2.4}%
+\contentsline {chapter}{\numberline {3}Formalización de IL}{30}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Lenguaje y semántica operacional}{30}{section.3.1}%
+\contentsline {section}{\numberline {3.2}La IL como tipo inductivo}{34}{section.3.2}%
+\contentsline {section}{\numberline {3.3}La Regla de Consecuencia}{36}{section.3.3}%
+\contentsline {section}{\numberline {3.4}El Teorema de Soundness}{37}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Formalización de ISL}{40}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Extensión del lenguaje y del modelo de estado}{40}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Álgebra de \emph {heaps} y aserciones espaciales}{41}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Semántica operacional y metateoría}{43}{section.4.3}%
+\contentsline {section}{\numberline {4.4}La ISL como tipo inductivo}{45}{section.4.4}%
+\contentsline {section}{\numberline {4.5}El Teorema de Soundness}{46}{section.4.5}%
+\contentsline {section}{\numberline {4.6}El Teorema de la Huella}{48}{section.4.6}%
+\contentsline {chapter}{\numberline {5}Evaluación}{56}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Detección de errores espaciales básicos (\emph {Use After Free})}{56}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Reasignación de memoria y punteros colgantes}{58}{section.5.2}%
+\contentsline {section}{\numberline {5.3}No determinismo y razonamiento paramétrico sobre bucles}{59}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Recorrido de una lista enlazada}{61}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Resumen de los resultados}{63}{section.5.5}%
+\contentsline {chapter}{\numberline {6}Conclusiones}{65}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Resumen de aportes}{65}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Trabajo relacionado}{66}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Trabajo futuro}{69}{section.6.3}%

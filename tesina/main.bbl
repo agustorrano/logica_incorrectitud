@@ -1,0 +1,141 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Appel and Blazy(2007)]{cminor}
+Andrew~W. Appel and Sandrine Blazy.
+\newblock Separation logic for small-step cminor.
+\newblock In Klaus Schneider and Jens Brandt, editors, \emph{Theorem Proving in Higher Order Logics}, pages 5--21, Berlin, Heidelberg, 2007. Springer Berlin Heidelberg.
+\newblock ISBN 978-3-540-74591-4.
+
+\bibitem[Bertot and Castéran(2004)]{coq}
+Yves Bertot and Pierre Castéran.
+\newblock \emph{Interactive theorem proving and program development. Coq'Art: The Calculus of inductive constructions.}
+\newblock Springer Berlin Heidelberg, 01 2004.
+\newblock ISBN 3540208542.
+\newblock \doi{10.1007/978-3-662-07964-5}.
+
+\bibitem[Brumley et~al.(2011)Brumley, Jager, Avgerinos, and Schwartz]{bap}
+David Brumley, Ivan Jager, Thanassis Avgerinos, and Edward~J. Schwartz.
+\newblock Bap: a binary analysis platform.
+\newblock In \emph{Proceedings of the 23rd International Conference on Computer Aided Verification}, CAV'11, page 463–469, Berlin, Heidelberg, 2011. Springer-Verlag.
+\newblock ISBN 9783642221095.
+
+\bibitem[Calcagno et~al.(2011)Calcagno, Distefano, O’Hearn, and Yang]{biabd}
+Cristiano Calcagno, Dino Distefano, Peter~W. O’Hearn, and Hongseok Yang.
+\newblock Compositional shape analysis by means of bi-abduction.
+\newblock \emph{J. ACM}, 58\penalty0 (6), December 2011.
+\newblock ISSN 0004-5411.
+\newblock \doi{10.1145/2049697.2049700}.
+\newblock URL \url{https://doi.org/10.1145/2049697.2049700}.
+
+\bibitem[Calcagno et~al.(2015)Calcagno, Distefano, Dubreil, Gabi, Hooimeijer, Luca, O'Hearn, Papakonstantinou, Purbrick, and Rodriguez]{fast}
+Cristiano Calcagno, Dino Distefano, Jeremy Dubreil, Dominik Gabi, Pieter Hooimeijer, Martino Luca, Peter O'Hearn, Irene Papakonstantinou, Jim Purbrick, and Dulma Rodriguez.
+\newblock Moving fast with software verification.
+\newblock In Klaus Havelund, Gerard Holzmann, and Rajeev Joshi, editors, \emph{NASA Formal Methods}, pages 3--11, Cham, 2015. Springer International Publishing.
+\newblock ISBN 978-3-319-17524-9.
+
+\bibitem[Distefano et~al.(2019)Distefano, F\"{a}hndrich, Logozzo, and O'Hearn]{facebook}
+Dino Distefano, Manuel F\"{a}hndrich, Francesco Logozzo, and Peter~W. O'Hearn.
+\newblock Scaling static analyses at facebook.
+\newblock \emph{Commun. ACM}, 62\penalty0 (8):\penalty0 62–70, July 2019.
+\newblock ISSN 0001-0782.
+\newblock \doi{10.1145/3338112}.
+\newblock URL \url{https://doi.org/10.1145/3338112}.
+
+\bibitem[Floyd(1967)]{floyd67}
+Robert~W. Floyd.
+\newblock Assigning meanings to programs.
+\newblock \emph{Proceedings of Symposium on Applied Mathematics}, 19:\penalty0 19--32, 1967.
+\newblock URL \url{http://laser.cs.umass.edu/courses/cs521-621.Spr06/papers/Floyd.pdf}.
+
+\bibitem[Gordon(2000)]{hol4}
+Mike Gordon.
+\newblock \emph{From LCF to HOL: a short history}, page 169–185.
+\newblock MIT Press, Cambridge, MA, USA, 2000.
+\newblock ISBN 0262161885.
+
+\bibitem[Griffin et~al.(2025)Griffin, Dongol, and Raad]{isabil}
+Matt Griffin, Brijesh Dongol, and Azalea Raad.
+\newblock {IsaBIL: A Framework for Verifying (In)correctness of Binaries in Isabelle/HOL}.
+\newblock In Jonathan Aldrich and Alexandra Silva, editors, \emph{39th European Conference on Object-Oriented Programming (ECOOP 2025)}, volume 333 of \emph{Leibniz International Proceedings in Informatics (LIPIcs)}, pages 14:1--14:30, Dagstuhl, Germany, 2025. Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik.
+\newblock ISBN 978-3-95977-373-7.
+\newblock \doi{10.4230/LIPIcs.ECOOP.2025.14}.
+\newblock URL \url{https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ECOOP.2025.14}.
+
+\bibitem[Hoare(1969)]{hoare}
+C.~A.~R. Hoare.
+\newblock An axiomatic basis for computer programming.
+\newblock \emph{Commun. ACM}, 12\penalty0 (10):\penalty0 576–580, October 1969.
+\newblock ISSN 0001-0782.
+\newblock \doi{10.1145/363235.363259}.
+\newblock URL \url{https://doi.org/10.1145/363235.363259}.
+
+\bibitem[Howard(1980)]{howard}
+William~Alvin Howard.
+\newblock The formulae-as-types notion of construction.
+\newblock In Haskell Curry, Hindley B., Seldin~J. Roger, and P.~Jonathan, editors, \emph{To H. B. Curry: Essays on Combinatory Logic, Lambda Calculus, and Formalism}. Academic Press, 1980.
+
+\bibitem[Jacobs et~al.(2011)Jacobs, Smans, Philippaerts, Vogels, Penninckx, and Piessens]{verifast}
+Bart Jacobs, Jan Smans, Pieter Philippaerts, Fr{\'e}d{\'e}ric Vogels, Willem Penninckx, and Frank Piessens.
+\newblock Verifast: a powerful, sound, predictable, fast verifier for c and java.
+\newblock In \emph{Proceedings of the Third International Conference on NASA Formal Methods}, NFM'11, page 41–55, Berlin, Heidelberg, 2011. Springer-Verlag.
+\newblock ISBN 9783642203978.
+
+\bibitem[Le et~al.(2022)Le, Raad, Villard, Berdine, Dreyer, and O'Hearn]{bugs}
+Quang~Loc Le, Azalea Raad, Jules Villard, Josh Berdine, Derek Dreyer, and Peter~W. O'Hearn.
+\newblock Finding real bugs in big programs with incorrectness logic.
+\newblock \emph{Proc. ACM Program. Lang.}, 6\penalty0 (OOPSLA1), April 2022.
+\newblock \doi{10.1145/3527325}.
+\newblock URL \url{https://doi.org/10.1145/3527325}.
+
+\bibitem[Myreen and Gordon(2007)]{mchoare}
+Magnus~O. Myreen and Michael J.~C. Gordon.
+\newblock Hoare logic for realistically modelled machine code.
+\newblock In \emph{Proceedings of the 13th International Conference on Tools and Algorithms for the Construction and Analysis of Systems}, TACAS'07, page 568–582, Berlin, Heidelberg, 2007. Springer-Verlag.
+\newblock ISBN 9783540712084.
+
+\bibitem[O'Hearn(2019{\natexlab{a}})]{sl2}
+Peter O'Hearn.
+\newblock Separation logic.
+\newblock \emph{Commun. ACM}, 62\penalty0 (2):\penalty0 86–95, January 2019{\natexlab{a}}.
+\newblock ISSN 0001-0782.
+\newblock \doi{10.1145/3211968}.
+\newblock URL \url{https://doi.org/10.1145/3211968}.
+
+\bibitem[O'Hearn(2019{\natexlab{b}})]{inclog}
+Peter~W. O'Hearn.
+\newblock Incorrectness logic.
+\newblock \emph{Proc. ACM Program. Lang.}, 4\penalty0 (POPL), December 2019{\natexlab{b}}.
+\newblock \doi{10.1145/3371078}.
+\newblock URL \url{https://doi.org/10.1145/3371078}.
+
+\bibitem[Raad et~al.(2020)Raad, Berdine, Dang, Dreyer, O'Hearn, and Villard]{isl}
+Azalea Raad, Josh Berdine, Hoang-Hai Dang, Derek Dreyer, Peter O'Hearn, and Jules Villard.
+\newblock Local reasoning about the presence of bugs: Incorrectness separation logic.
+\newblock In Shuvendu~K. Lahiri and Chao Wang, editors, \emph{Computer Aided Verification}, pages 225--252, Cham, 2020. Springer International Publishing.
+\newblock ISBN 978-3-030-53291-8.
+
+\bibitem[Raad et~al.(2022)Raad, Berdine, Dreyer, and O'Hearn]{cisl}
+Azalea Raad, Josh Berdine, Derek Dreyer, and Peter~W. O'Hearn.
+\newblock Concurrent incorrectness separation logic.
+\newblock \emph{Proc. ACM Program. Lang.}, 6\penalty0 (POPL), January 2022.
+\newblock \doi{10.1145/3498695}.
+\newblock URL \url{https://doi.org/10.1145/3498695}.
+
+\bibitem[Reynolds(2002)]{sl}
+J.C. Reynolds.
+\newblock Separation logic: a logic for shared mutable data structures.
+\newblock In \emph{Proceedings 17th Annual IEEE Symposium on Logic in Computer Science}, pages 55--74, 2002.
+\newblock \doi{10.1109/LICS.2002.1029817}.
+
+\bibitem[Swamy et~al.(2025)Swamy, Mart{\'i}nez, and Rastogi]{fstar}
+Nikhil Swamy, Guido Mart{\'i}nez, and Aseem Rastogi.
+\newblock \emph{Proof-Oriented Programming in F*}.
+\newblock F* Project, 2025.
+\newblock URL \url{https://fstar-lang.org/tutorial/proof-oriented-programming-in-fstar.pdf}.
+
+\end{thebibliography}

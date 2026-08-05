@@ -92,7 +92,7 @@ let mid_sum (start_ptr : loc) : cond =
   fun s -> pre_init start_ptr s /\ s._1 "sum" == Nat 0
 
 let mid_assume (start_ptr : loc) (k : nat) : cond =
-  fun s -> variant start_ptr k s /\ eval_expr s (enot (Eq (Var "ptr") (Const 0))) == 0
+  fun s -> variant start_ptr k s /\ eval_expr s (enot (Eq (Var "ptr") (Const 0))) =!= 0
 
 let post_load_v (start_ptr : loc) (k : nat) : cond =
   fun s ->
@@ -134,7 +134,7 @@ let pre_assert (start_ptr : loc) : cond =
 
 let pre_error (start_ptr : loc) : cond =
   fun s -> variant start_ptr n_target s /\ s._1 "ptr" == Loc 0 /\
-           eval_expr s (Eq (Var "sum") (Var "len")) == 0
+           eval_expr s (Eq (Var "sum") (Var "len")) =!= 0
 
 let post_error (start_ptr : loc) : cond =
   fun s -> s._3 == Er /\ pre_error start_ptr (s._1, s._2, Ok)
@@ -260,7 +260,7 @@ let lemma_empty_lseg (n : nat) (s : state)
   | _ -> ()
 
 let lemma_exit_target (start_ptr : loc) (s : state)
-  : Lemma (requires (pre_assert start_ptr s /\ eval_expr s (Eq (Var "ptr") (Const 0)) == 0))
+  : Lemma (requires (pre_assert start_ptr s /\ eval_expr s (Eq (Var "ptr") (Const 0)) =!= 0))
           (ensures (pre_error start_ptr s)) =
   let k = FStar.IndefiniteDescription.indefinite_description_ghost nat
     (fun k -> variant start_ptr k s)
@@ -292,7 +292,7 @@ let proof_init (start_ptr: loc) : isl_triple (is_ok (pre_init start_ptr)) init_v
 
 let proof_loop_step (start_ptr : loc) (k : nat)
   : isl_triple (is_ok (variant start_ptr k)) loop_body (variant start_ptr (k + 1)) =
-  let pre_assume s = variant start_ptr k s /\ eval_expr s (enot (Eq (Var "ptr") (Const 0))) == 0 in
+  let pre_assume s = variant start_ptr k s /\ eval_expr s (enot (Eq (Var "ptr") (Const 0))) =!= 0 in
   let p_assumed = ISL_Assume #(variant start_ptr k) (enot (Eq (Var "ptr") (Const 0))) in
 
   let p_load_v_raw = ISL_Load #(mid_assume start_ptr k) "v" (Var "ptr") in

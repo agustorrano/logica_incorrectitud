@@ -1580,3 +1580,11 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let f_store = F_StoreNull st e1 e2 #() in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h f_store () () in
     FF_Ext (Store e1 e2) s0_framed s1_framed ff s0 s1 () ()
+ 
+let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
+  : GTot (runsto p s0 s1) =
+  framed_footprint_sound p s0 s1 ff
+
+let footprint_theorem_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
+  : GTot (framed_footprint p s0 s1) =
+  runsto_decompose r

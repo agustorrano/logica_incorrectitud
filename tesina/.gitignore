@@ -8,3 +8,4 @@ comment.cut
 *.synctex*
 *.fdb_latexmk
 *.fls
+*.pdf

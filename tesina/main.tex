@@ -3353,31 +3353,31 @@ La comparación permite mostrar una posible línea de investigación futura, usa
 
 \subsection*{Mizzle: mecanización de una lógica de incorrectitud concurrente}
 \citet{mizzle} presentan Mizzle, una lógica de incorrectitud con separación para programas concurrentes escritos en OCaml 5.
-El desarrollo se encuntra mecanizado en Rocq sobre el framework Iris y cuenta con demostraciones de \emph{soundness} y \emph{completeness}.
+El desarrollo se encuentra mecanizado en Rocq sobre el framework Iris y cuenta con demostraciones de \emph{soundness} y \emph{completeness}.
 Mientras que \emph{soundness} garantiza que una derivación de Mizzle está respaldada por una ejecución real, \emph{completeness} establece que toda ejecución incorrecta considerada por el modelo puede representarse mediante una derivación de la lógica.
 
-Este trabajo es el más cercano a esta tesina porque los dos meacanizan razonamiento sub-aproximado junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
-Sin embargo, los dos desarrollos persiguen objetifos diferentes.
-Mizzle se enfoca en un leguaje más expresivo, con funciones de orden superior y concurrencia, mientras que en esta tesina se usa un lenguaje imperativo simplificado para estudiar la estructura metateórica de la ISL.
+Este trabajo es el más cercano a esta tesina porque los dos mecanizan razonamiento sub-aproximado junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
+Sin embargo, los dos desarrollos persiguen objetivos diferentes.
+Mizzle se enfoca en un lenguaje más expresivo, con funciones de orden superior y concurrencia, mientras que en esta tesina se usa un lenguaje imperativo simplificado para estudiar la estructura metateórica de la ISL.
 Por otro lado, Mizzle no incorpora liberación de memoria, mientras que la formalización desarrollada en esta tesina modela la liberación con \emph{heaps} negativos y usa esta información para demostrar errores de \emph{use after free} o \emph{double free}.
 
 Un aspecto interesante de Mizzle es su utilización como lenguaje de prueba para agentes basados en modelos de lenguaje.
-La propuesta consiste en no confiar en el razonamiento interno del LLM para decidir si un error es real, sino exigir que el modelo genere una demostración que pueda ser comporbada por Rocq.
-En su evalueación, los autores usan Claude Sonnet 5 junto con una guía de prueba, una descripción de la arquitectura del proyecto y una biblioetca de tácticas.
+La propuesta consiste en no confiar en el razonamiento interno del LLM para decidir si un error es real, sino exigir que el modelo genere una demostración que pueda ser comprobada por Rocq.
+En su evaluación, los autores usan Claude Sonnet 5 junto con una guía de prueba, una descripción de la arquitectura del proyecto y una biblioteca de tácticas.
 
-Motivados por esta propuesta, se realizó un experimento exploratorio para evaluar si un modelo de languaje podía usar la formalización desarrollada en esta tesina oara verificar la presencia de errores en los programas.
+Motivados por esta propuesta, se realizó un experimento exploratorio para evaluar si un modelo de lenguaje podía usar la formalización desarrollada en esta tesina para verificar la presencia de errores en los programas.
 Para ello, en primer lugar se usó Claude Sonnet 5 para generar un programa en C que contuviera algún error de memoria.
 En el programa creado, hay una función \texttt{apply\_catchup\_bonus} que conserva en una variable \texttt{lowest} un puntero a un elemento del arreglo dinámico \texttt{q->items} y luego invoca \texttt{queue\_push}.
 Cuando la cola se llena, \texttt{queue\_push} ejecuta \texttt{realloc}.
-Si este último mueve el arreglo a una nueva ubicación, \texttt{lowest} queda apuntando a memoria liberada y la próxima escritura en \texttt{lowest->score} es una caso de \emph{use after free}.
+Si este último mueve el arreglo a una nueva ubicación, \texttt{lowest} queda apuntando a memoria liberada y la próxima escritura en \texttt{lowest->score} es un caso de \emph{use after free}.
 
-En segundo lugar, se le proporcionó a un agente basado en GPT-5.5 EL repositorio que contenía la formalización desarrollada junto con sus casos de uso, y se le solicitó verificar el programa generado.
+En segundo lugar, se le proporcionó a un agente basado en GPT-5.5 el repositorio que contenía la formalización desarrollada junto con sus casos de uso, y se le solicitó verificar el programa generado.
 El agente identificó el camino de ejecución que conduce al error y produjo un archivo de \fstar{}, donde abstrajo el efecto relevante de \texttt{realloc}.
 Construyó una derivación de la ISL usando las reglas de la formalización y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
 La demostración generada fue aceptada por \fstar{}.
 
 Este experimento es una prueba preliminar y no pretende evaluar la capacidad de los LLM para construir pruebas formales.
-Sin embargo, muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático construya certificados de incorrectitud que luegos puedan ser comporbados por \fstar{}.
+Sin embargo, muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
 
 \subsection*{Resumen}
 La formalización propuesta en este trabajo se encuentra de alguna forma entre todos los desarrollos antes mencionados.

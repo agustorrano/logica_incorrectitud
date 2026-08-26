@@ -29,26 +29,28 @@
 % Abstract
 \chapter*{Resumen}
 \addcontentsline{toc}{chapter}{Resumen}
-Desde los inicios de la verificación formal de software, la atención se ha centrado en asegurar la correctitud de los programas, es decir, la ausencia total de errores. 
+Desde los inicios de la verificación formal de software, la atención se ha centrado en asegurar la correctitud de los programas, es decir, la ausencia total de errores.
 Con este fin, sistemas como la Lógica de Hoare y la Lógica de Separación proveen las bases matemáticas para demostrar formalmente que un programa se comporta según su especificación.
 Sin embargo, la aplicación de estos sistemas a programas de gran tamaño requiere mucho esfuerzo de especificación y prueba.
 
-Frente a estas limitaciones, la industria ha usualmente preferido usar herramientas como analizadores estáticos, herramientas que hacen un mejor esfuerzo para encontrar errores de forma automática. 
-A diferencia de los demostradores de correctitud, estos analizadores suelen emplear abstracciones y aproximaciones de los comportamientos posibles del programa perdiendo precisión en pos de escalabilidad. 
-Aunque estas técnicas pueden estar respaldadas por fundamentos formales, suelen reportar muchos falsos positivos, es decir, advertencias sobre errores que en realidad no son alcanzables en ninguna ejecución real del programa. 
+Frente a estas limitaciones, la industria ha usualmente preferido usar herramientas como analizadores estáticos, herramientas que hacen un mejor esfuerzo para encontrar errores de forma automática.
+A diferencia de los demostradores de correctitud, estos analizadores suelen emplear abstracciones y aproximaciones de los comportamientos posibles del programa perdiendo precisión en pos de escalabilidad.
+Aunque estas técnicas pueden estar respaldadas por fundamentos formales, suelen reportar muchos falsos positivos, es decir, advertencias sobre errores que en realidad no son alcanzables en ninguna ejecución real del programa.
 Esto reduce la confianza y productividad de los desarrolladores, quienes deben invertir tiempo en descartar manualmente errores mal advertidos.
 %\guido{Creo que reescribiría la oración para hablar 1) de demostradores de correctitud y 2) de analizadores estáticos. Ambos tienen problemas. Pero un analizador estático es una herramienta que hace un mejor esfuerzo para encontrar bugs, no están basados directamente en una lógica de correctitud (salvo haciendólos desviar muchísimo de la misma)}
 
-La Lógica de Incorrectitud surge como propuesta para invertir el paradigma tradicional al centrarse en la demostración de errores alcanzables, garantizando la ausencia de falsos positivos en los errores reportados. 
-Recientemente, esta teoría se combinó con el razonamiento local sobre la memoria de la Lógica de Separación, introduciendo la Lógica de Incorrectitud de Separación. 
+La Lógica de Incorrectitud surge como propuesta para invertir el paradigma tradicional al centrarse en la demostración de errores alcanzables, garantizando la ausencia de falsos positivos en los errores reportados.
+Recientemente, esta teoría se combinó con el razonamiento local sobre la memoria de la Lógica de Separación, introduciendo la Lógica de Incorrectitud de Separación.
 La mecanización de esta lógica constituye todavía un área de desarrollo reciente.
 
 Presentamos una formalización de la Lógica de Incorrectitud de Separación utilizando \fstar{}, un lenguaje de programación de tipos dependientes y asistente de pruebas.
 %\guido{Es cierto esto último? Me parece que la cosa no quedó muy modular}
 Por el lado teórico, demostramos las metapropiedades fundamentales de la lógica dentro del asistente de pruebas, haciendo especial énfasis en probar su solidez (\textit{soundness}) matemática para asegurar que cada error detectado sea verdaderamente alcanzable.
-Por el lado concreto, utilizamos la lógica formalizada para demostrar la existencia de errores en programas no triviales que hacen uso de estado mutable. 
+Por el lado concreto, utilizamos la lógica formalizada para demostrar la existencia de errores en programas no triviales que hacen uso de estado mutable.
 %\remove{De esta forma, buscamos darle una base matemática segura y verificada a las herramientas que detectan errores automáticamente.}
 %\guido{no pondría esto en el resumen, sólo la breve intro + lo que hicimos}
+
+\guido{perfecto el resumen}
 
 \chapter*{Agradecimientos}
 \addcontentsline{toc}{chapter}{Agradecimientos}
@@ -61,53 +63,82 @@ Agradezco a ...
 
 \chapter*{Preliminares}
 \addcontentsline{toc}{chapter}{Preliminares}
-A lo largo de este trabajo se asume que el lector posee familiaridad con la lógica de primer orden, teoría elemental de conjuntos, relaciones binarias, funciones y fundamentos de la verificación formal de programas, en particular de la Lógica de Hoare (HL). 
+A lo largo de este trabajo se asume que el lector posee familiaridad con la lógica de primer orden, teoría elemental de conjuntos, relaciones binarias, funciones y fundamentos de la verificación formal de programas, en particular de la Lógica de Hoare (HL).
 A continuación repasamos brevemente las nociones que se utilizan en los capítulos siguientes, con el fin de fijar la notación y facilitar la comparación entre la Lógica de Hoare y la Lógica de Incorrectitud (IL).
 
 Sea $\Sigma$ el conjunto de estados posibles de un programa.
+\guido{estado = contenido de la memoria? no incluye program counter, stack, etc}
 Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop}$.
-Semánticamente, una aserción puede identificarse con el conjunto de estados que la satisfacen:
+\guido{``Prop'' no va a ser entendido por todo lector, por ahí podés decir
+algo mínimo sobre Prop, o usar Bool ($\mathbb{B}$)}
+Semánticamente, \guido{y usualmente?} una aserción puede identificarse con el conjunto de estados que la satisfacen:
 $$[\![p]\!] = \{\sigma \in \Sigma \mid p(\sigma)\}$$
 En lo que sigue se utilizará esta identificación de manera implícita.
 Por lo tanto, las expresiones $\sigma \in p$ y $p(\sigma)$ se considerarán equivalentes.
+\guido{está muy bien aclararlo, por cierto}
 
 El comportamiento de un programa se representa mediante una relación binaria sobre estados $R \subseteq \Sigma \times \Sigma$.
 La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma'$ puede obtenerse a partir del estado $\sigma$ mediante la transición representada por $R$.
+\guido{R es un programa y ejecuta por completo, no? de alguna forma esto
+es semántica big-step}
 
 A partir de esta relación y una aserción, podemos definir la imagen posterior de $p$ mediante $R$ como:
 $$\operatorname{post}(R)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}$$
+\guido{``Es decir,''}
 La expresión $\operatorname{post}(R)(p)$ contiene exactamente los estados que pueden alcanzarse mediante una transición de $R$ desde algún estado que satisface $p$.
+\guido{Notar que se permite que R sea no determinista, i.e. que haya
+varios estados $q$ tales que $p~R~q$, e incluso que la postimagen sea vacía}
 
 Para un comando $C$, denotaremos su relación semántica mediante $[\![C]\!] \subseteq \Sigma \times \Sigma$.
 Por abreviación escribiremos:
 $$\operatorname{post}(C)(p) = \operatorname{post}([\![C]\!])(p)$$
+\guido{estaba leyendo R arriba como un comando, pero era una relacion. Por ahi
+podemos escribir una subseccion que solamente habla de relaciones, pre- y post-imagen, etc,
+y luego otra que habla de programas (que terminan siendo relaciones, pero ahi
+hay que explicar qué significa que tenga varios o ningún resultado)}
 
 A lo largo del trabajo se distinguirán dos niveles de razonamiento.
 La noción $\vdash_{\mathcal{L}} S$ indica que la especificación $S$ puede derivarse mediante las reglas de inferencia del sistema deductivo $\mathcal{L}$.
 En cambio, $\models_{\mathcal{L}} S$ indica que $S$ es válida respecto de la semántica del lenguaje.
+\guido{Este párrafo no fluye, es algo totalmente distinto a lo anterior.
+Empezaría recordando lo que es la HL (sig parrafo) y luego hablaria de esto.}
 
-La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación. 
+La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación.
 Su unidad básica es la tripleta de Hoare:
 $$\triple{p}{C}{q}$$
 donde $p$ y $q$ son aserciones (predicados sobre el estado del programa) y $C$ es un comando.
 
-Esta notación establece que si el programa $C$ se ejecuta a partir de un estado que satisface la precondición $p$, y dicha ejecución termina, entonces el estado resultante satisface la postcondición $q$. 
+Esta notación establece \guido{``esta tripleta denota''} que si el programa $C$ se ejecuta a partir de un estado que satisface la precondición $p$, y dicha ejecución termina, entonces el estado resultante satisface la postcondición $q$.
 Esta es una correctitud parcial, ya que la tripleta no garantiza que la ejecución vaya a terminar, sino que, en caso de terminar, el resultado será el esperado.
+\guido{esto no es siempre así, hay versiones totales y parciales de HL (y SL, etc).
+Acá siempre hacemos parcial? está bien, pero conviene aclararlo.}
 Semánticamente:
 $$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}(C)(p) \subseteq q$$
 
-Esta es la noción de sobre-aproximación, $q$ puede describir más estados de los que el programa realmente alcanza, pero nunca menos. 
+\guido{arranca raro el parrafo sig, yo diria: en una tripleta de hoare,
+entonces, $q$ es una \emph{sobreaproximación} de la postimagen de $p$ mediante $C$,
+pudiendo contener muchos más estados de los que realmente se alcanzan.}
+
+Esta es la noción de sobre-aproximación, $q$ puede describir más estados de los que el programa realmente alcanza, pero nunca menos.
 Cuando este principio se utiliza en analizadores automáticos orientados a buscar errores, esos estados pueden dar lugar a falsos positivos.
+\guido{en esta seccion de preliminares eliminaria esta ultima oración,
+no se introdujo nada de eso y un lector no la va a entender.}
 
 También se asume familiaridad con la Regla de Consecuencia de la HL, que permite debilitar la postcondición y fortalecer la precondición de una tripleta ya demostrada:
+\guido{Recordamos tambien la regla de consecuencia de la HL, que permite
+fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
+Esta regla nuevamente refleja la característica sobreaproximante(?) de la HL, dado
+que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente, sin afectar la validez de la tripleta.}
 \begin{mathpar}
 \inferrule []
     {p' \implies p \\ \triple{p}{C}{q} \\ q \implies q'}
     {\triple{p'}{C}{q'}}
 \end{mathpar}
 
-Finalmente, se asume familiaridad con los conceptos básicos de programación funcional y teoría de tipos, como tipos inductivos, recursión estructural, cuantificación existencial y universal. 
+Finalmente, se asume familiaridad con los conceptos básicos de programación funcional y teoría de tipos, como tipos inductivos, recursión estructural, cuantificación existencial y universal.
 Estos son los pilares sobre los que se apoya \fstar{}, el lenguaje utilizado en este trabajo.
+\guido{esto lo sacaria y lo pondria en 2.4, o ni siquiera ahi porque introducís estos
+conceptos.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,9 +151,9 @@ Estos son los pilares sobre los que se apoya \fstar{}, el lenguaje utilizado en 
 \raggedleft --- C. A. R. Hoare
 \end{quote}
 
-En este primer capítulo se presenta el propósito general del trabajo. 
-En primer lugar, se expone la motivación que dio origen a la tesina y el problema que se busca abordar. 
-Luego, se formulan sus objetivos generales. 
+En este primer capítulo se presenta el propósito general del trabajo.
+En primer lugar, se expone la motivación que dio origen a la tesina y el problema que se busca abordar.
+Luego, se formulan sus objetivos generales.
 Finalmente, se describe la organización del documento y se resume el contenido de cada uno de los capítulos.
 
 \section{Motivación}
@@ -137,17 +168,17 @@ En cambio, los analizadores estáticos priorizan la automatización y la escalab
 Para proporcionar garantías rigurosas sobre los errores reportados, estos análisis deben tener base en algún marco teórico apropiado y bien entendido.
 Con este propósito, \citet{inclog} introdujo la Lógica de Incorrectitud (IL), una propuesta reciente que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
 
-La IL se basa en la sub-aproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales. 
-En consecuencia, si el sistema permite derivar un error, existe una traza de ejecución que conduce hasta él. 
+La IL se basa en la sub-aproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales.
+En consecuencia, si el sistema permite derivar un error, existe una traza de ejecución que conduce hasta él.
 La lógica puede no representar todos los comportamientos posibles y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.
 
-La IL es análoga a la HL para incorrectitud. 
-Siendo así, sufre de limitaciones similares a la hora de razonar sobre programas con estado mutable y estructuras de datos complejas. 
-En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos. 
-Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL. 
+La IL es análoga a la HL para incorrectitud.
+Siendo así, sufre de limitaciones similares a la hora de razonar sobre programas con estado mutable y estructuras de datos complejas.
+En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
+Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 
-Las definiciones y metapropiedades de una lógica pueden demostrarse matemáticamente sobre un papel. 
-Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar. 
+Las definiciones y metapropiedades de una lógica pueden demostrarse matemáticamente sobre un papel.
+Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar.
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas, de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
 En esta tesina se usa \fstar{}, un lenguaje de programación orientado a pruebas que combina tipos dependientes, especificaciones lógicas y automatización mediante el solucionador SMT Z3.
 
@@ -174,7 +205,7 @@ Sin embargo, la reutilización directa del núcleo para distintos lenguajes conc
 \label{sec:estructura}
 El resto de la tesina se organiza de la siguiente manera.
 
-El \autoref{cap:conceptos-previos} presenta los conceptos teóricos necesarios para el desarrollo del trabajo. 
+El \autoref{cap:conceptos-previos} presenta los conceptos teóricos necesarios para el desarrollo del trabajo.
 Se introducen la IL, la SL, la ISL y las características principales de \fstar{} necesarias para entender la mecanización.
 
 El \autoref{cap:formalizacion-il} desarrolla la formalización de la IL.
@@ -198,28 +229,28 @@ Finalmente, el \autoref{cap:conclusiones} resume los resultados obtenidos, los t
 \raggedleft --- Edsger W. Dijkstra
 \end{quote}
 
-En este capítulo se describen los fundamentos teóricos de las lógicas formalizadas a lo largo de este trabajo, abordando sus conceptos centrales y reglas de inferencia. 
+En este capítulo se describen los fundamentos teóricos de las lógicas formalizadas a lo largo de este trabajo, abordando sus conceptos centrales y reglas de inferencia.
 Asimismo, se presenta una introducción a \fstar, el lenguaje y asistente de pruebas utilizado para el desarrollo práctico.
 
-En primer lugar, se expone la Lógica de Incorrectitud, seguida por la Lógica de Separación, detallando las definiciones formales y las particularidades de cada sistema. 
+En primer lugar, se expone la Lógica de Incorrectitud, seguida por la Lógica de Separación, detallando las definiciones formales y las particularidades de cada sistema.
 Luego, se introduce la Lógica de Incorrectitud de Separación.
 
 \section{Lógica de Incorrectitud (IL)}
 \label{sec:loginc}
-Desde los inicios de la verificación formal, el enfoque predominante ha sido garantizar la ausencia de errores en el software. 
-Sin embargo, en el desarrollo de software a escala industrial, los programadores pasan gran parte de su tiempo razonando sobre código incorrecto y buscando errores. 
-La Lógica de Incorrectitud (IL), introducida por \citet{inclog}, propone lo inverso a la Lógica de Hoare. 
+Desde los inicios de la verificación formal, el enfoque predominante ha sido garantizar la ausencia de errores en el software.
+Sin embargo, en el desarrollo de software a escala industrial, los programadores pasan gran parte de su tiempo razonando sobre código incorrecto y buscando errores.
+La Lógica de Incorrectitud (IL), introducida por \citet{inclog}, propone lo inverso a la Lógica de Hoare.
 En lugar de razonar sobre la ausencia de errores, provee las bases para demostrar matemáticamente la presencia de los mismos mediante la sub-aproximación.
 
 La principal diferencia entre la IL y la HL se encuentra en la dirección de la aproximación utilizada.
 Mientras que la HL emplea sobre-aproximaciones para abarcar todos los comportamientos posibles de un programa, la IL utiliza sub-aproximaciones que describen únicamente comportamientos respaldados por ejecuciones reales.
 
-Antes de presentar las tripletas de incorrectitud, es necesario observar cómo se interpretan sus aserciones. 
+Antes de presentar las tripletas de incorrectitud, es necesario observar cómo se interpretan sus aserciones.
 Sea $\Sigma$ el conjunto de estados posibles del programa.
 Una aserción $p$ es un predicado sobre estados, es decir, una función $p : \Sigma \rightarrow \mathsf{Prop}$.
 Equivalentemente, puede identificarse con el conjunto de estados que la satisfacen:
 $$[\![ p ]\!] = \{\sigma \in \Sigma \mid p(\sigma) \}$$
-De ahora en más, utilizaremos indistintamente una aserción y el conjunto de estados que representa escribiendo $p \subseteq \Sigma$. 
+De ahora en más, utilizaremos indistintamente una aserción y el conjunto de estados que representa escribiendo $p \subseteq \Sigma$.
 
 La semántica de un comando puede representarse mediante una relación binaria entre estados.
 Para un comando $C$ y una condición de salida $\epsilon \in \{ok, er\}$, denotamos por
@@ -228,7 +259,7 @@ la relación que contiene exactamente los pares $(\sigma, \sigma')$ tales que $C
 
 \begin{definicion}[Post-imagen]
 \label{def:post-img}
-Sea $r \subseteq \Sigma \times \Sigma$ una relación entre estados y sea $p \subseteq \Sigma$ una aserción. 
+Sea $r \subseteq \Sigma \times \Sigma$ una relación entre estados y sea $p \subseteq \Sigma$ una aserción.
 La post-imagen $post(r) \in P(\Sigma) \rightarrow P(\Sigma)$ de $p$ mediante $r$ se define como:
 
 $$post(r)p = \{\sigma' \mid \exists \sigma \in p. (\sigma, \sigma') \in r\}$$
@@ -257,7 +288,7 @@ La post-imagen representa el conjunto exacto de estados alcanzables.
 Tanto la HL como la IL comparan sus resultados con este conjunto, pero lo hacen en direcciones opuestas.
 
 \begin{definicion}[Tripletas semánticas]
-Sean $r \subseteq \Sigma \times \Sigma$ una relación y $p$, $q \subseteq \Sigma$ dos aserciones. 
+Sean $r \subseteq \Sigma \times \Sigma$ una relación y $p$, $q \subseteq \Sigma$ dos aserciones.
 
 La tripleta sub-aproximada:
 
@@ -311,7 +342,7 @@ La caracterización anterior explica la utilidad de la IL para el análisis auto
 Si una herramienta demuestra una postcondición de error satisfacible, cada estado descrito por ella está respaldado por una ejecución real.
 De esta forma, la lógica evita reportar como errores estados finales que no sean alcanzables.
 
-Esta garantía se vuelve especialmente relevante en analizadores automáticos aplicados a bases de código extensas. 
+Esta garantía se vuelve especialmente relevante en analizadores automáticos aplicados a bases de código extensas.
 En ese contexto, una herramienta puede emitir miles de advertencias, y cada falso positivo requiere que un desarrollador inspeccione manualmente una ejecución que en realidad no puede producirse.
 Muchas falsas alarmas no solo incrementan el costo de revisión, sino que también reducen la confianza en el analizador y pueden provocar que se ignoren reportes válidos.
 
@@ -401,23 +432,23 @@ Las reglas de inferencia se presentan en la \autoref{fig:reglas-il}.
 %\guido{Podríamos explicar la estrella de kleene, en general estas reglas son sobre bucles y no sobre la estrella.}
 
 Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la post-imagen.
-La regla de \textsc{Consecuencia} permite debilitar la precondición y fortalecer la postcondición para achicar el espacio de estados. 
+La regla de \textsc{Consecuencia} permite debilitar la precondición y fortalecer la postcondición para achicar el espacio de estados.
 La regla de la \textsc{Disyunción} permite combinar derivaciones obtenidas independientemente desde diferentes conjuntos de estados iniciales.
 Esto se corresponde con el hecho de que la post-imagen preserva uniones, establecido en el Lema~\ref{lem:prop-pi}.
 
-\textsc{Skip} proporciona las aserciones esperadas para la terminación normal, es decir, no existe una ejecución de \texttt{skip} que finalice en el canal de error. 
+\textsc{Skip} proporciona las aserciones esperadas para la terminación normal, es decir, no existe una ejecución de \texttt{skip} que finalice en el canal de error.
 Por el contrario, en la regla \textsc{Error} todo el estado va al canal anormal (\emph{er}).
 
-Para el caso de secuenciación hay dos reglas. La primera regla (\textsc{Secuencia (error)}) se refiere al cortocircuito, que se da cuando se produce un error dentro del primer comando. 
+Para el caso de secuenciación hay dos reglas. La primera regla (\textsc{Secuencia (error)}) se refiere al cortocircuito, que se da cuando se produce un error dentro del primer comando.
 En este caso, el segundo comando no se ejecuta.
 La segunda (\textsc{Secuencia (normal)}), se da cuando el primer comando finaliza normalmente y se puede continuar con el segundo.
 
-La regla \textsc{Choice} determina que para alcanzar un estado basta con que una de las ramas del operador no determinista $+$ sea capaz de lograrlo. 
+La regla \textsc{Choice} determina que para alcanzar un estado basta con que una de las ramas del operador no determinista $+$ sea capaz de lograrlo.
 La lógica no exige analizar ambas cuando el objetivo es justificar una ejecución concreta.
 Por su parte, \textsc{Assume} filtra el estado mediante una proposición $B$ en el canal de éxito, sin generar errores.
 
-Las mutaciones de las variables operan hacia adelante. 
-\textsc{Asignación} introduce una variable lógica existencial $x'$ para retener el valor histórico previo de $x$ evitando pérdidas de precisión. 
+Las mutaciones de las variables operan hacia adelante.
+\textsc{Asignación} introduce una variable lógica existencial $x'$ para retener el valor histórico previo de $x$ evitando pérdidas de precisión.
 De forma análoga, la regla \textsc{Nondet} sobrescribe la variable con un valor indeterminado eliminando sus restricciones previas en la postcondición.
 
 El lenguaje utilizado incluye además el operador de estrella de Kleene $C^\star$.
@@ -427,22 +458,22 @@ $$
 (\texttt{assume}\ (B); C)^\star; \texttt{assume}\ (\neg B).
 $$
 
-Luego, el análisis de los bucles se descompone en tres reglas. 
-La regla \textsc{Kleene (base)} corresponde a la salida inmediata del bucle. 
-La regla \textsc{Kleene (paso)} utiliza estructuralmente la forma $C^\star; C$ en lugar de $C; C^\star$ para facilitar el razonamiento en casos donde se lanza un error dentro de una iteración. 
-En este escenario, pasarán iteraciones exitosas y el error se disparará en la última de ellas. 
+Luego, el análisis de los bucles se descompone en tres reglas.
+La regla \textsc{Kleene (base)} corresponde a la salida inmediata del bucle.
+La regla \textsc{Kleene (paso)} utiliza estructuralmente la forma $C^\star; C$ en lugar de $C; C^\star$ para facilitar el razonamiento en casos donde se lanza un error dentro de una iteración.
+En este escenario, pasarán iteraciones exitosas y el error se disparará en la última de ellas.
 Finalmente, la regla \textsc{Kleene (variante)} introduce el principio de inducción matemática sobre variables naturales para generalizar y propagar hacia adelante estos estados alcanzables que incrementan de forma predecible en cada vuelta.
 
 \subsection*{La Regla de Consecuencia y la sub-aproximación}
-Una de las diferencias lógicas más contraintuitivas de la IL respecto a la verificación clásica es el comportamiento de su Regla de Consecuencia. 
+Una de las diferencias lógicas más contraintuitivas de la IL respecto a la verificación clásica es el comportamiento de su Regla de Consecuencia.
 En correctitud, la Regla de Consecuencia permite olvidar información debilitando la postcondición para cubrir todos los caminos posibles, por ejemplo, eliminando conjunciones lógicas:
 
 $$\triple{p}{C}{q_1 \land q_2} \implies \triple{p}{C}{q_1}$$
 Esto es válido porque, si todos los estados alcanzables satisfacen $q_1 \land q_2$, también satisfacen $q_1$.
 
-En la IL, debilitar la postcondición de esta forma no es válido. 
+En la IL, debilitar la postcondición de esta forma no es válido.
 El sistema exige retener el contexto exacto del camino evaluado para garantizar que los estados sigan siendo alcanzables.
-En su lugar, la sub-aproximación permite descartar caminos enteros de ejecución basándose en su propia Regla de Consecuencia. 
+En su lugar, la sub-aproximación permite descartar caminos enteros de ejecución basándose en su propia Regla de Consecuencia.
 Esta se define de la siguiente manera:
 
 \[
@@ -472,12 +503,12 @@ En particular, si se sabe que la ejecución de un condicional alcanza los estado
          {\vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q_1}}
 \]
 
-Esta capacidad que tiene la IL es fundamental. 
+Esta capacidad que tiene la IL es fundamental.
 Permite que las herramientas de análisis automático enfoquen su exploración en trazas específicas y omitan el resto.
 
 \begin{ejemplo}
     Considere el siguiente fragmento de código y la presunción inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$:
-    
+
     \begin{verbatim}
     if (x is even) {
         if (y is odd) {
@@ -485,7 +516,7 @@ Permite que las herramientas de análisis automático enfoquen su exploración e
         }
     }
     \end{verbatim}
-    
+
     ¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$ es una sub-aproximación de los estados alcanzables por este código partiendo de la presunción?
 
     Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida, la Definición~\ref{def:trip-inc} exige:
@@ -502,18 +533,18 @@ Permite que las herramientas de análisis automático enfoquen su exploración e
 \end{ejemplo}
 
 \subsection*{Razonamiento sobre bucles}
-El análisis de los bucles iterativos es el mayor cuello de botella en la verificación formal de software. 
-En la HL, para razonar sobre un bucle, es obligatorio encontrar un invariante, es decir, una propiedad matemática que englobe todos los estados posibles y se mantenga verdadera sin importar cuántas veces se ejecute el ciclo. 
+El análisis de los bucles iterativos es el mayor cuello de botella en la verificación formal de software.
+En la HL, para razonar sobre un bucle, es obligatorio encontrar un invariante, es decir, una propiedad matemática que englobe todos los estados posibles y se mantenga verdadera sin importar cuántas veces se ejecute el ciclo.
 Esta tarea no es trivial y a menudo requiere invención humana o dominios abstractos complejos, lo que dificulta la escalabilidad y automatización de las herramientas.
 
-La IL simplifica este problema, ya que los invariantes de bucle no juegan un rol central en el razonamiento sub-aproximado. 
+La IL simplifica este problema, ya que los invariantes de bucle no juegan un rol central en el razonamiento sub-aproximado.
 Como el objetivo de la IL no es garantizar un comportamiento seguro para todos los caminos de ejecución posibles, sino demostrar que ciertos estados son efectivamente alcanzables desde un estado inicial, puede concentrarse en una cantidad finita de iteraciones.
 
-La herramienta consiste en desenrollar el bucle. 
-Esto le permite a la IL analizar un bucle simplemente simulando la ejecución de su cuerpo un número finito y acotado de veces. 
+La herramienta consiste en desenrollar el bucle.
+Esto le permite a la IL analizar un bucle simplemente simulando la ejecución de su cuerpo un número finito y acotado de veces.
 Como la IL es sub-aproximada y permite descartar caminos, encontrar un error luego de desenrollar el bucle un par de veces produce una precondición lógicamente válida, eliminando la necesidad de deducir matemáticamente qué ocurriría en iteraciones infinitas.
 
-Para casos donde se requiere un razonamiento paramétrico, la IL introduce la Regla de la Variante Hacia Atrás (\textsc{Kleene (variante)}). 
+Para casos donde se requiere un razonamiento paramétrico, la IL introduce la Regla de la Variante Hacia Atrás (\textsc{Kleene (variante)}).
 Su premisa tiene la forma:
 $$\vdash_{\mathrm{IL}} \itriple{p(n)}{C}{ok : p(n + 1)}$$
 Por el Lema~\ref{lem:caracterizacion}, esta tripleta establece que cada estado que satisface $p(n + 1)$ posee algún estado predecesor que satisface $p(n)$.
@@ -539,8 +570,8 @@ La demostración mecanizada de este resultado para el lenguaje imperativo utiliz
 
 \begin{corolario}
 \label{cor:errores}
-Si 
-$$\vdash_{\mathrm{IL}} \itriple{p}{C}{er : q}$$ 
+Si
+$$\vdash_{\mathrm{IL}} \itriple{p}{C}{er : q}$$
 y $q \neq \emptyset$, entonces existen estados $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
 $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
 \end{corolario}
@@ -549,7 +580,7 @@ El corolario expresa la garantía de ausencia de falsos positivos, donde todo es
 Si el resultado es satisfacible, entonces existe una ejecución que finaliza en el canal de error.
 
 \subsection*{Relevancia práctica}
-La relevancia práctica del razonamiento sobre incorrectitud puede observarse en distintos trabajos vinculados con Facebook y Meta. 
+La relevancia práctica del razonamiento sobre incorrectitud puede observarse en distintos trabajos vinculados con Facebook y Meta.
 Como antecedente industrial, herramientas como Infer y Zoncolan mostraron que los análisis estáticos composicionales podían integrarse en procesos de desarrollo industriales y aplicarse sobre bases de código de gran tamaño~\cite{fast, facebook}.
 Aunque estas herramientas son anteriores a la introducción de la IL y no constituyen implementaciones directas de esta lógica, sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
 
@@ -557,12 +588,12 @@ Una evidencia más directa sobre la aplicabilidad de la IL y la ISL es el desarr
 En su evaluación sobre OpenSSL, un proyecto de código abierto que proporciona bibliotecas y herramientas criptográficas para comunicaciones seguras, encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
 Este resultado muestra que la IL no solo puede utilizarse como explicación teórica de analizadores existentes, sino también como fundamento para diseñar nuevas herramientas capaces de detectar errores reales en programas de tamaño considerable.
 
-Sin embargo, para aplicar este tipo de razonamiento a programas con memoria mutable y estructuras enlazadas es necesario incorporar mecanismos de razonamiento local. 
+Sin embargo, para aplicar este tipo de razonamiento a programas con memoria mutable y estructuras enlazadas es necesario incorporar mecanismos de razonamiento local.
 Estos mecanismos son provistos por la Lógica de Separación, que se presenta a continuación.
 
 \section{Lógica de Separación (SL)}
 \label{sec:logsep}
-La HL es efectiva para razonar sobre variables simples, pero su escalabilidad disminuye ante estructuras de datos mutables. 
+La HL es efectiva para razonar sobre variables simples, pero su escalabilidad disminuye ante estructuras de datos mutables.
 El obstáculo principal es el \emph{aliasing}.
 
 La SL introducida por \citet{sl} y desarrollada por \citet{sl2}, extiende la HL con aserciones que describen la estructura de la memoria.
@@ -590,8 +621,8 @@ Dos expresiones de puntero $e_1$ y $e_2$ presentan \emph{aliasing} en un \emph{s
 $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 \end{definicion}
 
-En este tipo de programas, una modificación realizada a través de un puntero puede alterar el valor al que hace referencia otro puntero diferente. 
-Entonces, para poder probar la correctitud de un programa con \textit{aliasing} mediante la lógica tradicional, el verificador debe añadir restricciones globales complejas que garanticen que ninguna operación de mutación afectará a otras referencias. 
+En este tipo de programas, una modificación realizada a través de un puntero puede alterar el valor al que hace referencia otro puntero diferente.
+Entonces, para poder probar la correctitud de un programa con \textit{aliasing} mediante la lógica tradicional, el verificador debe añadir restricciones globales complejas que garanticen que ninguna operación de mutación afectará a otras referencias.
 Este es un proceso que, para programas de tamaño moderado, se le suma mucha dificultad y no escala.
 
 \subsection*{La conjunción separadora y aserciones espaciales}
@@ -644,8 +675,8 @@ Formalmente:
 $$(s, h) \models P * Q \iff \exists h_1, h_2 \in Heaps. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land (s, h_1) \models P \land (s, h_2) \models Q$$
 \end{definicion}
 
-El contraste entre la conjunción clásica ($\land$) y la separadora ($*$) es lo que le otorga a la SL el poder de describir patrones de \emph{aliasing} o separación de forma concisa. 
-Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$, la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente, y la aserción $y \mapsto 3, x$. 
+El contraste entre la conjunción clásica ($\land$) y la separadora ($*$) es lo que le otorga a la SL el poder de describir patrones de \emph{aliasing} o separación de forma concisa.
+Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$, la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente, y la aserción $y \mapsto 3, x$.
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
 \begin{figure}[h]
@@ -679,7 +710,7 @@ Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 \label{fig:aserciones}
 \end{figure}
 
-Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$, la conjunción clásica dicta que ambos predicados se cumplen sobre la misma memoria exacta. 
+Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$, la conjunción clásica dicta que ambos predicados se cumplen sobre la misma memoria exacta.
 Físicamente, esto es posible si $x$ e $y$ son exactamente el mismo puntero, como se muestra en la \autoref{fig:conjuncion-clasica}.
 
 \begin{figure}[h]
@@ -700,7 +731,7 @@ Físicamente, esto es posible si $x$ e $y$ son exactamente el mismo puntero, com
 \label{fig:conjuncion-clasica}
 \end{figure}
 
-Por el contrario, si utilizamos la conjunción separadora $(x \mapsto 3, y) * (y \mapsto 3, x)$, estamos forzando lógicamente a que las memorias descritas sean disjuntas. 
+Por el contrario, si utilizamos la conjunción separadora $(x \mapsto 3, y) * (y \mapsto 3, x)$, estamos forzando lógicamente a que las memorias descritas sean disjuntas.
 Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estructura en la que existen dos bloques de memoria separados, donde cada uno guarda un puntero hacia el otro.
 
 \begin{figure}[h]
@@ -738,7 +769,7 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
 \subsection*{El lenguaje imperativo extendido}
 Para poder operar sobre este nuevo modelo de memoria, la SL extiende el lenguaje de programación imperativo clásico con cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
 \begin{enumerate}
-    \item \textbf{Asignación (allocation):} 
+    \item \textbf{Asignación (allocation):}
     $$v := \texttt{cons}(e_1, \ldots, e_n)$$
     reserva $n$ celdas consecutivas del heap y guarda la dirección base en la variable $v$.
     \item \textbf{Lectura (lookup):}
@@ -753,8 +784,8 @@ Para poder operar sobre este nuevo modelo de memoria, la SL extiende el lenguaje
 \end{enumerate}
 
 \subsection*{Razonamiento local y la Regla del Marco}
-La capacidad de describir porciones disjuntas de memoria da lugar al principio más importante de esta teoría en lo que respecta a la especificación de programas, el razonamiento local. 
-Según \citet{sl}, para entender cómo funciona un programa, debe ser posible que el razonamiento y la especificación se limiten a las celdas de memoria que el programa realmente accede. 
+La capacidad de describir porciones disjuntas de memoria da lugar al principio más importante de esta teoría en lo que respecta a la especificación de programas, el razonamiento local.
+Según \citet{sl}, para entender cómo funciona un programa, debe ser posible que el razonamiento y la especificación se limiten a las celdas de memoria que el programa realmente accede.
 El valor de cualquier otra celda permanecerá automáticamente sin cambios.
 
 \begin{ejemplo}
@@ -781,8 +812,8 @@ Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando, definimos la Reg
 En la condición lateral tenemos $\operatorname{mod}(C)$, el conjunto de variables del \emph{store} que pueden ser modificadas por $C$, y $\operatorname{fv}(R)$, el conjunto de variables libres de la aserción $R$.
 Esta condición garantiza que $C$ no modifique ninguna variable de las que depende $R$, de modo que este recurso siga describiendo el mismo fragmento de memoria después de ejecutar $C$.
 
-Esta regla formaliza la intuición de la localidad. 
-Si un programa funciona correctamente sobre un fragmento del \emph{heap}, entonces seguirá funcionando de la misma manera si agregamos un recurso ajeno $R$ que no interfiere en la ejecución. 
+Esta regla formaliza la intuición de la localidad.
+Si un programa funciona correctamente sobre un fragmento del \emph{heap}, entonces seguirá funcionando de la misma manera si agregamos un recurso ajeno $R$ que no interfiere en la ejecución.
 La SL garantiza que el recurso $R$ quedará inalterado, permitiendo razonar sobre sistemas complejos a través de componentes más simples.
 Su fundamento semántico es la propiedad de localidad, que establece que una ejecución sobre un fragmento de \emph{heap} puede extenderse con memoria disjunta que permanece inalterada.
 
@@ -817,7 +848,7 @@ $$\models_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \iff \forall \sigma_q \in 
 Por lo tanto, todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
 
 \subsection*{Heaps negativos}
-Intentar construir la ISL combinando linealmente la semántica de la SL tradicional y la IL produce un sistema inválido. 
+Intentar construir la ISL combinando linealmente la semántica de la SL tradicional y la IL produce un sistema inválido.
 En el modelo clásico de la SL, la operación de liberación ($\mathsf{free}$) remueve la locación del \emph{heap}, haciendo que el estado vuelva a ser una porción vacía.
 Si intentamos aplicar la Regla de Marco bajo el pensamiento de sub-aproximación, el sistema colapsa porque nos permite deducir un estado final válido partiendo de una precondición imposible.
 
@@ -980,16 +1011,16 @@ Por otro lado, la regla \textsc{Alloc2} formaliza la capacidad de reasignar una 
 A diferencia de la anterior, esta regla no incorpora una nueva dirección al dominio.
 
 \textsc{Free} representa la liberación exitosa, toma una celda válida y activa en la memoria y muta su estado lógico hacia un \emph{heap} negativo.
-Por otro lado, \textsc{FreeEr} y \textsc{FreeNull} representan el caso de error. 
-El primero intercepta la violación de tipo \emph{double free}; si se intenta liberar un puntero que ya está marcado como inválido, el sistema aborta hacia el canal de error. 
+Por otro lado, \textsc{FreeEr} y \textsc{FreeNull} representan el caso de error.
+El primero intercepta la violación de tipo \emph{double free}; si se intenta liberar un puntero que ya está marcado como inválido, el sistema aborta hacia el canal de error.
 El segundo caso intercepta el fallo provocado por el puntero nulo.
 
-Las reglas \textsc{Load} rigen la lectura del \emph{heap}. 
-El caso de éxito recupera hacia adelante el valor indexado en el \emph{store} mediante una variable $x'$. 
-La regla \textsc{LoadEr} detiene el flujo si el programa intenta realizar una lectura sobre un puntero previamente liberado (\emph{use after free}). 
+Las reglas \textsc{Load} rigen la lectura del \emph{heap}.
+El caso de éxito recupera hacia adelante el valor indexado en el \emph{store} mediante una variable $x'$.
+La regla \textsc{LoadEr} detiene el flujo si el programa intenta realizar una lectura sobre un puntero previamente liberado (\emph{use after free}).
 Por último, \textsc{LoadNull} detiene el flujo cuando el puntero que se quiere leer es nulo.
 
-Finalmente, las reglas de \textsc{Store} controlan la mutación del \emph{heap}. 
+Finalmente, las reglas de \textsc{Store} controlan la mutación del \emph{heap}.
 En particular, el caso de éxito actualiza el valor de la celda de forma local.
 Análogamente a los casos anteriores, \textsc{StoreEr} interrumpe el flujo si la celda apuntada por $x$ es inválida, mientras que \textsc{StoreNull} hace lo mismo para el caso donde se trate de un puntero nulo.
 
@@ -1001,7 +1032,7 @@ Con respecto a la Regla del Marco, en la ISL se formaliza de la siguiente manera
 \label{eq:frame-isl}
 \end{equation}
 
-A diferencia de la SL tradicional, donde la regla del marco puede aplicarse solo en ejecuciones seguras, en la ISL la regla se aplica de forma idéntica tanto en el canal de éxito como en el de error. 
+A diferencia de la SL tradicional, donde la regla del marco puede aplicarse solo en ejecuciones seguras, en la ISL la regla se aplica de forma idéntica tanto en el canal de éxito como en el de error.
 Gracias a que los \emph{heaps} negativos retienen el espacio de las celdas liberadas, un error local detectado en una parte pequeña de la memoria se propaga al \emph{heap} global a través del marco $r$, garantizando que el \emph{bug} encontrado es real y escalable a sistemas mayores.
 
 \subsection*{Soundness de la ISL}
@@ -1073,7 +1104,7 @@ El resto de la memoria puede incorporarse con un marco.
 
 \begin{teorema}[Teorema de la Huella]
 \label{teo:huella}
-Para todo comando $C$ y toda condición de salida $\epsilon \in \{ok, er\}$, 
+Para todo comando $C$ y toda condición de salida $\epsilon \in \{ok, er\}$,
 $$[\![C]\!]_{\epsilon} = \operatorname{frame}(\operatorname{foot}(C)_\epsilon)$$
 \end{teorema}
 
@@ -1094,16 +1125,16 @@ La dirección local a global se obtiene mediante la extensión operacional por m
 \subsection*{Begin-Anywhere}
 La combinación de razonamiento local, monotonía del \emph{heap} y sub-aproximación permite construir análisis de ejecución simbólica capaces de comenzar desde un fragmento de código sin conocer previamente todo el estado global.
 Esta estrategia se conoce como \emph{Begin-Anywhere}.
-En las herramientas de verificación clásicas, siempre se debe empezar desde un punto de entrada raíz (como la función $\mathsf{main}$) para tener todo el contexto del heap. 
+En las herramientas de verificación clásicas, siempre se debe empezar desde un punto de entrada raíz (como la función $\mathsf{main}$) para tener todo el contexto del heap.
 Sin este contexto, el analizador no sabría qué hay en la memoria al llegar a una función intermedia y fallaría.
 
 En la ISL, el análisis puede empezar en cualquier procedimiento de forma aislada gracias a la técnica de bi-abducción adaptada a la sub-aproximación~\cite{biabd}.
-Podemos definir la bi-abducción como la capacidad del analizador para sintetizar lógicamente las precondiciones faltantes sobre la marcha. 
+Podemos definir la bi-abducción como la capacidad del analizador para sintetizar lógicamente las precondiciones faltantes sobre la marcha.
 Si al analizar una instrucción falta un recurso en el estado actual, la herramienta infiere que ese recurso debió existir en el estado inicial para que la ejecución fuera posible.
 En esta tesina no se implementa dicho procedimiento automático, las presunciones, los caminos y las derivaciones se construyen de forma explícita, y \fstar{} verifica su validez.
 
-Al sintetizar el contexto necesario paso a paso enfocándose estrictamente en la huella mínima del comando, la herramienta puede descubrir vulnerabilidades de forma modular. 
-Debido a que la ISL trabaja bajo el paradigma de la sub-aproximación, esta técnica es muy potente. 
+Al sintetizar el contexto necesario paso a paso enfocándose estrictamente en la huella mínima del comando, la herramienta puede descubrir vulnerabilidades de forma modular.
+Debido a que la ISL trabaja bajo el paradigma de la sub-aproximación, esta técnica es muy potente.
 Cada error que el sistema encuentre partiendo de estas precondiciones sintetizadas es un escenario real y alcanzable.
 
 \section{El lenguaje \fstar{}}
@@ -1124,8 +1155,8 @@ En particular, permite expresar las reglas de inferencia como tipos inductivos y
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
 \subsection*{Tipos dependientes y refinamientos}
-En \fstar{}, los tipos pueden depender de valores. 
-La manifestación más práctica de esto son los tipos de refinamiento. 
+En \fstar{}, los tipos pueden depender de valores.
+La manifestación más práctica de esto son los tipos de refinamiento.
 Un tipo de refinamiento permite expresar propiedades de los datos directamente en sus tipos, de modo que su cumplimiento sea comprobado estáticamente.
 
 Dado un tipo \texttt{t} y un predicado \texttt{P}, la expresión \texttt{x : t \{ P x \}} representa los valores \texttt{x} de tipo \texttt{t} que además satisfacen la propiedad \texttt{P x}.
@@ -1138,7 +1169,7 @@ let nat = x : int { x >= 0 }
 Cualquier función que requiera un argumento del tipo \texttt{nat} fuerza al verificador estático a demostrar matemáticamente que el valor provisto satisface la restricción $x \geq 0$ antes de compilar.
 De este modo, propiedades que en otros lenguajes se verificarían durante la ejecución se convierten en obligaciones estáticas.
 
-Esta dependencia entre valores y tipos permite que la firma de una función actúe como su propia especificación matemática. 
+Esta dependencia entre valores y tipos permite que la firma de una función actúe como su propia especificación matemática.
 Por ejemplo, la función de incremento puede definirse garantizando estáticamente que el valor de retorno \texttt{y} será exactamente igual al argumento \texttt{x} más uno:
 
 \begin{lstlisting}[style=fstar]
@@ -1151,17 +1182,17 @@ En la formalización desarrollada, las aserciones lógicas se representan como p
 \begin{lstlisting}[style=fstar]
 type cond = state -> prop
 \end{lstlisting}
-A su vez, los refinamientos permiten exigir que los estados recibidos o producidos por una función satisfagan una aserción determinada. 
+A su vez, los refinamientos permiten exigir que los estados recibidos o producidos por una función satisfagan una aserción determinada.
 Por ejemplo, el siguiente parámetro:
 
 \begin{lstlisting}[style=fstar]
 s : state { post s }
 \end{lstlisting}
-representa un estado \texttt{s} acompañado por la garantía estática de que satisface la postcondición \texttt{post}. 
+representa un estado \texttt{s} acompañado por la garantía estática de que satisface la postcondición \texttt{post}.
 Esta forma aparece en el enunciado mecanizado del Teorema de Soundness, donde la prueba recibe un estado final que satisface el resultado de una tripleta y debe construir un estado inicial que satisfaga su presunción.
 
 \subsection*{Tipos inductivos indexados y Curry-Howard}
-\fstar{} hace un uso extensivo de los tipos inductivos para definir estructuras de datos y proposiciones lógicas. 
+\fstar{} hace un uso extensivo de los tipos inductivos para definir estructuras de datos y proposiciones lógicas.
 Una de las características más potentes del lenguaje es la capacidad de crear tipos inductivos indexados, los cuales permiten capturar invariantes complejos directamente en la forma de la estructura.
 
 La formalización se apoya en la correspondencia Curry-Howard \cite{howard}, donde las proposiciones se interpretan como tipos y las demostraciones como valores que habitan esos tipos.
@@ -1199,12 +1230,12 @@ let eval_expr (s : state) (e : expr) : GTot int =
 \end{lstlisting}
 indica que la función siempre termina y que su resultado se utiliza solo dentro de especificaciones o demostraciones.
 
-Para enunciar y demostrar teoremas abstractos, \fstar{} proporciona el efecto \texttt{Lemma}. 
+Para enunciar y demostrar teoremas abstractos, \fstar{} proporciona el efecto \texttt{Lemma}.
 Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{requires} y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
 Su resultado computacional es irrelevante, lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
 Por ejemplo, una firma de la forma:
 \begin{lstlisting}[style=fstar]
-val lemma : 
+val lemma :
   x : t ->
   Lemma
     (requires P x)
@@ -1249,12 +1280,12 @@ La integración con Z3 permite automatizar las obligaciones lógicas locales, mi
 \raggedleft --- Arthur Conan Doyle
 \end{quote}
 
-En el capítulo anterior se establecieron los fundamentos teóricos de la IL. 
+En el capítulo anterior se establecieron los fundamentos teóricos de la IL.
 En este capítulo se presenta la mecanización de este sistema deductivo utilizando el asistente de pruebas \fstar{}.
 
 Para lograrlo, se aplica el paradigma de programación orientada a pruebas.
 En primer lugar, se modela la sintaxis y semántica del lenguaje imperativo subyacente.
-Luego, se codifican los axiomas de la IL a través del isomorfismo de Curry-Howard. 
+Luego, se codifican los axiomas de la IL a través del isomorfismo de Curry-Howard.
 Por último, se demuestra su solidez (\textit{soundness}) respecto a la semántica operacional.
 
 \section{Lenguaje y semántica operacional}
@@ -1275,7 +1306,7 @@ Un \texttt{store} es una función total que asigna un valor a cada variable.
 La actualización de una variable se expresa funcionalmente mediante la siguiente función:
 
 \begin{lstlisting}[style=fstar]
-let override (#a : eqtype) (#b : Type) 
+let override (#a : eqtype) (#b : Type)
   (f : a -> b) (x : a) (y : b) : a -> b =
   fun z -> if z = x then y else f z
 \end{lstlisting}
@@ -1285,8 +1316,8 @@ El lenguaje considerado distingue entre ejecuciones que continúan normalmente y
 Para representar esta información se definen los siguientes tipos:
 
 \begin{lstlisting}[style=fstar]
-type term_mode = 
-  | Ok 
+type term_mode =
+  | Ok
   | Er
 type state = store & term_mode
 \end{lstlisting}
@@ -1320,7 +1351,7 @@ let rec eval_expr' (s : store) (e : expr) : GTot nat =
     | Var x -> s x
     | Const n -> n
     | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
-    | Minus e1 e2 -> 
+    | Minus e1 e2 ->
       let res = eval_expr' s e1 - eval_expr' s e2 in
       if res >= 0 then res else 0
     | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
@@ -1356,7 +1387,7 @@ type stmt =
 \texttt{Assume e} conserva solo los caminos donde \texttt{e} es verdadera.
 \texttt{Seq p q} representa composición secuencial, \texttt{Choice p q} elección no determinista y \texttt{Kleene p} una cantidad finita y no determinista de ejecuciones de \texttt{p}.
 
-La ejecución de los comandos no puede modelarse utilizando una función determinista \mbox{\texttt{state -> \, state}}. 
+La ejecución de los comandos no puede modelarse utilizando una función determinista \mbox{\texttt{state -> \, state}}.
 Existen dos impedimentos teóricos para construir un intérprete funcional tradicional:
 
 \begin{enumerate}
@@ -1369,7 +1400,7 @@ Para resolver el primer problema, se incorporó el modo de terminación directam
 Por otro lado, para resolver el segundo problema, abandonamos las funciones y modelamos la ejecución como una relación matemática utilizando un tipo inductivo indexado:
 
 \begin{lstlisting}[style=fstar]
-noeq 
+noeq
 type runsto : stmt -> state -> state -> Type0
 \end{lstlisting}
 
@@ -1404,7 +1435,7 @@ Su función es permitir que \fstar{} identifique como equivalentes estados cuyos
   runsto p s0' s1'
 \end{lstlisting}
 
-La instrucción más elemental que modifica el estado es la asignación. 
+La instrucción más elemental que modifica el estado es la asignación.
 Esta se formaliza mediante:
 
 \begin{lstlisting}[style=fstar]
@@ -1414,7 +1445,7 @@ Esta se formaliza mediante:
 \end{lstlisting}
 
 Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
-Toma un estado de éxito arbitrario $s$, evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e}, y garantiza que el estado final es idéntico a $s$, pero con el valor de la variable $x$ actualizado mediante \texttt{override}. 
+Toma un estado de éxito arbitrario $s$, evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e}, y garantiza que el estado final es idéntico a $s$, pero con el valor de la variable $x$ actualizado mediante \texttt{override}.
 Por último, como \texttt{Assign} es una operación segura en nuestro lenguaje, el modo de terminación siempre es el canal de éxito.
 
 La asignación no determinista se representa mediante:
@@ -1425,7 +1456,7 @@ La asignación no determinista se representa mediante:
 \end{lstlisting}
 
 Si estuviéramos programando un intérprete tradicional, implementar el no determinismo requeriría un generador de números pseudoaleatorios, lo cual ensuciaría el razonamiento matemático.
-En nuestra formalización, el valor $v$ no se calcula computacionalmente, sino que se recibe como un parámetro lógico que el sistema deductivo provee. 
+En nuestra formalización, el valor $v$ no se calcula computacionalmente, sino que se recibe como un parámetro lógico que el sistema deductivo provee.
 Esto le otorga al verificador la capacidad de instanciar $v$ libremente con cualquier valor necesario para explorar una traza que conduzca a un error.
 
 Representamos la terminación normal, de error y filtrado de caminos de la siguiente manera:
@@ -1433,14 +1464,14 @@ Representamos la terminación normal, de error y filtrado de caminos de la sigui
 \begin{lstlisting}[style=fstar]
 | R_Skip : s : state { s._2 == Ok } -> runsto Skip s s
 | R_Error : s : state { s._2 == Ok } -> runsto Error s (s._1, Er)
-| R_Assume : s : state { s._2 == Ok } -> #e : expr -> 
+| R_Assume : s : state { s._2 == Ok } -> #e : expr ->
   squash (eval_expr s e =!= 0) ->
   runsto (Assume e) s s
 \end{lstlisting}
 
 \texttt{R\_Skip} conserva el estado.
 La regla \texttt{R\_Error} conserva el \emph{store}, pero cambia el modo de terminación.
-Por su parte, \texttt{R\_Assume} actúa como un filtro lógico que descarta los caminos de ejecución inviables. 
+Por su parte, \texttt{R\_Assume} actúa como un filtro lógico que descarta los caminos de ejecución inviables.
 Esta regla no produce un estado de error cuando la condición es falsa.
 En ese caso, no existe una derivación de \texttt{runsto}.
 De esta manera, los caminos que no satisfacen la condición son eliminados de la relación semántica.
@@ -1459,8 +1490,8 @@ La composición secuencial se divide según el modo de terminación del primer c
 
 La regla \texttt{R\_Seq} establece que si la primera instrucción \texttt{p} termina con éxito en un estado intermedio \texttt{t}, la ejecución normal continúa evaluando \texttt{q} a partir de \texttt{t} hasta llegar al estado final \texttt{u}.
 Sin embargo, el comportamiento cambia en la regla \texttt{R\_SeqEr}.
-Si la semántica garantiza que el comando \texttt{p} abortó dejando un estado de error \texttt{t}, la regla corta la ejecución. 
-El comando secundario \texttt{q} nunca se menciona en las premisas, lo que significa matemáticamente que no se evalúa. 
+Si la semántica garantiza que el comando \texttt{p} abortó dejando un estado de error \texttt{t}, la regla corta la ejecución.
+El comando secundario \texttt{q} nunca se menciona en las premisas, lo que significa matemáticamente que no se evalúa.
 El estado de error \texttt{t} se propaga hacia la superficie de la secuencia, garantizando la interrupción que la sub-aproximación requiere para capturar \emph{bugs} tempranos.
 
 La elección no determinista posee una regla para cada rama:
@@ -1480,7 +1511,7 @@ Por último, la estrella de Kleene representa una cantidad finita y no determini
 El caso base realiza cero iteraciones, mientras que el caso inductivo agrega una nueva ejecución \texttt{p} a una repetición previa:
 
 \begin{lstlisting}[style=fstar]
-| R_Kleene0 : #p : stmt -> #s : state { s._2 == Ok } -> 
+| R_Kleene0 : #p : stmt -> #s : state { s._2 == Ok } ->
   runsto (Kleene p) s s
 | R_KleeneS : #p : stmt -> #s : state { s._2 == Ok } -> #t : state ->
   runsto (Seq (Kleene p) p) s t ->
@@ -1525,18 +1556,18 @@ A continuación se analiza cómo se codifican estructuralmente las reglas de la 
 En primer lugar, observamos las instrucciones más simples de nuestro lenguaje:
 
 \begin{lstlisting}[style=fstar]
-| I_Skip : pre : cond -> 
+| I_Skip : pre : cond ->
   il_triple (is_ok pre) Skip (is_ok pre)
-| I_Error : pre : cond -> 
-  il_triple (is_ok pre) Error 
+| I_Error : pre : cond ->
+  il_triple (is_ok pre) Error
             (fun s -> let (st, m) = s in m == Er /\ pre (st, Ok))
 | I_Assume : pre : cond -> #e : expr ->
-  il_triple (is_ok pre) (Assume e) 
+  il_triple (is_ok pre) (Assume e)
             (is_ok (fun s -> pre s /\ eval_expr s e =!= 0))
 \end{lstlisting}
 
 La regla \texttt{I\_Skip} conserva la aserción.
-Por el contrario, la regla \texttt{I\_Error} modela la interrupción del flujo normal. 
+Por el contrario, la regla \texttt{I\_Error} modela la interrupción del flujo normal.
 Conserva el \emph{store} descrito por la presunción, pero cambia el modo de terminación.
 \texttt{I\_Assume} incorpora la condición evaluada al resultado.
 La postcondición conserva solo los estados que satisfacen la presunción y para los cuales la expresión es verdadera.
@@ -1549,8 +1580,8 @@ La regla de asignación debe conservar suficiente información histórica para j
 | I_Assign : #pre : cond -> #x : var -> #e : expr ->
   il_triple
     (is_ok pre) (Assign x e)
-    (is_ok (fun s -> exists x_init. 
-           pre ((override s._1 x x_init), s._2) /\ 
+    (is_ok (fun s -> exists x_init.
+           pre ((override s._1 x x_init), s._2) /\
            (s._1 x = eval_expr ((override s._1 x x_init), s._2) e)))
 \end{lstlisting}
 
@@ -1564,7 +1595,7 @@ En este caso, para cada estado final se exige la existencia de algún valor ante
 
 \begin{lstlisting}[style=fstar]
 | I_Nondet : #x : var -> #pre : cond ->
-  il_triple (is_ok pre) (Nondet x) 
+  il_triple (is_ok pre) (Nondet x)
             (is_ok (fun s -> exists v. pre ((override s._1 x v), s._2)))
 \end{lstlisting}
 
@@ -1575,7 +1606,7 @@ La composición secuencial demuestra el poder composicional de manejar ambos flu
   #pre : cond -> #mid : cond -> #post : cond ->
   il_triple (is_ok pre) p mid ->
   il_triple (is_ok mid) q post ->
-  il_triple (is_ok pre) (Seq p q) 
+  il_triple (is_ok pre) (Seq p q)
             (fun s -> post s \/ (s._2 == Er /\ mid s))
 \end{lstlisting}
 
@@ -1606,7 +1637,7 @@ El caso de las iteraciones finitas se representa mediante:
 
 \begin{lstlisting}[style=fstar]
 | I_Kleene0 :
-  #p : stmt -> #pre : cond -> 
+  #p : stmt -> #pre : cond ->
   il_triple (is_ok pre) (Kleene p) (is_ok pre)
 | I_KleeneS : #p : stmt -> #pre : cond -> #post : cond ->
   il_triple (is_ok pre) (Seq (Kleene p) p) post ->
@@ -1629,11 +1660,11 @@ Como se observó en el Lema~\ref{lem:prop-pi}, la post-imagen preserva uniones.
 Esta propiedad se refleja mediante:
 
 \begin{lstlisting}[style=fstar]
-| I_Disjunction : #pre1 : cond -> #pre2 : cond -> 
-  #p : stmt -> #post1 : cond -> #post2 : cond -> 
+| I_Disjunction : #pre1 : cond -> #pre2 : cond ->
+  #p : stmt -> #post1 : cond -> #post2 : cond ->
   il_triple (is_ok pre1) p post1 ->
   il_triple (is_ok pre2) p post2 ->
-  il_triple (is_ok (fun s -> pre1 s \/ pre2 s)) p 
+  il_triple (is_ok (fun s -> pre1 s \/ pre2 s)) p
             (fun s -> post1 s \/ post2 s)
 \end{lstlisting}
 
@@ -1642,8 +1673,8 @@ La regla permite combinar derivaciones obtenidas a partir de conjuntos diferente
 \section{La Regla de Consecuencia}
 \label{sec:il-consecuencia}
 Una de las diferencias estructurales entre la IL y la verificación clásica es el comportamiento de su Regla de Consecuencia.
-Como vimos en la \autoref{sec:loginc}, la sub-aproximación exige invertir la dirección de las implicaciones. 
-El sistema permite debilitar la precondición y fortalecer la postcondición. 
+Como vimos en la \autoref{sec:loginc}, la sub-aproximación exige invertir la dirección de las implicaciones.
+El sistema permite debilitar la precondición y fortalecer la postcondición.
 Esto es para no exigir estados iniciales innecesarios y para enfocar el análisis en un subconjunto de estados finales de interés, descartando lógicamente otras ramas.
 La validez de estas direcciones se justificó utilizando la monotonía de la post-imagen establecida en el Lema~\ref{lem:prop-pi}.
 
@@ -1653,7 +1684,7 @@ $$\operatorname{post}' \subseteq \operatorname{post}'(C)(\operatorname{pre}')$$
 Esta regla se codifica mediante:
 
 \begin{lstlisting}[style=fstar]
-| I_Consequence : #pre : cond -> #p : stmt -> 
+| I_Consequence : #pre : cond -> #p : stmt ->
   #post : cond -> pre' : cond -> post' : cond ->
   il_triple (is_ok pre) p post ->
   squash (forall x. pre x ==> pre' x) ->
@@ -1703,11 +1734,11 @@ Consume un habitante de \texttt{il\_triple}, que certifica derivabilidad, y prod
 La demostración se realiza por inducción estructural sobre \texttt{pf}.
 La cláusula \texttt{decreases pf} indica que cada llamada recursiva se realiza sobre una subderivación menor.
 
-Hay instrucciones en las que la traza se reconstruye de forma directa. 
+Hay instrucciones en las que la traza se reconstruye de forma directa.
 En el caso de \texttt{Skip}, el estado inicial coincide con el final:
 
 \begin{lstlisting}[style=fstar]
-| I_Skip _ -> 
+| I_Skip _ ->
   let s0 = s1 in
   let r = R_Skip s0 in
   (|s0, r|)
@@ -1716,7 +1747,7 @@ En el caso de \texttt{Skip}, el estado inicial coincide con el final:
 Para \texttt{Error}, el \emph{store} inicial coincide con el final, pero el modo de terminación difiere:
 
 \begin{lstlisting}[style=fstar]
-| I_Error _ -> 
+| I_Error _ ->
   let (st1, _) = s1 in
   let s0 = (st1, Ok) in
   let r = R_Error s0 in
@@ -1735,17 +1766,17 @@ En \texttt{Assume}, la postcondición ya contiene la prueba de que la expresión
 Las reglas de asignación y no determinismo contienen cuantificadores existenciales en sus postcondiciones.
 Para construir la ejecución operacional es necesario extraer sus testigos.
 
-En el caso de asignación, la postcondición garantiza la existencia de un valor histórico \texttt{x\_init}. 
+En el caso de asignación, la postcondición garantiza la existencia de un valor histórico \texttt{x\_init}.
 Sin embargo, a nivel computacional en \fstar{}, no es posible ejecutar hacia atrás para adivinar cuál era ese valor en el \emph{store} original.
-Para resolver esto nos apoyamos en la operación fantasma \texttt{indefinite\_description\_ghost}. 
+Para resolver esto nos apoyamos en la operación fantasma \texttt{indefinite\_description\_ghost}.
 Esta operación fantasma de elección clásica nos permite transformar la existencia lógica de un estado en un testigo que podemos manipular en el código de la demostración.
 Este testigo no forma parte de un programa ejecutable, solo se usa durante la demostración:
 
 \begin{lstlisting}[style=fstar]
 | I_Assign #pre #x #e ->
   let (st1, m) = s1 in
-  let x_init = FStar.IndefiniteDescription.indefinite_description_ghost 
-               _ (fun x_init -> pre ((override st1 x x_init), m) 
+  let x_init = FStar.IndefiniteDescription.indefinite_description_ghost
+               _ (fun x_init -> pre ((override st1 x x_init), m)
                /\ (st1 x = eval_expr ((override st1 x x_init), m) e))
   in
   let st0 = override st1 x x_init in
@@ -1755,14 +1786,14 @@ Este testigo no forma parte de un programa ejecutable, solo se usa durante la de
   (|s0, pf1|)
 \end{lstlisting}
 
-Una vez que tenemos el \emph{store} histórico, construimos la traza \texttt{R\_Assign}. 
+Una vez que tenemos el \emph{store} histórico, construimos la traza \texttt{R\_Assign}.
 Para satisfacer la comprobación de tipos dependientes al atar el paso operacional con el estado final \texttt{s1}, invocamos a la regla de extensión semántica \texttt{R\_Ext}, la cual nos permite ajustar sutiles equivalencias de extensionalidad de funciones sobre el \emph{store}.
 
 El caso de \texttt{Nondet} sigue el mismo patrón.
 La postcondición proporciona un valor histórico que permite reconstruir un estado inicial, mientras que la ejecución se instancia con el valor final de \texttt{x}.
 
-La demostración para la secuenciación de comandos \texttt{I\_Seq} ilustra cómo la sub-aproximación captura flujos anormales. 
-La regla deductiva afirma que el resultado de \texttt{Seq p q} puede derivar del éxito final de \texttt{q} o de un fallo prematuro en \texttt{p}. 
+La demostración para la secuenciación de comandos \texttt{I\_Seq} ilustra cómo la sub-aproximación captura flujos anormales.
+La regla deductiva afirma que el resultado de \texttt{Seq p q} puede derivar del éxito final de \texttt{q} o de un fallo prematuro en \texttt{p}.
 Por lo tanto, el teorema de soundness debe inspeccionar el estado final \texttt{s1} para decidir qué fragmento de la semántica reconstruir:
 
 \begin{lstlisting}[style=fstar]
@@ -1802,7 +1833,7 @@ Para \texttt{I\_Kleene0}, la ejecución realiza cero iteraciones.
 Para \texttt{I\_KleeneS}, la hipótesis inductiva reconstruye una ejecución de \texttt{Seq (Kleene p) p}, que luego se transforma en una ejecución de \texttt{Kleene p} mediante \texttt{R\_KleeneS}.
 
 El tratamiento de la iteración mediante \texttt{I\_KleeneVariant} usa un mecanismo híbrido.
-Primero, utiliza la descripción indefinida para encontrar el número de iteraciones $n$ en el que finalizó el bucle. 
+Primero, utiliza la descripción indefinida para encontrar el número de iteraciones $n$ en el que finalizó el bucle.
 Luego, construye la traza completa declarando una función auxiliar recursiva sobre el número de iteraciones.
 El caso base utiliza \texttt{R\_Kleene0}.
 En el caso inductivo, se reconstruye primero la última ejecución de \texttt{p}, luego a repetición anterior y finalmente se componen ambas mediante \texttt{R\_Seq} y \texttt{R\_KleeneS}
@@ -1822,7 +1853,7 @@ Por lo tanto, el Corolario~\ref{cor:errores} también se aplica a esta formaliza
 Esta garantía debe entenderse respecto del lenguaje y de la semántica formalizados.
 \fstar{} certifica que el sistema deductivo no introduce estados finales sin respaldo operacional dentro del modelo definido.
 Sobre esta base, el próximo capítulo extenderá el estado con memoria dinámica y trasladará la misma estrategia de mecanización a la ISL.
- 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1856,8 +1887,8 @@ En primer lugar, se incorporan las ubicaciones de memoria y se amplía el tipo d
 \begin{lstlisting}[style=fstar]
 type var = string
 type loc = nat
-type value = 
-  | Nat of nat 
+type value =
+  | Nat of nat
   | Loc of loc
 type store = var -> value
 \end{lstlisting}
@@ -1973,7 +2004,7 @@ Por lo tanto, \texttt{points\_to l v} no describe un \emph{heap} arbitrariamente
 Esto corresponde a la interpretación exacta del points-to de la Definición~\ref{def:points_to}.
 En el segundo caso, se está representando a la aserción negativa.
 \texttt{points\_to\_empty l} mecaniza la aserción de \emph{heap} negativo de la Definición~\ref{def:heap_negativo}.
-Expresa que \texttt{l} es una ubicación conocida, no nula, que fue liberada y todavía no fue reasignada. 
+Expresa que \texttt{l} es una ubicación conocida, no nula, que fue liberada y todavía no fue reasignada.
 
 A partir del álgebra anterior, la conjunción separadora se representa mediante:
 
@@ -2028,7 +2059,7 @@ Analizamos los constructores operacionales que difieren de aquellos vistos en el
 La regla operacional de reserva es:
 
 \begin{lstlisting}[style=fstar]
-| R_Alloc : s : state { s._3 == Ok } -> #x : var -> 
+| R_Alloc : s : state { s._3 == Ok } -> #x : var ->
   l : loc { l =!= 0 } -> v : value ->
   #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
   runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
@@ -2110,7 +2141,7 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   (r : runsto p s0 s1) (h_fr : heap)
   (#_ : squash (let (_, hp, _) = s0 in heaps_disjoint hp h_fr))
   (#_ : squash (let (_, hp, _) = s1 in heaps_disjoint hp h_fr)) :
-  GTot (runsto p 
+  GTot (runsto p
     (let (st, hp, m) = s0 in (st, heap_union hp h_fr, m))
     (let (st, hp, m) = s1 in (st, heap_union hp h_fr, m)))
   (decreases r)
@@ -2128,7 +2159,7 @@ El caso secuencial requiere conocer que el marco también es disjunto del \emph{
 Para obtener esta propiedad se utiliza el lema:
 
 \begin{lstlisting}[style=fstar]
-let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state) 
+let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
   (h_fr : heap) (r : runsto p s0 s1) :
   Lemma (requires (let (_, hp1, _) = s1 in heaps_disjoint hp1 h_fr))
         (ensures (let (_, hp0, _) = s0 in heaps_disjoint hp0 h_fr))
@@ -2237,8 +2268,8 @@ Con esto, la Regla del Marco se codifica como el siguiente constructor:
 La conjunción separadora protege el \emph{heap} del marco, ya que exige que el fragmento descrito por \texttt{fr} sea disjunto de la memoria local utilizada por la derivación.
 La condición que provee \texttt{independent\_on\_vars} protege el \emph{store}, garantizando que las modificaciones permitidas por \texttt{p} no alteran la validez de \texttt{fr}.
 
-La regla \texttt{ISL\_Frame} actúa como un elevador de contexto y representa la regla deductiva de la ecuación \ref{eq:frame-isl}. 
-Toma como premisa implícita una tripleta previamente demostrada que opera sobre un fragmento local de memoria descrito por \texttt{pre} y \texttt{post}. 
+La regla \texttt{ISL\_Frame} actúa como un elevador de contexto y representa la regla deductiva de la ecuación \ref{eq:frame-isl}.
+Toma como premisa implícita una tripleta previamente demostrada que opera sobre un fragmento local de memoria descrito por \texttt{pre} y \texttt{post}.
 Luego, recibe como parámetro lógico un predicado arbitrario \texttt{fr}, el cual describe el conjunto de recursos adicionales.
 
 \section{El Teorema de Soundness}
@@ -2295,10 +2326,10 @@ donde la postcondición local se satisface sobre $h_1$, que de ahora en más lla
 En la prueba se define esta información mediante un predicado auxiliar:
 
 \begin{lstlisting}[style=fstar]
-let unfold p_two (h1 : heap) (h2 : heap) : prop = 
-  heaps_disjoint h1 h2 /\ 
-  hp1 == heap_union h1 h2 /\ 
-  p_post (st1, h1, m) /\ 
+let unfold p_two (h1 : heap) (h2 : heap) : prop =
+  heaps_disjoint h1 h2 /\
+  hp1 == heap_union h1 h2 /\
+  p_post (st1, h1, m) /\
   fr (st1, h2, m)
 in
 \end{lstlisting}
@@ -2306,13 +2337,13 @@ La existencia de ambos \emph{heaps} proviene de la definición de \texttt{sep\_c
 El comprobador SMT Z3 no puede instanciar computacionalmente esos sub-\emph{heaps} por sí solo.
 Para materializarlos, se transforman los dos testigos existenciales en una tupla y se selecciona dicha tupla mediante \texttt{indefinite\_description\_ghost}.
 
-Una vez aislado el fragmento local del \emph{heap}, aplicamos la hipótesis inductiva de nuestro teorema. 
+Una vez aislado el fragmento local del \emph{heap}, aplicamos la hipótesis inductiva de nuestro teorema.
 
 \begin{lstlisting}[style=fstar]
-  let (|s0_local, r_local|) = 
+  let (|s0_local, r_local|) =
     soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
 \end{lstlisting}
-Esta llamada nos devuelve un estado inicial local y una traza válida entre dicho estado y la porción final \texttt{h\_local}. 
+Esta llamada nos devuelve un estado inicial local y una traza válida entre dicho estado y la porción final \texttt{h\_local}.
 El \emph{heap} \texttt{h\_local} es el fragmento que satisface la postcondición local proporcionada por la conjunción separadora.
 En esta parte de la prueba no se afirma todavía que dicho fragmento sea una huella mínima en el sentido de la Definición~\ref{def:huella-minima}.
 
@@ -2451,15 +2482,15 @@ La estructura principal del constructor es:
 
 \begin{lstlisting}[style=fstar]
 | F_Seq : p : stmt -> q : stmt -> st0 : store -> stm : store ->
-  st1 : store -> h_common : heap -> 
-  h_p : heap { heaps_disjoint h_common h_p } -> 
-  h_q : heap { heaps_disjoint h_common h_q /\ heaps_disjoint h_p h_q } -> 
-  h0 : heap { heaps_disjoint h0 h_q } -> 
-  h1 : heap { heaps_disjoint h1 h_p } -> 
+  st1 : store -> h_common : heap ->
+  h_p : heap { heaps_disjoint h_common h_p } ->
+  h_q : heap { heaps_disjoint h_common h_q /\ heaps_disjoint h_p h_q } ->
+  h0 : heap { heaps_disjoint h0 h_q } ->
+  h1 : heap { heaps_disjoint h1 h_p } ->
   m1 : term_mode ->
   footprint p (st0, h0, Ok) (stm, heap_union h_common h_p, Ok) ->
   footprint q (stm, heap_union h_common h_q, Ok) (st1, h1, m1) ->
-  footprint (Seq p q) (st0, heap_union h0 h_q, Ok) 
+  footprint (Seq p q) (st0, heap_union h0 h_q, Ok)
                       (st1, heap_union h1 h_p, m1)
 \end{lstlisting}
 
@@ -2479,7 +2510,7 @@ Por lo tanto, las dos ejecuciones pueden componerse mediante la regla operaciona
 La propagación de un error producido por el primer comando se representa con un constructor separado:
 
 \begin{lstlisting}[style=fstar]
-| F_SeqEr : p : stmt -> q : stmt -> 
+| F_SeqEr : p : stmt -> q : stmt ->
   s : state { s._3 == Ok } -> t : state { t._3 == Er } ->
   footprint p s t ->
   footprint (Seq p q) s t
@@ -2491,7 +2522,7 @@ Este constructor cierra la relación de huellas bajo equivalencia de estados.
 
 \begin{lstlisting}[style=fstar]
 | F_Ext : p : stmt -> s0 : state -> s1 : state -> footprint p s0 s1 ->
-  s0' : state -> s1' : state -> 
+  s0' : state -> s1' : state ->
   squash (state_equiv s0 s0') ->
   squash (state_equiv s1 s1') ->
   footprint p s0' s1'
@@ -2507,7 +2538,7 @@ Una vez definida la relación local, el primer resultado consiste en demostrar q
 
 \begin{lstlisting}[style=fstar]
 let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
-                        (f : footprint p s0 s1) 
+                        (f : footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases f)
 \end{lstlisting}
 
@@ -2541,11 +2572,11 @@ Para representar dicha clausura se define:
 \begin{lstlisting}[style=fstar]
 noeq
 type framed_footprint : stmt -> state -> state -> Type0 =
-  | FF_Frame : p : stmt -> s0 : state -> s1 : state -> 
-    h_fr : heap -> fp : footprint p s0 s1 -> 
+  | FF_Frame : p : stmt -> s0 : state -> s1 : state ->
+    h_fr : heap -> fp : footprint p s0 s1 ->
     d0 : squash (heaps_disjoint s0._2 h_fr) ->
     d1 : squash (heaps_disjoint s1._2 h_fr) ->
-    framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3) 
+    framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3)
                        (s1._1, heap_union s1._2 h_fr, s1._3)
   | FF_Ext : p : stmt -> s0 : state -> s1 : state ->
     framed_footprint p s0 s1 -> s0' : state -> s1' : state ->
@@ -2559,7 +2590,7 @@ Por otro lado, \texttt{FF\_Ext} aplica al nivel de \texttt{framed\_footprint} el
 La corrección operacional de la clausura se demuestra mediante:
 
 \begin{lstlisting}[style=fstar]
-let rec framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) 
+let rec framed_footprint_sound (p : stmt) (s0 : state) (s1 : state)
   (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases ff) =
   match ff with
@@ -2595,7 +2626,7 @@ La demostración procede por inducción estructural sobre \texttt{r}.
 Cuando la derivación operacional comienza con \texttt{R\_Ext}, la hipótesis inductiva descompone la ejecución original y \texttt{FF\_Ext} transporta el resultado:
 
 \begin{lstlisting}[style=fstar]
-| R_Ext #p #s0 #s1 r_base s0' s1' eq0 eq1 -> 
+| R_Ext #p #s0 #s1 r_base s0' s1' eq0 eq1 ->
   let ff = runsto_decompose r_base in
   FF_Ext p s0 s1 ff s0' s1' eq0 eq1
 \end{lstlisting}
@@ -2640,7 +2671,7 @@ La estructura es la siguiente:
 
 \begin{lstlisting}[style=fstar]
 let rec map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
-  (transform : (#sl0 : state -> #sl1 : state -> footprint p sl0 sl1 -> 
+  (transform : (#sl0 : state -> #sl1 : state -> footprint p sl0 sl1 ->
                 GTot (footprint q sl0 sl1)))
   (ff : framed_footprint p s0 s1)
   : GTot (framed_footprint q s0 s1) (decreases ff) =
@@ -2715,11 +2746,11 @@ $$\operatorname{runsto} \; p \; s_0 \; s_1 \iff \operatorname{framed\_footprint}
 En \fstar{}, las dos expresiones se expresan como:
 
 \begin{lstlisting}[style=fstar]
-let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state) 
+let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state)
   (ff : framed_footprint p s0 s1) : GTot (runsto p s0 s1) =
   framed_footprint_sound p s0 s1 ff
 
-let footprint_theorem_complete (#p : stmt) (#s0 #s1 : state) 
+let footprint_theorem_complete (#p : stmt) (#s0 #s1 : state)
   (r : runsto p s0 s1) : GTot (framed_footprint p s0 s1) =
   runsto_decompose r
 \end{lstlisting}
@@ -2740,7 +2771,7 @@ $$[\![C]\!]_\epsilon = \operatorname{frame}(\operatorname{foot}(C)_\epsilon).$$
 \raggedleft --- Richard W. Hamming
 \end{quote}
 
-En el \autoref{cap:formalizacion-isl} pudimos construir, mecanizar y demostrar la solidez matemática de la ISL utilizando \fstar{}. 
+En el \autoref{cap:formalizacion-isl} pudimos construir, mecanizar y demostrar la solidez matemática de la ISL utilizando \fstar{}.
 El objetivo de este capítulo es evaluar la expresividad de la formalización mediante una serie de casos de estudio representativos.
 
 En particular, se estudian un error de uso de memoria después de su liberación, un puntero colgante generado por una reasignación, un bucle con elecciones no deterministas y el recorrido de una lista enlazada.
@@ -2775,8 +2806,8 @@ Luego de su ejecución, la aserción final del comando garantiza que la memoria 
 
 \begin{lstlisting}[style=fstar]
 let post_alloc (s : state) : prop =
-  exists (l : loc) (v : value). 
-    s._3 == Ok /\ s._1 "x" == Loc l /\ 
+  exists (l : loc) (v : value).
+    s._3 == Ok /\ s._1 "x" == Loc l /\
     l =!= 0 /\ points_to l v s /\
     (exists x_old. emp (override s._1 "x" x_old, override s._2 l Unknown, Ok))
 \end{lstlisting}
@@ -2789,7 +2820,7 @@ El estado resultante refleja la transición:
 
 \begin{lstlisting}[style=fstar]
 let post_free (s : state) : prop =
-  exists (v : value). 
+  exists (v : value).
     s._3 == Ok /\ points_to_empty (eval_expr s (Var "x")) s /\
     post_alloc (s._1, override s._2 (eval_expr s (Var "x")) (Full v), Ok)
 \end{lstlisting}
@@ -2890,7 +2921,7 @@ let post_free_y (ptr : var) (s : state) : prop =
   exists (v : value).
     s._3 == Ok /\
     points_to_empty (eval_expr s (Var "y")) s /\
-    post_load_y ptr 
+    post_load_y ptr
       (s._1, override s._2 (eval_expr s (Var "y")) (Full v), s._3)
 \end{lstlisting}
 La dirección histórica está representada por \texttt{points\_to\_empty}.
@@ -2913,7 +2944,7 @@ En particular, la aplicación de la regla de elección es:
 
 \begin{lstlisting}[style=fstar]
 let p_push_back_raw = ISL_ChoiceL p_seq_pb1 in
-let p_push_back = ISL_Consequence (post_load_x ptr) (post_store_v ptr) 
+let p_push_back = ISL_Consequence (post_load_x ptr) (post_store_v ptr)
                   p_push_back_raw () () in
 \end{lstlisting}
 Luego, la derivación de \texttt{push\_back} se compone con la lectura inicial y la escritura final.
@@ -2973,9 +3004,9 @@ Para evitar ese desenrollado se usa \texttt{ISL\_KleeneVariant}.
 La familia de aserciones se define como sigue:
 
 \begin{lstlisting}[style=fstar]
-let variant (k : nat) : cond = 
-  fun (st, _, m) -> 
-    k <= 1000000 /\ st "n" == Nat 1000000 /\ 
+let variant (k : nat) : cond =
+  fun (st, _, m) ->
+    k <= 1000000 /\ st "n" == Nat 1000000 /\
     st "i" == Nat k /\ st "j" == Nat k /\ m == Ok
 \end{lstlisting}
 Este predicado asocia el número de iteración lógica \texttt{k} con los valores concretos del \textit{store}.
@@ -3005,8 +3036,8 @@ La postcondición final es:
 
 \begin{lstlisting}[style=fstar]
 let post_er_bug : cond =
-  fun (st, _, m) -> 
-    st "n" == Nat 1000000 /\ st "i" == Nat 1000000 /\ 
+  fun (st, _, m) ->
+    st "n" == Nat 1000000 /\ st "i" == Nat 1000000 /\
     st "j" == Nat 1000000 /\ m == Er
 \end{lstlisting}
 
@@ -3037,7 +3068,7 @@ assert(sum != len);
 
 Para este caso, modelamos una lista enlazada de longitud arbitraria \texttt{n\_target}.
 Aunque en este ejemplo se fija \texttt{n\_target} en diez, la demostración es paramétrica en la longitud de la lista y no requiere desenrollar una iteración por cada nodo.
-Además, se considera como precondición una lista cuyos elementos son todos iguales a 1. 
+Además, se considera como precondición una lista cuyos elementos son todos iguales a 1.
 Esta condición es suficiente para garantizar que, al finalizar el recorrido, la suma de los elementos coincide con la longitud de la lista y la aserción falla.
 No es la única configuración posible que satisface dicha igualdad, pero permite expresar el argumento mediante un predicado espacial paramétrico simple.
 
@@ -3071,8 +3102,8 @@ Luego, definimos la aserción de estado intermedio de la siguiente manera:
 \begin{lstlisting}[style=fstar]
 let post_len_shape (start_ptr curr_ptr next_ptr : loc) (k : nat) : cond =
   fun s ->
-    k < n_target /\ s._3 == Ok /\ s._1 "sum" == Nat (k + 1) /\ 
-    s._1 "len" == Nat (k + 1) /\ s._1 "v" == Nat 1 /\ 
+    k < n_target /\ s._3 == Ok /\ s._1 "sum" == Nat (k + 1) /\
+    s._1 "len" == Nat (k + 1) /\ s._1 "v" == Nat 1 /\
     s._1 "ptr" == Loc curr_ptr /\ points_to curr_ptr (Nat 1) s /\
     (prefix_seg start_ptr curr_ptr k **
     points_to (curr_ptr + 1) (Loc next_ptr) **
@@ -3120,13 +3151,13 @@ Esto se puede observar en la \autoref{fig:particion-lista}.
 \draw[ptr] (n4p.center) to[out=0, in=180, looseness=1.2] (n5v.west);
 
 \draw[decorate,decoration={brace,amplitude=6pt,mirror,raise=5pt}]
-  (n1p.south west) -- (n2p.south east) 
-  node[midway,yshift=-25pt, text width=3.5cm, align=center] 
+  (n1p.south west) -- (n2p.south east)
+  node[midway,yshift=-25pt, text width=3.5cm, align=center]
   {\texttt{prefix\_seg} \\ \scriptsize Porción ya iterada};
 
 \draw[decorate,decoration={brace,amplitude=6pt,mirror,raise=5pt}]
-  (n4p.south west) -- (n5p.south east) 
-  node[midway,yshift=-25pt, text width=4cm, align=center] 
+  (n4p.south west) -- (n5p.south east)
+  node[midway,yshift=-25pt, text width=4cm, align=center]
   {\texttt{list\_seg} \\ \scriptsize Resto por visitar};
 \end{tikzpicture}
 \caption{Partición espacial de la lista durante la iteración \texttt{k}.}
@@ -3141,10 +3172,10 @@ Si el programa original fuese inicializado con una memoria arbitraria, el verifi
 En nuestra demostración, inicializamos la prueba exigiendo en la precondición que el \emph{heap} contenga el predicado \texttt{list\_seg} poblado exactamente con una lista de unos:
 
 \begin{lstlisting}[style=fstar]
-let pre_init (start_ptr : loc) : cond = 
+let pre_init (start_ptr : loc) : cond =
   fun s -> let xs = ones n_target in
-    (exists (curr_ptr : loc). 
-      s._3 == Ok /\ s._1 "ptr" == Loc curr_ptr /\ 
+    (exists (curr_ptr : loc).
+      s._3 == Ok /\ s._1 "ptr" == Loc curr_ptr /\
       (prefix_seg start_ptr curr_ptr 0 ** list_seg curr_ptr 0 xs) s)
 \end{lstlisting}
 
@@ -3159,7 +3190,7 @@ let lemma_prove_sum_step (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr k s))
           (ensures (is_ok (fun s0 -> exists (st_init : var -> value).
                     post_load_v start_ptr k (st_init, s0._2, s0._3) /\
-                    s._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3) 
+                    s._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3)
                                  (Plus (Var "sum") (Var "v"))) /\
                     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) s))
 \end{lstlisting}
@@ -3204,7 +3235,7 @@ El tercer caso muestra que la sub-aproximación permite concentrarse en una úni
 La Regla de la Variante de Kleene permite expresar el efecto de una cantidad arbitraria de iteraciones con una familia de aserciones, sin materializar un árbol diferente para cada valor concreto.
 
 Finalmente, el recorrido de la lista enlazada combina el razonamiento paramétrico con predicados espaciales recursivos.
-La conjunción separadora permite dividir el \emph{heap} entre la parte ya visitada, el nodo actual y el resto de la estructura. 
+La conjunción separadora permite dividir el \emph{heap} entre la parte ya visitada, el nodo actual y el resto de la estructura.
 
 Esta evaluación no establece completitud respecto de todos los programas posibles, no mide el rendimiento de la verificación y no demuestra que las aserciones puedan sintetizarse automáticamente.
 Su alcance consiste en validar que las construcciones desarrolladas en el \autoref{cap:formalizacion-isl} puedan usarse para demostrar la alcanzabilidad de errores no triviales.

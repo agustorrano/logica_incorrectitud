@@ -161,22 +161,45 @@ Finalmente, se describe la organización del documento y se resume el contenido 
 La verificación formal busca establecer propiedades sobre el comportamiento de los programas mediante modelos y demostraciones matemáticas.
 Con los trabajos fundacionales de \citet{floyd67} y \citet{hoare}, una parte importante de esta disciplina se ha concentrado en demostrar que los programas satisfacen sus especificaciones y, como consecuencia, que determinadas clases de errores no pueden producirse.
 A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas, incluyendo concurrencia, \emph{liveness} y uso de recursos.
+\guido{para después: estaría bueno agregar citas}
 
-Los métodos deductivos como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl}, permiten demostrar que un programa satisface una especificación, aunque suelen requerir un gran esfuerzo de anotación y prueba.
+Los métodos deductivos como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl}, permiten demostrar que un programa satisface una especificación,
+\guido{la IL también! seria mas explicito, algo como no contiene
+comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda} aunque suelen requerir un gran esfuerzo de anotación y prueba.
 En cambio, los analizadores estáticos priorizan la automatización y la escalabilidad, pero las aproximaciones que utilizan pueden reducir su precisión y dar lugar a falsos positivos.
+\guido{empezaria incluso explicando qué es un analizador estático. E.g.
+``por otro lado, los \emph{analizadores estáticos} son herramientas
+automatizadas que se corren sobre un programa para encontrar posibles
+errores comunes. En general, estos analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización, pero pueden perder precisión y dar lugar a falsos positivos. Debido a la indecibilidad del problema de verificación
+(teorema de Rice), los analizadores estáticos tienen una tensión inevitable
+entre reportar todos los posibles errores y no reportar falsas advertencias''}
 
 Para proporcionar garantías rigurosas sobre los errores reportados, estos análisis deben tener base en algún marco teórico apropiado y bien entendido.
-Con este propósito, \citet{inclog} introdujo la Lógica de Incorrectitud (IL), una propuesta reciente que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
+Con este propósito, \citet{inclog} introdujo \guido{recientemente}
+la Lógica de Incorrectitud (IL), una propuesta \remove{reciente} que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
 
 La IL se basa en la sub-aproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales.
 En consecuencia, si el sistema permite derivar un error, existe una traza de ejecución que conduce hasta él.
-La lógica puede no representar todos los comportamientos posibles y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.
+La lógica puede no representar todos los comportamientos posibles
+\guido{acá creo que querés decir que una \emph{tripleta} puede no modelar
+todos los comportamientos, que está bien aclarar, pero que la \emph{lógica} pueda
+hacerlo es otro tema (puede todo error en un comando de los nuestros demostrarse?).
+Creo que habíamos visto un paper sobre completitud relativa y la repuesta era que
+sí?}
+y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.
 
 La IL es análoga a la HL para incorrectitud.
+\guido{la primera oración me parece que pierde flujo, por ahí ``la
+versión original de IL presentada por O'Hearn era análoga a la lógica original
+de Hoare, i.e. definida sobre un lenguaje de comandos con un \emph{store}
+pero sin un \emph{heap} y por lo tanto sin estrucutras de datos mutables.''}
 Siendo así, sufre de limitaciones similares a la hora de razonar sobre programas con estado mutable y estructuras de datos complejas.
 En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
+\guido{por ahí un cuadradito con HL, IL, SL, ISL ayuda al lector? no sé,
+queda medio choto capaz}
 
+\guido{se pierde flujo acá}
 Las definiciones y metapropiedades de una lógica pueden demostrarse matemáticamente sobre un papel.
 Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar.
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas, de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.

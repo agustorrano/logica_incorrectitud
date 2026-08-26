@@ -9,3 +9,4 @@ comment.cut
 *.fdb_latexmk
 *.fls
 *.pdf
+*.toc

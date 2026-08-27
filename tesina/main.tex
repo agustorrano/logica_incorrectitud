@@ -201,6 +201,7 @@ queda medio choto capaz}
 
 \guido{se pierde flujo acá}
 Las definiciones y metapropiedades de una lógica pueden demostrarse matemáticamente sobre un papel.
+\guido{explicar qué es una metapropiedad, qué es soundness}
 Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar.
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas, de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
 En esta tesina se usa \fstar{}, un lenguaje de programación orientado a pruebas que combina tipos dependientes, especificaciones lógicas y automatización mediante el solucionador SMT Z3.
@@ -218,11 +219,13 @@ En una primera etapa se mecaniza la IL sobre un lenguaje imperativo simplificado
 Esta primera formalización permite estudiar de forma aislada las características propias de la sub-aproximación, el no determinismo, la composición secuencial y el razonamiento sobre bucles.
 
 En una segunda etapa se extiende el modelo para incorporar memoria mutable y razonamiento espacial.
-Para ello se redefine el estado del programa mediante un \emph{store}, un \emph{heap} y un modo de terminación, y se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.
+Para ello se redefine el estado del programa mediante un \emph{store}, un \emph{heap} y un modo de terminación, y se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.\guido{la étapa previa
+ya tenía store, no?}
 
 Además, se busca que la formalización mantenga una separación entre el núcleo lógico de la ISL y la sintaxis del lenguaje imperativo utilizado.
 Esto pretende facilitar futuras extensiones del modelo y su posible adaptación a lenguajes más expresivos.
 Sin embargo, la reutilización directa del núcleo para distintos lenguajes concretos y la construcción de un analizador automático completo queda fuera del alcance de esta tesina.
+\guido{creo que este párrafo no agrega mucho}
 
 \section{Estructura de la tesina}
 \label{sec:estructura}
@@ -260,13 +263,26 @@ Luego, se introduce la Lógica de Incorrectitud de Separación.
 
 \section{Lógica de Incorrectitud (IL)}
 \label{sec:loginc}
-Desde los inicios de la verificación formal, el enfoque predominante ha sido garantizar la ausencia de errores en el software.
+Desde los inicios de la verificación formal\guido{acá por ahí podés citar a Hoare, Floyd, o
+incluso el paper de Turing sobre verificar una rutina simple (\url{https://turingarchive.kings.cam.ac.uk/publications-lectures-and-talks-amtb/amt-b-8}, o ``An Early Program Proof by Alan Turing'' de Morris y Jones)}, el enfoque predominante ha sido garantizar la ausencia de errores en el software.
 Sin embargo, en el desarrollo de software a escala industrial, los programadores pasan gran parte de su tiempo razonando sobre código incorrecto y buscando errores.
+\guido{este ``sin embargo'' no me cierra, yo diria que aun si la verificacion formal existe, ha
+sido históricamente inaplicable a sistemas de escala industrial debido a su complejidad y a
+veces por no poder expresar las propiedades de interés (e.g. ``la interfaz es intuitiva'').
+Hay excepciones notables, como sel4, HACL*, CompCert, etc, pero a grosso modo no es algo
+usado en la industria. Al menos pre-IA. Entonces, los programadores no la usan, pero sí usan
+analizadores estaticos. Y putean porque marcan demasiados falsos positivos y los terminan
+ignorando. Aca nos interesa eliminar este ultimo problema.}
+%
 La Lógica de Incorrectitud (IL), introducida por \citet{inclog}, propone lo inverso a la Lógica de Hoare.
-En lugar de razonar sobre la ausencia de errores, provee las bases para demostrar matemáticamente la presencia de los mismos mediante la sub-aproximación.
+En lugar de razonar sobre la ausencia de errores, provee las bases para demostrar matemáticamente la presencia de los mismos mediante la sub-aproximación.\guido{poner sub-aproximación en itálica, y tal vez
+``mediante una nocion llamada sub-aproximacion''? como está escrito, suena a que el lector
+ya debería saber lo que es.}
 
 La principal diferencia entre la IL y la HL se encuentra en la dirección de la aproximación utilizada.
 Mientras que la HL emplea sobre-aproximaciones para abarcar todos los comportamientos posibles de un programa, la IL utiliza sub-aproximaciones que describen únicamente comportamientos respaldados por ejecuciones reales.
+\guido{bien, pero ``la dirección de aproximación utilizada'' va a confundir a alguien que no
+conoce del tema, incluso si sabe HL}
 
 Antes de presentar las tripletas de incorrectitud, es necesario observar cómo se interpretan sus aserciones.
 Sea $\Sigma$ el conjunto de estados posibles del programa.
@@ -274,11 +290,16 @@ Una aserción $p$ es un predicado sobre estados, es decir, una función $p : \Si
 Equivalentemente, puede identificarse con el conjunto de estados que la satisfacen:
 $$[\![ p ]\!] = \{\sigma \in \Sigma \mid p(\sigma) \}$$
 De ahora en más, utilizaremos indistintamente una aserción y el conjunto de estados que representa escribiendo $p \subseteq \Sigma$.
+\guido{Esto no es exactamente lo mismo que en Preliminares?}
 
 La semántica de un comando puede representarse mediante una relación binaria entre estados.
 Para un comando $C$ y una condición de salida $\epsilon \in \{ok, er\}$, denotamos por
 $$[\![C]\!]_\epsilon \subseteq \Sigma \times \Sigma$$
 la relación que contiene exactamente los pares $(\sigma, \sigma')$ tales que $C$ puede ejecutarse desde el estado inicial $\sigma$ y finalizar en $\sigma'$ mediante el canal de salida $\epsilon$.
+\guido{idem, todo lo que sea semántica operacional, relaciones, pre- y post-imagen
+no cambia entre HL e IL. Repetir las definiciones sin mencionar esto va a confundir.
+Elijamos un sólo lugar para ponerlas, podría ser todo acá. De hecho ``preliminares''
+y ``conceptos previos'' significan lo mismo para mí.}
 
 \begin{definicion}[Post-imagen]
 \label{def:post-img}
@@ -321,6 +342,10 @@ La tripleta sobre-aproximada o tripleta de Hoare:
 
 $$\triple{p}{r}{q} \text{ es válida si y solo si } post(r)(p) \subseteq q$$
 \end{definicion}
+\guido{comentario sobre el estilo: estás introduciendo la sintaxis y dando definiendo
+cuando es valida a la vez, lo cual es confuso. Lo usual es decir algo como
+``una tripleta de sub-aproximacion, denotada [p]c[q], representa que el comando c bla bla bla.
+Una tripleta se llama semanticamente valida ($\models$) cuando bla bla''}
 
 La diferencia entre ambas tripletas reside en la dirección de la aproximación.
 La tripleta de Hoare busca describir un conjunto que contenga todos los estados alcanzables, mientras que la tripleta sub-aproximada describe solo estados cuya alcanzabilidad puede justificarse.
@@ -329,9 +354,16 @@ La relación entre ambas aproximaciones puede resumirse como:
 $$q_{sub} \subseteq post(r)(p) \subseteq q_{sobre}$$
 
 En consecuencia, una sobre-aproximación imprecisa puede incluir comportamientos que no se producen en ninguna ejecución real y dar lugar a falsos positivos.
+\guido{me parece raro decir que HL puede dar falsos positivos.
+Eso es una propiedad de analizadores estaticos, no de una logica.
+El paper de IL creo que menciona que si diseñás un analizador basadandote
+en una logica de sobreaprox entonces tenes falsos positivos, si, pero eso es una mala
+decision de quien lo implementa.}
 Una sub-aproximación puede omitir comportamientos y, por lo tanto, no encontrar todos los errores posibles, pero no debe introducir estados finales imposibles.
 
 La tripleta de incorrectitud se obtiene instanciando la tripleta sub-aproximada con la semántica de un comando y una condición de salida.
+\guido{estas segura que tripleta de subaprox y tripleta de incorrectitud
+son conceptos distintos...?}
 
 \begin{definicion}(Tripleta de incorrectitud)
 \label{def:trip-inc}
@@ -344,6 +376,10 @@ $$\models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$$
 si y solo si $q \subseteq post_\epsilon(C)(p)$, donde $p$ se denomina presunción, mientras que $q$ describe un resultado para el canal de terminación $\epsilon$.
 El canal $ok$ representa terminación normal y el canal $er$ una provocada por un error.
 \end{definicion}
+\guido{hay que introducir condicion de salida, no explicamos que
+el lenguaje puede lanzar errores. De hecho tampoco introducimos
+la sintaxis del lenguaje de comandos, aunque eso puede estar
+bien porque la nocion de esta logica es independiente del lenguaje concreto.}
 
 %\guido{Para que lo de abajo tenga sentido, hay que decir que p/q pueden ser interpretados como predicados sobre el estado (= conjuntos de estados). También habría que definir $post(C)p$. Por ahí podés empezar con un vistazo por arriba y luego entrar en los detalles de qué significa cada cosa.}
 

@@ -464,3 +464,137 @@
     primaryClass  = {cs.PL},
     url           = {https://arxiv.org/abs/2607.11611}, 
 }
+
+@inproceedings{
+    templog,
+    author    = {Pnueli, Amir},
+    title     = {The temporal logic of programs},
+    year      = {1977},
+    publisher = {IEEE Computer Society},
+    address   = {USA},
+    url       = {https://doi.org/10.1109/SFCS.1977.32},
+    doi       = {10.1109/SFCS.1977.32},
+    abstract  = {A unified approach to program verification is suggested, which applies to both sequential and parallel programs. The main proof method suggested is that of temporal reasoning in which the time dependence of events is the basic concept. Two formal systems are presented for providing a basis for temporal reasoning. One forms a formalization of the method of intermittent assertions, while the other is an adaptation of the tense logic system Kb, and is particularly suitable for reasoning about concurrent programs.},
+    booktitle = {Proceedings of the 18th Annual Symposium on Foundations of Computer Science},
+    pages     = {46–57},
+    numpages  = {12},
+    series    = {SFCS '77}
+}
+
+@article{
+    concurrence,
+    author     = {Owicki, Susan and Gries, David},
+    title      = {An axiomatic proof technique for parallel programs I},
+    year       = {1976},
+    issue_date = {December  1976},
+    publisher  = {Springer-Verlag},
+    address    = {Berlin, Heidelberg},
+    volume     = {6},
+    number     = {4},
+    issn       = {0001-5903},
+    url        = {https://doi.org/10.1007/BF00268134},
+    doi        = {10.1007/BF00268134},
+    abstract   = {A language for parallel programming, with a primitive construct for synchronization and mutual exclusion, is presented. Hoare's deductive system for proving partial correctness of sequential programs is extended to include the parallelism described by the language. The proof method lends insight into how one should understand and present parallel programs. Examples are given using several of the standard problems in the literature. Methods for proving termination and the absence of deadlock are also given.},
+    journal    = {Acta Inf.},
+    month      = dec,
+    pages      = {319–340},
+    numpages   = {22}
+}
+
+@inproceedings{
+    dinlog,
+    title     = {SEMANTICAL CONSIDERATIONS ON FLOYD-HOARE LOGIC},
+    author    = {Vaughan R. Pratt},
+    booktitle = {IEEE Annual Symposium on Foundations of Computer Science},
+    year      = {1976},
+    url       = {https://api.semanticscholar.org/CorpusID:214793472}
+}
+
+@article{10.1145/982962.964003,
+author = {Benton, Nick},
+title = {Simple relational correctness proofs for static analyses and program transformations},
+year = {2004},
+issue_date = {January 2004},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {39},
+number = {1},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/982962.964003},
+doi = {10.1145/982962.964003},
+abstract = {We show how some classical static analyses for imperative programs, and the optimizing transformations which they enable, may be expressed and proved correct using elementary logical and denotationaltechniques. The key ingredients are an interpretation of program properties as relations, rather than predicates, and a realization that although many program analyses are traditionally formulated in very intensional terms, the associated transformations are actually enabled by more liberal extensional properties.We illustrate our approach with formal systems for analysing and transforming while-programs. The first is a simple type system which tracks constancy and dependency information and can be used to perform dead-code elimination, constant propagation and program slicing as well as capturing a form of secure information flow. The second is a relational version of Hoare logic, which significantly generalizes our first type system and can also justify optimizations including hoisting loop invariants. Finally we show how a simple available expression analysis and redundancy elimination transformation may be justified by translation into relational Hoare logic.},
+journal = {SIGPLAN Not.},
+month = jan,
+pages = {14–25},
+numpages = {12},
+keywords = {types, security, program analysis, partial equivalence relations, optimizing compilation, information flow, dependency, denotational semantics, Hoare logic}
+}
+
+@inproceedings{
+    hlrel,
+    author    = {Benton, Nick},
+    title     = {Simple relational correctness proofs for static analyses and program transformations},
+    year      = {2004},
+    isbn      = {158113729X},
+    publisher = {Association for Computing Machinery},
+    address   = {New York, NY, USA},
+    url       = {https://doi.org/10.1145/964001.964003},
+    doi       = {10.1145/964001.964003},
+    abstract  = {We show how some classical static analyses for imperative programs, and the optimizing transformations which they enable, may be expressed and proved correct using elementary logical and denotationaltechniques. The key ingredients are an interpretation of program properties as relations, rather than predicates, and a realization that although many program analyses are traditionally formulated in very intensional terms, the associated transformations are actually enabled by more liberal extensional properties.We illustrate our approach with formal systems for analysing and transforming while-programs. The first is a simple type system which tracks constancy and dependency information and can be used to perform dead-code elimination, constant propagation and program slicing as well as capturing a form of secure information flow. The second is a relational version of Hoare logic, which significantly generalizes our first type system and can also justify optimizations including hoisting loop invariants. Finally we show how a simple available expression analysis and redundancy elimination transformation may be justified by translation into relational Hoare logic.},
+    booktitle = {Proceedings of the 31st ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+    pages     = {14–25},
+    numpages  = {12},
+    keywords  = {types, security, program analysis, partial equivalence relations, optimizing compilation, information flow, dependency, denotational semantics, Hoare logic},
+    location  = {Venice, Italy},
+    series    = {POPL '04}
+}
+
+@article{10.1145/1594834.1480894,
+author = {Barthe, Gilles and Gr{\'e}goire, Benjamin and Zanella B{\'e}guelin, Santiago},
+title = {Formal certification of code-based cryptographic proofs},
+year = {2009},
+issue_date = {January 2009},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {44},
+number = {1},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/1594834.1480894},
+doi = {10.1145/1594834.1480894},
+abstract = {As cryptographic proofs have become essentially unverifiable, cryptographers have argued in favor of developing techniques that help tame the complexity of their proofs. Game-based techniques provide a popular approach in which proofs are structured as sequences of games and in which proof steps establish the validity of transitions between successive games. Code-based techniques form an instance of this approach that takes a code-centric view of games, and that relies on programming language theory to justify proof steps. While code-based techniques contribute to formalize the security statements precisely and to carry out proofs systematically, typical proofs are so long and involved that formal verification is necessary to achieve a high degree of confidence. We present Certicrypt, a framework that enables the machine-checked construction and verification of code-based proofs. Certicrypt is built upon the general-purpose proof assistant Coq, and draws on many areas, including probability, complexity, algebra, and semantics of programming languages. Certicrypt provides certified tools to reason about the equivalence of probabilistic programs, including a relational Hoare logic, a theory of observational equivalence, verified program transformations, and game-based techniques such as reasoning about failure events. The usefulness of Certicrypt is demonstrated through various examples, including a proof of semantic security of OAEP (with a bound that improves upon existing published results), and a proof of existential unforgeability of FDH signatures. Our work provides a first yet significant step towards Halevi's ambitious programme of providing tool support for cryptographic proofs.},
+journal = {SIGPLAN Not.},
+month = jan,
+pages = {90–101},
+numpages = {12},
+keywords = {coq proof assistant, cryptographic proofs, observational equivalence, program transformations, relational hoare logic}
+}
+
+@inproceedings{
+    cripto,
+    author    = {Barthe, Gilles and Gr{\'e}goire, Benjamin and Zanella B{\'e}guelin, Santiago},
+    title     = {Formal certification of code-based cryptographic proofs},
+    year      = {2009},
+    isbn      = {9781605583792},
+    publisher = {Association for Computing Machinery},
+    address   = {New York, NY, USA},
+    url       = {https://doi.org/10.1145/1480881.1480894},
+    doi       = {10.1145/1480881.1480894},
+    abstract  = {As cryptographic proofs have become essentially unverifiable, cryptographers have argued in favor of developing techniques that help tame the complexity of their proofs. Game-based techniques provide a popular approach in which proofs are structured as sequences of games and in which proof steps establish the validity of transitions between successive games. Code-based techniques form an instance of this approach that takes a code-centric view of games, and that relies on programming language theory to justify proof steps. While code-based techniques contribute to formalize the security statements precisely and to carry out proofs systematically, typical proofs are so long and involved that formal verification is necessary to achieve a high degree of confidence. We present Certicrypt, a framework that enables the machine-checked construction and verification of code-based proofs. Certicrypt is built upon the general-purpose proof assistant Coq, and draws on many areas, including probability, complexity, algebra, and semantics of programming languages. Certicrypt provides certified tools to reason about the equivalence of probabilistic programs, including a relational Hoare logic, a theory of observational equivalence, verified program transformations, and game-based techniques such as reasoning about failure events. The usefulness of Certicrypt is demonstrated through various examples, including a proof of semantic security of OAEP (with a bound that improves upon existing published results), and a proof of existential unforgeability of FDH signatures. Our work provides a first yet significant step towards Halevi's ambitious programme of providing tool support for cryptographic proofs.},
+    booktitle = {Proceedings of the 36th Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+    pages     = {90–101},
+    numpages  = {12},
+    keywords  = {coq proof assistant, cryptographic proofs, observational equivalence, program transformations, relational hoare logic},
+    location  = {Savannah, GA, USA},
+    series    = {POPL '09}
+}
+
+@article{
+    riceteo,
+    title   = {Classes of recursively enumerable sets and their decision problems},
+    author  = {H. Gordon Rice},
+    journal = {Transactions of the American Mathematical Society},
+    year    = {1953},
+    volume  = {74},
+    pages   = {358-366},
+    url     = {https://api.semanticscholar.org/CorpusID:120980829}
+}

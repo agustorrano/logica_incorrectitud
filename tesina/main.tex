@@ -211,13 +211,33 @@ Finalmente, se describe la organización del documento y se resume el contenido 
 \label{sec:motivacion}
 La verificación formal busca establecer propiedades sobre el comportamiento de los programas mediante modelos y demostraciones matemáticas.
 Con los trabajos fundacionales de \citet{floyd67} y \citet{hoare}, una parte importante de esta disciplina se ha concentrado en demostrar que los programas satisfacen sus especificaciones y, como consecuencia, que determinadas clases de errores no pueden producirse.
-A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas, incluyendo concurrencia, \emph{liveness} y uso de recursos.
+A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas.
+\changed{La lógica de \citet{concurrence} extendió el razonamiento axiomático a programas concurrentes, mientras que la Lógica Temporal de \citet{templog}
+permitió expresar propiedades sobre la evolución de las ejecuciones, como \emph{liveness} y \emph{safety}.
+La Lógica Dinámica de \citet{dinlog} incorporó los programas como modalidades dentro de las fórmulas lógicas.
+Luego, la Lógica de Hoare Relacional~\cite{hlrel} permitió comparar dos ejecuciones y demostrar propiedades
+como equivalencia de programas.
+También se desarrollaron lógicas para programas probabilísticos, utilizadas, por ejemplo, para verificar propiedades de construcciones criptográficas~\cite{cripto}.}
 \guido{para después: estaría bueno agregar citas}
 
-Los métodos deductivos como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl}, permiten demostrar que un programa satisface una especificación,
+Los métodos deductivos \changed{orientados a la correctitud,} como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
+permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un porgrama produce comportamientos indeseados.} 
+\remove{que un programa satisface una especificación,}
 \guido{la IL también! seria mas explicito, algo como no contiene
-comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda} aunque suelen requerir un gran esfuerzo de anotación y prueba.
-En cambio, los analizadores estáticos priorizan la automatización y la escalabilidad, pero las aproximaciones que utilizan pueden reducir su precisión y dar lugar a falsos positivos.
+comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda}
+\changed{Estas desmostraciones proporcianan garantías matemáticas,}
+aunque suelen requerir un gran esfuerzo de anotación y prueba,
+\changed{lo que dificulta su aplicación directa a programas de gran escala.}
+
+\changed{Por otro lado, los analizadores estáticos son herramientas
+automatizadas que examinan un programa sin necesidad de ejecutarlo sobre entradas concretas,
+con el objetivo de encontrar posibles errores comunes.
+En general, estos analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
+pero pueden perder precisión y dar lugar a falsos positivos.
+Debido a la indecibilidad de las propiedades semánticas no triviales de los programas,
+establecida por el Teorema de Rice~\cite{riceteo}, los analizadores estáticos tienen una tensión inevitable
+entre reportar todos los posibles errores y evitar falsas advertencias}
+\remove{En cambio, los analizadores estáticos priorizan la automatización y la escalabilidad, pero las aproximaciones que utilizan pueden reducir su precisión y dar lugar a falsos positivos.}
 \guido{empezaria incluso explicando qué es un analizador estático. E.g.
 ``por otro lado, los \emph{analizadores estáticos} son herramientas
 automatizadas que se corren sobre un programa para encontrar posibles
@@ -226,32 +246,67 @@ errores comunes. En general, estos analizadores utilizan aproximaciones que prio
 entre reportar todos los posibles errores y no reportar falsas advertencias''}
 
 Para proporcionar garantías rigurosas sobre los errores reportados, estos análisis deben tener base en algún marco teórico apropiado y bien entendido.
-Con este propósito, \citet{inclog} introdujo \guido{recientemente}
-la Lógica de Incorrectitud (IL), una propuesta \remove{reciente} que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
+Con este propósito, \citet{inclog} introdujo recientemente %\guido{recientemente}
+la Lógica de Incorrectitud (IL), una propuesta %\remove{reciente}
+que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
 
 La IL se basa en la sub-aproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales.
-En consecuencia, si el sistema permite derivar un error, existe una traza de ejecución que conduce hasta él.
-La lógica puede no representar todos los comportamientos posibles
+En consecuencia, si el sistema permite derivar uns \changed{tripleta que contiene un estado de} error, existe una traza de ejecución que conduce hasta él.
+\remove{La lógica puede no representar todos los comportamientos posibles}
 \guido{acá creo que querés decir que una \emph{tripleta} puede no modelar
 todos los comportamientos, que está bien aclarar, pero que la \emph{lógica} pueda
 hacerlo es otro tema (puede todo error en un comando de los nuestros demostrarse?).
 Creo que habíamos visto un paper sobre completitud relativa y la repuesta era que
 sí?}
-y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.
+\remove{y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.}
+\changed{Una tripleta de incorrectitud puede representar solo una parte de los comportamientos alcanzables del programa y,
+por lo tanto, no tiene que describir todos los errores existentes.
+Sin embargo, los errores incluidos en una tripleta semáticamente válida están respaldadas por ejecuciones reales y no constituyen falsos positivos.}
 
-La IL es análoga a la HL para incorrectitud.
 \guido{la primera oración me parece que pierde flujo, por ahí ``la
 versión original de IL presentada por O'Hearn era análoga a la lógica original
 de Hoare, i.e. definida sobre un lenguaje de comandos con un \emph{store}
 pero sin un \emph{heap} y por lo tanto sin estrucutras de datos mutables.''}
-Siendo así, sufre de limitaciones similares a la hora de razonar sobre programas con estado mutable y estructuras de datos complejas.
+
+\remove{La IL es análoga a la HL para incorrectitud.}
+
+\changed{La versión original de la IL presentada por O'Hearn es análoga a la Lógica de Hoare clásica,
+ya que se define sobre un lenguaje de comandos cuyo estado esta representado con un \emph{store},
+pero sin un \emph{heap}.
+Por lo tanto, no permite razonar sobre memoria dinámica y estrucutras de datos mutables.}
 En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
+\changed{Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.}
+
 \guido{por ahí un cuadradito con HL, IL, SL, ISL ayuda al lector? no sé,
 queda medio choto capaz}
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{
+  | >{\centering\arraybackslash}X
+  | >{\centering\arraybackslash}X
+  | >{\centering\arraybackslash}X |
+}
+  \hline
+  \textbf{Memoria modelada} & \textbf{Correctitud} & \textbf{Incorrectitud} \\
+  \hline
+  Variables del programa (\emph{store}) & Lógica de Hoare (HL) & Lógica de Incorrectitud (IL) \\
+  \hline
+  Variables y memoria dinámica (\emph{store} y \emph{heap}) & Lógica de Separación (SL) & Lógica de Incorrectitud de Separación (ISL) \\
+  \hline
+\end{tabularx}
+\caption{Relación entre las lógicas.}
+\label{tab:relacion-logicas}
+\end{table}
 
 \guido{se pierde flujo acá}
-Las definiciones y metapropiedades de una lógica pueden demostrarse matemáticamente sobre un papel.
+
+\changed{Para que estas lógicas den garantías rigurosas, no basta con definir sus aserciones y reglas de inferencia,
+teambién es necesario demostrar sus metapropiedades, es decir, propiedades del propio sistema lógico y de su relación con la semántica.
+Una de las más importantes es \emph{soundness}, que establece que toda tripleta derivable mediante las reglas del sistema
+es también semánticamente válida.}
+\changed{Estas propiedades} pueden demostrarse matemáticamente sobre un papel.
 \guido{explicar qué es una metapropiedad, qué es soundness}
 Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar.
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas, de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
@@ -266,16 +321,21 @@ El trabajo se concentra en establecer un núcleo lógico mecanizado que pueda se
 El objetivo general de esta tesina es formalizar la ISL en el asistente de pruebas \fstar{} y demostrar su solidez respecto de una semántica operacional explícita.
 Esta formalización se desarrolla de manera incremental.
 
-En una primera etapa se mecaniza la IL sobre un lenguaje imperativo simplificado, sin operaciones de memoria dinámica.
+En una primera etapa se mecaniza la IL sobre un lenguaje imperativo simplificado,
+\changed{cuyo estado está representado mediante un \emph{store} y}
+sin operaciones sobre memoria dinámica.
 Esta primera formalización permite estudiar de forma aislada las características propias de la sub-aproximación, el no determinismo, la composición secuencial y el razonamiento sobre bucles.
 
 En una segunda etapa se extiende el modelo para incorporar memoria mutable y razonamiento espacial.
-Para ello se redefine el estado del programa mediante un \emph{store}, un \emph{heap} y un modo de terminación, y se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.\guido{la étapa previa
+Para ello, \changed{el estado, representado inicialmente con un \emph{store}, se aplía con}
+un \emph{heap} y un modo de terminación.
+Además, se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.\guido{la étapa previa
 ya tenía store, no?}
+\agustina{Si, ahí creo que esta más claro.}
 
-Además, se busca que la formalización mantenga una separación entre el núcleo lógico de la ISL y la sintaxis del lenguaje imperativo utilizado.
+\remove{Además, se busca que la formalización mantenga una separación entre el núcleo lógico de la ISL y la sintaxis del lenguaje imperativo utilizado.
 Esto pretende facilitar futuras extensiones del modelo y su posible adaptación a lenguajes más expresivos.
-Sin embargo, la reutilización directa del núcleo para distintos lenguajes concretos y la construcción de un analizador automático completo queda fuera del alcance de esta tesina.
+Sin embargo, la reutilización directa del núcleo para distintos lenguajes concretos y la construcción de un analizador automático completo queda fuera del alcance de esta tesina.}
 \guido{creo que este párrafo no agrega mucho}
 
 \section{Estructura de la tesina}

@@ -8,6 +8,7 @@
 \newif\ifdraft\drafttrue
 \newcommand{\comm}[3]{\ifdraft{{\color{#1}[#2: #3]}}\fi}
 \definecolor{darkgreen}{rgb}{0 0.5, 0}
+\newcommand{\changed}[1]{\textcolor{magenta}{#1}}
 \newcommand{\agustina}[1]{\comm{darkgreen}{Agustina}{#1}}
 \newcommand{\guido}[1]{\comm{blue}{Guido}{#1}}
 \newcommand{\remove}[1]{\ifdraft{\color{gray}{\sout{#1}}}\fi}
@@ -37,18 +38,14 @@ Frente a estas limitaciones, la industria ha usualmente preferido usar herramien
 A diferencia de los demostradores de correctitud, estos analizadores suelen emplear abstracciones y aproximaciones de los comportamientos posibles del programa perdiendo precisión en pos de escalabilidad.
 Aunque estas técnicas pueden estar respaldadas por fundamentos formales, suelen reportar muchos falsos positivos, es decir, advertencias sobre errores que en realidad no son alcanzables en ninguna ejecución real del programa.
 Esto reduce la confianza y productividad de los desarrolladores, quienes deben invertir tiempo en descartar manualmente errores mal advertidos.
-%\guido{Creo que reescribiría la oración para hablar 1) de demostradores de correctitud y 2) de analizadores estáticos. Ambos tienen problemas. Pero un analizador estático es una herramienta que hace un mejor esfuerzo para encontrar bugs, no están basados directamente en una lógica de correctitud (salvo haciendólos desviar muchísimo de la misma)}
 
 La Lógica de Incorrectitud surge como propuesta para invertir el paradigma tradicional al centrarse en la demostración de errores alcanzables, garantizando la ausencia de falsos positivos en los errores reportados.
 Recientemente, esta teoría se combinó con el razonamiento local sobre la memoria de la Lógica de Separación, introduciendo la Lógica de Incorrectitud de Separación.
 La mecanización de esta lógica constituye todavía un área de desarrollo reciente.
 
 Presentamos una formalización de la Lógica de Incorrectitud de Separación utilizando \fstar{}, un lenguaje de programación de tipos dependientes y asistente de pruebas.
-%\guido{Es cierto esto último? Me parece que la cosa no quedó muy modular}
 Por el lado teórico, demostramos las metapropiedades fundamentales de la lógica dentro del asistente de pruebas, haciendo especial énfasis en probar su solidez (\textit{soundness}) matemática para asegurar que cada error detectado sea verdaderamente alcanzable.
 Por el lado concreto, utilizamos la lógica formalizada para demostrar la existencia de errores en programas no triviales que hacen uso de estado mutable.
-%\remove{De esta forma, buscamos darle una base matemática segura y verificada a las herramientas que detectan errores automáticamente.}
-%\guido{no pondría esto en el resumen, sólo la breve intro + lo que hicimos}
 
 \guido{perfecto el resumen}
 
@@ -66,68 +63,122 @@ Agradezco a ...
 A lo largo de este trabajo se asume que el lector posee familiaridad con la lógica de primer orden, teoría elemental de conjuntos, relaciones binarias, funciones y fundamentos de la verificación formal de programas, en particular de la Lógica de Hoare (HL).
 A continuación repasamos brevemente las nociones que se utilizan en los capítulos siguientes, con el fin de fijar la notación y facilitar la comparación entre la Lógica de Hoare y la Lógica de Incorrectitud (IL).
 
-Sea $\Sigma$ el conjunto de estados posibles de un programa.
+Sea $\Sigma$ un conjunto de estados posibles de un programa.
+\changed{Un estado representa el contenido de la memoria del programa en un momento de su ejecución.}
 \guido{estado = contenido de la memoria? no incluye program counter, stack, etc}
-Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop}$.
+\agustina{¿debería explicar más qué significa un estado?}
+Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop}$\changed{, 
+donde $\mathsf{Prop}$ representa el universo de las proposiciones lógicas.
+Por lo tanto, para cada estado $\sigma$, la exprsión $p(\sigma)$ afirma una propiedad que puede ser verdadera o falsa en ese estado}.
 \guido{``Prop'' no va a ser entendido por todo lector, por ahí podés decir
 algo mínimo sobre Prop, o usar Bool ($\mathbb{B}$)}
-Semánticamente, \guido{y usualmente?} una aserción puede identificarse con el conjunto de estados que la satisfacen:
+Semánticamente, \guido{y usualmente?} \agustina{no entiendo el comentario} una aserción puede identificarse con el conjunto de estados que la satisfacen:
 $$[\![p]\!] = \{\sigma \in \Sigma \mid p(\sigma)\}$$
 En lo que sigue se utilizará esta identificación de manera implícita.
 Por lo tanto, las expresiones $\sigma \in p$ y $p(\sigma)$ se considerarán equivalentes.
-\guido{está muy bien aclararlo, por cierto}
+%\guido{está muy bien aclararlo, por cierto}
 
-El comportamiento de un programa se representa mediante una relación binaria sobre estados $R \subseteq \Sigma \times \Sigma$.
-La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma'$ puede obtenerse a partir del estado $\sigma$ mediante la transición representada por $R$.
-\guido{R es un programa y ejecuta por completo, no? de alguna forma esto
-es semántica big-step}
+\section*{Relaciones entre estados}
+Sea $R \subseteq \Sigma \times \Sigma$ una relación binaria entre estados.
+La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma$ esta relacionado mediante $R$
+con el estado $\sigma'$.
+%\guido{R es un programa y ejecuta por completo, no? de alguna forma esto
+%es semántica big-step}
 
-A partir de esta relación y una aserción, podemos definir la imagen posterior de $p$ mediante $R$ como:
+Dada una aserción $p \subseteq \Sigma$, podemos definir la imagen posterior de $p$ mediante $R$ como:
 $$\operatorname{post}(R)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}$$
-\guido{``Es decir,''}
-La expresión $\operatorname{post}(R)(p)$ contiene exactamente los estados que pueden alcanzarse mediante una transición de $R$ desde algún estado que satisface $p$.
-\guido{Notar que se permite que R sea no determinista, i.e. que haya
-varios estados $q$ tales que $p~R~q$, e incluso que la postimagen sea vacía}
+%\guido{``Es decir,''}
+Es decir, la expresión $\operatorname{post}(R)(p)$ contiene exactamente los estados que pueden alcanzarse mediante una transición de $R$ desde algún estado perteneciente a $p$.
+%\guido{Notar que se permite que R sea no determinista, i.e. que haya
+%varios estados $q$ tales que $p~R~q$, e incluso que la postimagen sea vacía}
 
+Análogamente, dada una aserción $q \subseteq \Sigma$, la preimagen de $q$ mediante $R$ se define como:
+$$\operatorname{pre}(R)(p) = \{\sigma \in \Sigma \mid \exists \sigma' \in q. \; (\sigma, \sigma') \in R\}$$
+Es decir, la expresión $\operatorname{pre}(R)(q)$ contiene los estados que se relacionan
+mediante $R$ con algún estado perteneciente a $q$.
+
+\section*{Programas como relaciones}
 Para un comando $C$, denotaremos su relación semántica mediante $[\![C]\!] \subseteq \Sigma \times \Sigma$.
+La pertenencia $(\sigma, \sigma') \in [\![C]\!]$ indica que existe una ejecución completa y terminante de $C$ que empieza en el estado
+$\sigma$ y termina en el estado $\sigma'$.
+En este sentido, $[\![C]\!]$ constituye una representación relacional de una semántica de estilo \emph{big-step}.
+
 Por abreviación escribiremos:
 $$\operatorname{post}(C)(p) = \operatorname{post}([\![C]\!])(p)$$
+Por lo tanto, $\operatorname{post}(C)(p)$ contiene los estados que pueden obtenerse como resultado de una ejecución terminante de $C$ que inicia en algún estado que satisface $p$.
+
+La representación del comportamiento de un comando con una relación permite observar que una ejecución no siempre produce un único estado final.
+En particular, desde un mismo estado inicial pueden existir varias ejecuciones terminantes con resultados diferentes.
+Si un comando $C$ puede finalizar desde $\sigma$ en dos estados distintos $\sigma_1$ y $\sigma_2$, entonces:
+$$(\sigma, \sigma_1) \in [\![C]\!] \land (\sigma, \sigma_2) \in [\![C]\!].$$
+Este caso representa un comportamiento no determinista y ambos estados finales pertenecen a la postimagen de cualquier aserción que contenga a $\sigma$.
+
+Por otra parte, la relación no tiene que asociar necesariamente un estado final a cada estado inicial.
+Puede ocurrir que, para algún $\sigma \in \Sigma$, no exista ningún estado $\sigma' \in \Sigma$ tal que $(\sigma, \sigma') \in [\![C]\!]$.
+En este caso, $[\![C]\!]$ no registra ningún resultado terminante de $C$ desde $\sigma$.
+
 \guido{estaba leyendo R arriba como un comando, pero era una relacion. Por ahi
 podemos escribir una subseccion que solamente habla de relaciones, pre- y post-imagen, etc,
 y luego otra que habla de programas (que terminan siendo relaciones, pero ahi
 hay que explicar qué significa que tenga varios o ningún resultado)}
+\agustina{¿mejor con la separación?}
 
-A lo largo del trabajo se distinguirán dos niveles de razonamiento.
+\remove{A lo largo del trabajo se distinguirán dos niveles de razonamiento.
 La noción $\vdash_{\mathcal{L}} S$ indica que la especificación $S$ puede derivarse mediante las reglas de inferencia del sistema deductivo $\mathcal{L}$.
-En cambio, $\models_{\mathcal{L}} S$ indica que $S$ es válida respecto de la semántica del lenguaje.
+En cambio, $\models_{\mathcal{L}} S$ indica que $S$ es válida respecto de la semántica del lenguaje.}
 \guido{Este párrafo no fluye, es algo totalmente distinto a lo anterior.
 Empezaría recordando lo que es la HL (sig parrafo) y luego hablaria de esto.}
+\agustina{Lo menciono más abajo.}
 
+\section*{Lógica de Hoare}
 La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación.
 Su unidad básica es la tripleta de Hoare:
 $$\triple{p}{C}{q}$$
 donde $p$ y $q$ son aserciones (predicados sobre el estado del programa) y $C$ es un comando.
 
-Esta notación establece \guido{``esta tripleta denota''} que si el programa $C$ se ejecuta a partir de un estado que satisface la precondición $p$, y dicha ejecución termina, entonces el estado resultante satisface la postcondición $q$.
-Esta es una correctitud parcial, ya que la tripleta no garantiza que la ejecución vaya a terminar, sino que, en caso de terminar, el resultado será el esperado.
+\changed{En este trabajo consideramos la versión de correctitud parcial de la HL, ya que es la que permite
+establecer de manera más directa la comparación con la IL: las dos caracterizan
+estados resultantes de ejecuciones que terminan, sin exigir la terminación de todas
+las ejecuciones posibles.
+Bajo esta interpretacipon, la}
+tripleta denota
+%\guido{``esta tripleta denota''}
+que si el programa $C$ se ejecuta a partir de un estado que satisface la precondición $p$, y dicha ejecución termina, entonces el estado resultante satisface la postcondición $q$.
+\changed{La tripleta no garantiza la terminación de $C$.}
+\remove{Esta es una correctitud parcial, ya que la tripleta no garantiza que la ejecución vaya a terminar, sino que, en caso de terminar, el resultado será el esperado.}
 \guido{esto no es siempre así, hay versiones totales y parciales de HL (y SL, etc).
 Acá siempre hacemos parcial? está bien, pero conviene aclararlo.}
-Semánticamente:
-$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}(C)(p) \subseteq q$$
 
+Semánticamente, \changed{la validez de una tripleta de Hoare se define mediante}:
+$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}(C)(p) \subseteq q$$
+\changed{En una tripleta de hoare,
+entonces, $q$ es una sobreaproximación de la postimagen de $p$ mediante $C$,
+pudiendo contener muchos más estados de los que realmente se alcanzan.}
 \guido{arranca raro el parrafo sig, yo diria: en una tripleta de hoare,
 entonces, $q$ es una \emph{sobreaproximación} de la postimagen de $p$ mediante $C$,
 pudiendo contener muchos más estados de los que realmente se alcanzan.}
 
-Esta es la noción de sobre-aproximación, $q$ puede describir más estados de los que el programa realmente alcanza, pero nunca menos.
-Cuando este principio se utiliza en analizadores automáticos orientados a buscar errores, esos estados pueden dar lugar a falsos positivos.
+\agustina{¿vale la pena poner este siguiente párrafo? de ser necesario, también se debería explicar que son las reglas de inferencia?}
+\changed{Sobre estas especificaciones, se distinguirán dos niveles de razonamiento.
+La noción $\vdash_{\mathcal{L}} S$ indica que la especificación $S$ puede derivarse mediante las reglas de inferencia del sistema deductivo $\mathcal{L}$.
+En cambio, $\models_{\mathcal{L}} S$ indica que $S$ es válida respecto de la semántica del lenguaje.
+La relación entre los dos niveles se expresa mediante propiedades como \emph{soundness}:
+un sistema es sólido cuando toda especificación derivable mediante sus reglas es también semánticamente válida.}
+
+\remove{Esta es la noción de sobre-aproximación, $q$ puede describir más estados de los que el programa realmente alcanza, pero nunca menos.
+Cuando este principio se utiliza en analizadores automáticos orientados a buscar errores, esos estados pueden dar lugar a falsos positivos.}
 \guido{en esta seccion de preliminares eliminaria esta ultima oración,
 no se introdujo nada de eso y un lector no la va a entender.}
+\agustina{Saco también la primera oración porque dice lo mismo que la última del párrafo anterior.}
 
-También se asume familiaridad con la Regla de Consecuencia de la HL, que permite debilitar la postcondición y fortalecer la precondición de una tripleta ya demostrada:
+\remove{También se asume familiaridad con la Regla de Consecuencia de la HL, que permite debilitar la postcondición y fortalecer la precondición de una tripleta ya demostrada:}
 \guido{Recordamos tambien la regla de consecuencia de la HL, que permite
 fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
 Esta regla nuevamente refleja la característica sobreaproximante(?) de la HL, dado
+que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente, sin afectar la validez de la tripleta.}
+\changed{Recordamos tambien la regla de consecuencia de la HL, que permite
+fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
+Esta regla nuevamente refleja la característica sobreaproximante de la HL, dado
 que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente, sin afectar la validez de la tripleta.}
 \begin{mathpar}
 \inferrule []
@@ -135,8 +186,8 @@ que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente
     {\triple{p'}{C}{q'}}
 \end{mathpar}
 
-Finalmente, se asume familiaridad con los conceptos básicos de programación funcional y teoría de tipos, como tipos inductivos, recursión estructural, cuantificación existencial y universal.
-Estos son los pilares sobre los que se apoya \fstar{}, el lenguaje utilizado en este trabajo.
+\remove{Finalmente, se asume familiaridad con los conceptos básicos de programación funcional y teoría de tipos, como tipos inductivos, recursión estructural, cuantificación existencial y universal.
+Estos son los pilares sobre los que se apoya \fstar{}, el lenguaje utilizado en este trabajo.}
 \guido{esto lo sacaria y lo pondria en 2.4, o ni siquiera ahi porque introducís estos
 conceptos.}
 

@@ -83,11 +83,11 @@ También se desarrollaron lógicas para programas probabilísticos, utilizadas, 
 \guido{para después: estaría bueno agregar citas}
 
 Los métodos deductivos \changed{orientados a la correctitud,} como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
-permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un porgrama produce comportamientos indeseados.} 
+permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un programa produce comportamientos indeseados.} 
 \remove{que un programa satisface una especificación,}
 \guido{la IL también! seria mas explicito, algo como no contiene
 comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda}
-\changed{Estas desmostraciones proporcianan garantías matemáticas,}
+\changed{Estas demostraciones proporcionan garantías matemáticas,}
 aunque suelen requerir un gran esfuerzo de anotación y prueba,
 \changed{lo que dificulta su aplicación directa a programas de gran escala.}
 
@@ -98,7 +98,7 @@ En general, estos analizadores utilizan aproximaciones que priorizan la escalabi
 pero pueden perder precisión y dar lugar a falsos positivos.
 Debido a la indecibilidad de las propiedades semánticas no triviales de los programas,
 establecida por el Teorema de Rice~\cite{riceteo}, los analizadores estáticos tienen una tensión inevitable
-entre reportar todos los posibles errores y evitar falsas advertencias}
+entre reportar todos los posibles errores y evitar falsas advertencias.}
 \remove{En cambio, los analizadores estáticos priorizan la automatización y la escalabilidad, pero las aproximaciones que utilizan pueden reducir su precisión y dar lugar a falsos positivos.}
 \guido{empezaria incluso explicando qué es un analizador estático. E.g.
 ``por otro lado, los \emph{analizadores estáticos} son herramientas
@@ -112,8 +112,8 @@ Con este propósito, \citet{inclog} introdujo recientemente %\guido{recientement
 la Lógica de Incorrectitud (IL), una propuesta %\remove{reciente}
 que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
 
-La IL se basa en la sub-aproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales.
-En consecuencia, si el sistema permite derivar uns \changed{tripleta que contiene un estado de} error, existe una traza de ejecución que conduce hasta él.
+La IL se basa en la subaproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales.
+En consecuencia, si el sistema permite derivar una \changed{tripleta que contiene un estado de} error, existe una traza de ejecución que conduce hasta él.
 \remove{La lógica puede no representar todos los comportamientos posibles}
 \guido{acá creo que querés decir que una \emph{tripleta} puede no modelar
 todos los comportamientos, que está bien aclarar, pero que la \emph{lógica} pueda
@@ -123,7 +123,7 @@ sí?}
 \remove{y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.}
 \changed{Una tripleta de incorrectitud puede representar solo una parte de los comportamientos alcanzables del programa y,
 por lo tanto, no tiene que describir todos los errores existentes.
-Sin embargo, los errores incluidos en una tripleta semáticamente válida están respaldadas por ejecuciones reales y no constituyen falsos positivos.}
+Sin embargo, los errores incluidos en una tripleta semánticamente válida están respaldados por ejecuciones reales y no constituyen falsos positivos.}
 
 \guido{la primera oración me parece que pierde flujo, por ahí ``la
 versión original de IL presentada por O'Hearn era análoga a la lógica original
@@ -133,9 +133,9 @@ pero sin un \emph{heap} y por lo tanto sin estrucutras de datos mutables.''}
 \remove{La IL es análoga a la HL para incorrectitud.}
 
 \changed{La versión original de la IL presentada por O'Hearn es análoga a la Lógica de Hoare clásica,
-ya que se define sobre un lenguaje de comandos cuyo estado esta representado con un \emph{store},
+ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
 pero sin un \emph{heap}.
-Por lo tanto, no permite razonar sobre memoria dinámica y estrucutras de datos mutables.}
+Por lo tanto, no permite razonar sobre memoria dinámica y estructuras de datos mutables.}
 En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 \changed{Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.}
@@ -165,7 +165,7 @@ queda medio choto capaz}
 \guido{se pierde flujo acá}
 
 \changed{Para que estas lógicas den garantías rigurosas, no basta con definir sus aserciones y reglas de inferencia,
-teambién es necesario demostrar sus metapropiedades, es decir, propiedades del propio sistema lógico y de su relación con la semántica.
+también es necesario demostrar sus metapropiedades, es decir, propiedades del propio sistema lógico y de su relación con la semántica.
 Una de las más importantes es \emph{soundness}, que establece que toda tripleta derivable mediante las reglas del sistema
 es también semánticamente válida.}
 \changed{Estas propiedades} pueden demostrarse matemáticamente sobre un papel.
@@ -183,14 +183,13 @@ El trabajo se concentra en establecer un núcleo lógico mecanizado que pueda se
 El objetivo general de esta tesina es formalizar la ISL en el asistente de pruebas \fstar{} y demostrar su solidez respecto de una semántica operacional explícita.
 Esta formalización se desarrolla de manera incremental.
 
-En una primera etapa se mecaniza la IL sobre un lenguaje imperativo simplificado,
-\changed{cuyo estado está representado mediante un \emph{store} y}
-sin operaciones sobre memoria dinámica.
-Esta primera formalización permite estudiar de forma aislada las características propias de la sub-aproximación, el no determinismo, la composición secuencial y el razonamiento sobre bucles.
+En una primera etapa se mecaniza la IL sobre un lenguaje imperativo simplificado, sin operaciones sobre memoria dinámica.
+\changed{Su memoria se representa mediante un \emph{store} y su semántica distingue terminaciones normales y con error.}
+Esta primera formalización permite estudiar de forma aislada las características propias de la subaproximación, el no determinismo, la composición secuencial y el razonamiento sobre bucles.
 
 En una segunda etapa se extiende el modelo para incorporar memoria mutable y razonamiento espacial.
-Para ello, \changed{el estado, representado inicialmente con un \emph{store}, se aplía con}
-un \emph{heap} y un modo de terminación.
+Para ello, \changed{el estado, representado inicialmente con un \emph{store}, se amplía con}
+un \emph{heap}, manteniendo la distinción entre modos de terminación.
 Además, se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.\guido{la étapa previa
 ya tenía store, no?}
 \agustina{Si, ahí creo que esta más claro.}
@@ -205,7 +204,8 @@ Sin embargo, la reutilización directa del núcleo para distintos lenguajes conc
 El resto de la tesina se organiza de la siguiente manera.
 
 El \autoref{cap:conceptos-previos} presenta los conceptos teóricos necesarios para el desarrollo del trabajo.
-Se introducen la IL, la SL, la ISL y las características principales de \fstar{} necesarias para entender la mecanización.
+Se introduce un marco teórico inicial, las lógicas en las que se basa este trabajo,
+las cuales son la HL, la IL, la SL y la ISL, y las características principales de \fstar{} necesarias para entender la mecanización.
 
 El \autoref{cap:formalizacion-il} desarrolla la formalización de la IL.
 Se definen  el lenguaje imperativo, su semántica operacional y la demostración de su solidez.
@@ -248,7 +248,7 @@ Con esto en mente, sea $\Sigma$ un conjunto de estados posibles de un programa.
 Para describir propiedades de estos estados utilizamos aserciones.
 Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop}$\changed{, 
 donde $\mathsf{Prop}$ representa el universo de las proposiciones lógicas.
-Por lo tanto, para cada estado $\sigma$, la exprsión $p(\sigma)$ afirma una propiedad que puede ser verdadera o falsa en ese estado}.
+Por lo tanto, para cada estado $\sigma$, la expresión $p(\sigma)$ afirma una propiedad que puede ser verdadera o falsa en ese estado}.
 \guido{``Prop'' no va a ser entendido por todo lector, por ahí podés decir
 algo mínimo sobre Prop, o usar Bool ($\mathbb{B}$)}
 En particular, una aserción puede identificarse con el conjunto de estados que la satisfacen:
@@ -260,29 +260,31 @@ Por lo tanto, las expresiones $\sigma \in p$ y $p(\sigma)$ se considerarán equi
 Además de describir conjuntos de estados, es necesario expresar cómo un estado puede transformarse en otro.
 Para esto se utilizan relaciones binarias sobre $\Sigma$.
 Sea $R \subseteq \Sigma \times \Sigma$ una relación binaria entre estados.
-La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma$ esta relacionado mediante $R$
+La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma$ está relacionado mediante $R$
 con el estado $\sigma'$.
 A partir de una relación, podemos determinar qué estados se encuentran relacionados con los elementos de una aserción.
 
-\begin{definicion}[Post-imagen]
+\begin{definicion}[Postimagen]
 \label{def:post-img}
 Sea $R \subseteq \Sigma \times \Sigma$ una relación entre estados y sea $p \subseteq \Sigma$ una aserción.
-La post-imagen $\operatorname{post}(R) \in P(\Sigma) \rightarrow P(\Sigma)$ de $p$ mediante $R$ se define como:
+El operador de postimagen $\operatorname{post}(R) : P(\Sigma) \rightarrow P(\Sigma)$
+asocia a cada aserción $p$ el conjunto:
 
-$$\operatorname{post}(R)p = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}$$
+$$\operatorname{post}(R)(p) = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}$$
 
-La post-imagen contiene exactamente los estados que pueden alcanzarse mediante la relación $R$ partiendo de algún estado que satisface $p$.
+Este conjunto contiene exactamente los estados relacionados mediante $R$ con algún estado perteneciente a $p$.
 \end{definicion}
 
-\begin{lema}(Propiedades de la post-imagen)
+\begin{lema}(Propiedades de la postimagen)
 \label{lem:prop-pi}
-Sea $R \subseteq \Sigma \times \Sigma$ una relación y sean $p, p_1, p_2 \subseteq \Sigma$. Entonces:
+Sea $R \subseteq \Sigma \times \Sigma$ una relación y sean $p_1, p_2 \subseteq \Sigma$.
+Entonces:
 $$p_1 \subseteq p_2 \implies \operatorname{post}(R)(p_1) \subseteq \operatorname{post}(R)(p_2)$$
 y
 $$\operatorname{post}(R)(p_1 \cup p_2) = \operatorname{post}(R)(p_1) \cup \operatorname{post}(R)(p_2)$$
 \end{lema}
 \emph{Demostración.} La primera propiedad se sigue directamente de que todo estado perteneciente a $p_1$ también pertenece a $p_2$.
-Para la segunda, un estado pertenece a la post-imagen de $p_1 \cup p_2$ si posee un estado inicial en $p_1$ o en $p_2$, lo que equivale a pertenecer a alguna de las dos post-imágenes.
+Para la segunda, un estado pertenece a la postimagen de $p_1 \cup p_2$ si posee un estado inicial en $p_1$ o en $p_2$, lo que equivale a pertenecer a alguna de las dos postimágenes.
 $\ensuremath{\blacksquare}$
 
 \subsection*{Programas como relaciones}
@@ -299,8 +301,9 @@ $$[\![C]\!]_\epsilon \subseteq \Sigma \times \Sigma$$
 La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\epsilon$ indica que existe una ejecución completa y terminante de $C$ que empieza en el estado
 $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\epsilon$.
 En este sentido, $[\![C]\!]_\epsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step}.
+\agustina{¿está bien que nombre \emph{big-step}? ¿o no lo puedo asumir como sabido?}
 
-Aplicando la definición de post-imagen a la relación semántica de un comando, definimos
+Aplicando la definición de postimagen a la relación semántica de un comando, definimos
 $$\operatorname{post}_\epsilon(C)(p) = \operatorname{post}([\![C]\!]_\epsilon)(p)$$
 Desarrollando esta definición, obtenemos
 $$\operatorname{post}_\epsilon(C)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in [\![C]\!]_\epsilon\}$$
@@ -308,45 +311,53 @@ Por lo tanto, $\operatorname{post}_\epsilon(C)(p)$ contiene los estados que pued
 resultado de una ejecución terminante de $C$ que inicia en algún estado que satisface $p$
 y que termina con el modo $\epsilon$.
 
-La representación del comportamiento de un comando con una relación permite observar que una ejecución no siempre produce un único estado final.
-En particular, desde un mismo estado inicial pueden existir varias ejecuciones terminantes con resultados diferentes.
-Si un comando $C$ puede finalizar desde $\sigma$ en dos estados distintos $\sigma_1$ y $\sigma_2$, entonces:
+La representación mediante relaciones permite que un comando tenga distintos resultados desde un mismo estado incial.
+En particular, si existen dos ejecuciones de $C$ desde $\sigma$ que terminan con el mismo modo $\epsilon$
+en estados distintos $\sigma_1$ y $\sigma_2$, entonces
 $$(\sigma, \sigma_1) \in [\![C]\!]_\epsilon \land (\sigma, \sigma_2) \in [\![C]\!]_\epsilon.$$
 Este caso representa un comportamiento no determinista y ambos estados finales pertenecen a la postimagen de cualquier aserción que contenga a $\sigma$.
 
-Las relaciones semánticas también permiten representar la ausencia de un resultado con un modo de terminación determinado.
+Las relaciones semánticas también permiten representar la ausencia de resultados.
 Si, para un estado inicial $\sigma$, no existe ningún estado final $\sigma'$ tal que
 $(\sigma, \sigma') \in [\![C]\!]_\epsilon$,
 entonces el comando no tiene una ejecución desde $\sigma$ que termine con el modo $\epsilon$.
-Esto puede implicar que la ejecución finalice en otro modo de terminación o que se ejecute indefinidamente.
+Esto no implica necesariamente divergencia,
+ya que podrían existir ejecuciones que finalicen con otro modo.
+También puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
+por ejemplo, cuando todas las ejecuciones desde $\sigma$ continúan indefinidamente.
 
 \section{Lógica de Hoare}
+\label{sec:hoare}
 La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación.
 Su unidad básica es la tripleta de Hoare:
 $$\triple{p}{C}{q}$$
 donde $p$ y $q$ son aserciones y $C$ es un comando.
-La aserción $p$ se denomina precondición, mentras que $q$ se denomina postcondición.
+La aserción $p$ se denomina precondición, mientras que $q$ se denomina postcondición.
 
 Existen versiones parciales y totales de la HL.
-\changed{En este trabajo se considera la versión de correctitud parcial de la HL, ya que es la que permite
-establecer de manera más directa la comparación con la IL: las dos caracterizan
-estados resultantes de ejecuciones que terminan, sin exigir la terminación de todas
-las ejecuciones posibles.
-Bajo esta interpretacipon, la}
-tripleta denota
+\changed{En este trabajo se considera la versión decorrectitud parcial de la HL,
+donde la tripleta denota que toda ejecución de $C$ iniciada en unestado que satisface $p$,
+si termina normalmente, alcanza un estado que satisface $q$.}
+%tripleta denota
 %\guido{``esta tripleta denota''}
-que si el programa $C$ se ejecuta a partir de un estado que satisface la precondición $p$, y dicha ejecución termina, entonces el estado resultante satisface la postcondición $q$.
-\changed{La tripleta no garantiza la terminación de $C$.}
+%que si el programa $C$ se ejecuta a partir de un estado que satisface la precondición $p$, y dicha ejecución termina normalmente,
+%entonces el estado resultante satisface la postcondición $q$.
+\changed{No se exigeque todas las ejecuciones terminen, a diferencia de las versiones totales.}
 \remove{Esta es una correctitud parcial, ya que la tripleta no garantiza que la ejecución vaya a terminar, sino que, en caso de terminar, el resultado será el esperado.}
 \guido{esto no es siempre así, hay versiones totales y parciales de HL (y SL, etc).
 Acá siempre hacemos parcial? está bien, pero conviene aclararlo.}
 
-La interpretación semántica de una tripleta puede formularse con la post-imagen de la Definición~\ref{def:post-img}.
+La interpretación semántica de una tripleta puede formularse con la postimagen de la Definición~\ref{def:post-img}.
+Una tripleta de Hoare describe las ejecuciones que finalizan normalmente, por esta razón,
+se considera la postimagen $\operatorname{post}_{ok}(C)(p)$.
 \changed{Luego, la validez de una tripleta de Hoare se define mediante}:
-$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}(C)(p) \subseteq q$$
+$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q$$
 \changed{En una tripleta de Hoare válida,
 entonces, $q$ es una sobreaproximación de la postimagen de $p$ mediante $C$,
-pudiendo contener muchos más estados de los que realmente se alcanzan.}
+es decir, contiene todos los estados alcanzables mediante ejecuciones normales de $C$
+desde $p$, pudiendo contener muchos más estados de los que realmente se alcanzan.
+Cuando los conjuntos $\operatorname{post}_{ok}(C)(p)$ y $q$ coinciden, entonces la postcondición describe
+exactamente esos resultados.}
 %\guido{arranca raro el parrafo sig, yo diria: en una tripleta de hoare,
 %entonces, $q$ es una \emph{sobreaproximación} de la postimagen de $p$ mediante $C$,
 %pudiendo contener muchos más estados de los que realmente se alcanzan.}
@@ -359,12 +370,12 @@ pudiendo contener muchos más estados de los que realmente se alcanzan.}
 %un sistema es sólido cuando toda especificación derivable mediante sus reglas es también semánticamente válida.}
 
 La validez semántica de una tripleta debe distinguirse de su derivabilidad dentro de un sistema de prueba.
-La expresión
-$$\models_\mathrm{HL} \triple{p}{C}{q}$$
-indica que la tripleta es válida respecto de la semántica del comando.
-En cambio, se escribe
+Mientras que
+$\models_\mathrm{HL} \triple{p}{C}{q}$
+indica que la tripleta es válida respecto de la semántica del comando,
+se escribe
 $$\vdash_\mathrm{HL} \triple{p}{C}{q}$$
-cuando la tripleta pueda obtenerse con las reglas de inferencia de la HL.
+cuando la tripleta puede obtenerse con las reglas de inferencia de la HL.
 Por lo tanto, el símbolo $\models_\mathrm{HL}$ expresa una relación semántica,
 mientras que $\vdash_\mathrm{HL}$ expresa la existencia de una derivación formal.
 
@@ -384,34 +395,47 @@ que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente
     {\triple{p'}{C}{q'}}
 \end{mathpar}
 
-La IL, presentada en la siguiente sección, parte del mismo marco teórico,
-pero tiene una relación diferente entre la postcondición y los estados alcanzables.
-Mientras que la HL exige que la postcondición contenga todos los resultados considerados,
-la IL exige que cada estado descrito por la postcondición sea alcanzable con alguna ejecución.
+La IL, presentada en la siguiente sección, parte del mismo marco teórico para razonar sobre la alcanzabilidad de resultados.
 
 \section{Lógica de Incorrectitud (IL)}
 \label{sec:loginc}
-Desde los inicios de la verificación formal\guido{acá por ahí podés citar a Hoare, Floyd, o
-incluso el paper de Turing sobre verificar una rutina simple (\url{https://turingarchive.kings.cam.ac.uk/publications-lectures-and-talks-amtb/amt-b-8}, o ``An Early Program Proof by Alan Turing'' de Morris y Jones)}, el enfoque predominante ha sido garantizar la ausencia de errores en el software.
-Sin embargo, en el desarrollo de software a escala industrial, los programadores pasan gran parte de su tiempo razonando sobre código incorrecto y buscando errores.
-\guido{este ``sin embargo'' no me cierra, yo diria que aun si la verificacion formal existe, ha
-sido históricamente inaplicable a sistemas de escala industrial debido a su complejidad y a
-veces por no poder expresar las propiedades de interés (e.g. ``la interfaz es intuitiva'').
-Hay excepciones notables, como sel4, HACL*, CompCert, etc, pero a grosso modo no es algo
-usado en la industria. Al menos pre-IA. Entonces, los programadores no la usan, pero sí usan
-analizadores estaticos. Y putean porque marcan demasiados falsos positivos y los terminan
-ignorando. Aca nos interesa eliminar este ultimo problema.}
+%Desde los inicios de la verificación formal\guido{acá por ahí podés citar a Hoare, Floyd, o
+%incluso el paper de Turing sobre verificar una rutina simple (\url{https://turingarchive.kings.cam.ac.uk/publications-lectures-and-talks-amtb/amt-b-8}, o ``An Early Program Proof by Alan Turing'' de Morris y Jones)}, el enfoque predominante ha sido garantizar la ausencia de errores en el software.
+%Sin embargo, en el desarrollo de software a escala industrial, los programadores pasan gran parte de su tiempo razonando sobre código incorrecto y buscando errores.
+%\guido{este ``sin embargo'' no me cierra, yo diria que aun si la verificacion formal existe, ha
+%sido históricamente inaplicable a sistemas de escala industrial debido a su complejidad y a
+%veces por no poder expresar las propiedades de interés (e.g. ``la interfaz es intuitiva'').
+%Hay excepciones notables, como sel4, HACL*, CompCert, etc, pero a grosso modo no es algo
+%usado en la industria. Al menos pre-IA. Entonces, los programadores no la usan, pero sí usan
+%analizadores estaticos. Y putean porque marcan demasiados falsos positivos y los terminan
+%ignorando. Aca nos interesa eliminar este ultimo problema.}
 
 La Lógica de Incorrectitud (IL), introducida por \citet{inclog}, propone lo inverso a la Lógica de Hoare.
-En lugar de razonar sobre la ausencia de errores, provee las bases para demostrar matemáticamente la presencia de los mismos mediante la sub-aproximación.\guido{poner sub-aproximación en itálica, y tal vez
-``mediante una nocion llamada sub-aproximacion''? como está escrito, suena a que el lector
+La IL permite demostrar que determinados resultados pueden ser producidos por alguna ejecución.
+Para ello, la IL utiliza una noción denominada subaproximación.
+Como se explicó en la \autoref{sec:hoare}, una tripleta de Hoare válida usa una postcondición $q_\mathrm{sobre}$
+que contiene todos los estados alcanzables:
+$$\operatorname{post}_{ok}(C)(p) \subseteq q_\mathrm{sobre}.$$
+En cambio, una subaproximación $q_\mathrm{sub}$ contiene solo estados que son efectivamente alcanzables:
+$$q_\mathrm{sub} \subseteq \operatorname{post}_\epsilon(C)(p).$$
+Cuando se consideran las ejecuciones que terminan normalmente, la relación entre ambas aproximaciones puede resumirse como:
+$$q_\mathrm{sub} \subseteq \operatorname{post}_{ok}(C)(p) \subseteq q_\mathrm{sobre}.$$
+\remove{En lugar de razonar sobre la ausencia de errores, provee las bases para demostrar matemáticamente la presencia de los mismos mediante la subaproximación.}
+\guido{poner subaproximación en itálica, y tal vez
+``mediante una nocion llamada subaproximacion''? como está escrito, suena a que el lector
 ya debería saber lo que es.}
+La IL también permite aplicar el mismo razonamiento subaproximado a las ejecuciones que terminan con error,
+utilizando en ese caso $\operatorname{post}_{er}(C)(p)$.
 
-La principal diferencia entre la IL y la HL se encuentra en la dirección de la aproximación utilizada.
-Mientras que la HL emplea sobre-aproximaciones para abarcar todos los comportamientos posibles de un programa, la IL utiliza sub-aproximaciones que describen únicamente comportamientos respaldados por ejecuciones reales.
-\guido{bien, pero ``la dirección de aproximación utilizada'' va a confundir a alguien que no
-conoce del tema, incluso si sabe HL}
+Por lo tanto, una subaproximación puede omitir algunos resultados del comando,
+pero no debe incluir estados finales cuya alcanzabilidad no pueda justificarse con una ejecución.
+Esta propiedad permite usar la IL como fundamento lógico de herramientas orientadas a detectar errores
+sin reportar estados de error imposibles.
 
+%La principal diferencia entre la IL y la HL se encuentra en la dirección de la aproximación utilizada.
+%Mientras que la HL emplea sobre-aproximaciones para abarcar todos los comportamientos posibles de un programa, la IL utiliza sub-aproximaciones que describen únicamente comportamientos respaldados por ejecuciones reales.
+%\guido{bien, pero ``la dirección de aproximación utilizada'' va a confundir a alguien que no
+%conoce del tema, incluso si sabe HL}
 
 %\begin{definicion}[Tripletas semánticas]
 %Sean $r \subseteq \Sigma \times \Sigma$ una relación y $p$, $q \subseteq \Sigma$ dos aserciones.
@@ -429,43 +453,48 @@ conoce del tema, incluso si sabe HL}
 %``una tripleta de sub-aproximacion, denotada [p]c[q], representa que el comando c bla bla bla.
 %Una tripleta se llama semanticamente valida ($\models$) cuando bla bla''}
 
-La relación entre ambas aproximaciones puede resumirse como:
-$$q_{sub} \subseteq post(r)(p) \subseteq q_{sobre}$$
+%En consecuencia, una sobre-aproximación imprecisa puede incluir comportamientos que no se producen en ninguna ejecución real y dar lugar a falsos positivos.
+%\guido{me parece raro decir que HL puede dar falsos positivos.
+%Eso es una propiedad de analizadores estaticos, no de una logica.
+%El paper de IL creo que menciona que si diseñás un analizador basadandote
+%en una logica de sobreaprox entonces tenes falsos positivos, si, pero eso es una mala
+%decision de quien lo implementa.}
+%Una sub-aproximación puede omitir comportamientos y, por lo tanto, no encontrar todos los errores posibles, pero no debe introducir estados finales imposibles.
 
-En consecuencia, una sobre-aproximación imprecisa puede incluir comportamientos que no se producen en ninguna ejecución real y dar lugar a falsos positivos.
-\guido{me parece raro decir que HL puede dar falsos positivos.
-Eso es una propiedad de analizadores estaticos, no de una logica.
-El paper de IL creo que menciona que si diseñás un analizador basadandote
-en una logica de sobreaprox entonces tenes falsos positivos, si, pero eso es una mala
-decision de quien lo implementa.}
-Una sub-aproximación puede omitir comportamientos y, por lo tanto, no encontrar todos los errores posibles, pero no debe introducir estados finales imposibles.
-
-La tripleta de incorrectitud se obtiene instanciando la tripleta sub-aproximada con la semántica de un comando y una condición de salida.
-\guido{estas segura que tripleta de subaprox y tripleta de incorrectitud
-son conceptos distintos...?}
+%La tripleta de incorrectitud se obtiene instanciando la tripleta sub-aproximada con la semántica de un comando y una condición de salida.
+%\guido{estas segura que tripleta de subaprox y tripleta de incorrectitud
+%son conceptos distintos...?}
 
 \begin{definicion}(Tripleta de incorrectitud)
 \label{def:trip-inc}
-Sean $C$ un comando, $p$, $q \subseteq \Sigma$ dos aserciones y $\epsilon \in \{ok, er\}$ una condición de salida.
+Sean $C$ un comando, $p$, $q \subseteq \Sigma$ dos aserciones y $\epsilon \in \{ok, er\}$ un modo de terminación.
 Una tripleta de incorrectitud se escribe:
 $$\itriple{p}{C}{\epsilon : q}$$
+La aserción $p$ se denomina presunción y $q$, postcondición.
+La tripleta expresa que cada estado descrito por $q$ puede alcanzarse mediante alguna ejecución de $C$
+que comienza en un estado que satisface $p$ y finaliza con el modo $\epsilon$.
+\end{definicion}
 
 La tripleta es semánticamente válida, lo que denotamos mediante:
 $$\models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$$
-si y solo si $q \subseteq post_\epsilon(C)(p)$, donde $p$ se denomina presunción, mientras que $q$ describe un resultado para el canal de terminación $\epsilon$.
-El canal $ok$ representa terminación normal y el canal $er$ una provocada por un error.
-\end{definicion}
+si y solo si $q \subseteq \operatorname{post}_\epsilon(C)(p)$.
+%donde $p$ se denomina presunción, mientras que $q$ describe un resultado para el canal de terminación $\epsilon$.
+%El canal $ok$ representa terminación normal y el canal $er$ una provocada por un error.
+
 \guido{hay que introducir condicion de salida, no explicamos que
 el lenguaje puede lanzar errores. De hecho tampoco introducimos
 la sintaxis del lenguaje de comandos, aunque eso puede estar
 bien porque la nocion de esta logica es independiente del lenguaje concreto.}
+\agustina{Cambie a modo de terminación que está introducido más arriba.
+Lo de la sintaxis lo pense por lo que vos mencionas, de última puedo introducir algo
+como para el lector lo entienda más o explicar por que no lo hacemos?}
 
 \begin{lema}(Caracterización)
 \label{lem:caracterizacion}
 Los siguientes son equivalentes:
 \begin{enumerate}
     \item $\models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$.
-    \item Todo estado que satisface $q$ puede alcanzarse desde algún estado que satisface $p$: $\forall \sigma_q \in q. \exists \sigma_p. (\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$.
+    \item Todo estado que satisface $q$ puede alcanzarse desde algún estado que satisface $p$: $\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$.
 \end{enumerate}
 \end{lema}
 \emph{Demostración.} Por la Definición~\ref{def:trip-inc},
@@ -498,7 +527,7 @@ cuando la tripleta puede obtenerse mediante una derivación finita construida ut
 \end{definicion}
 
 La derivabilidad es una noción sintáctica, determinada por las reglas del sistema.
-En cambio, la validez es una noción semántica, definida mediante la post-imagen.
+En cambio, la validez es una noción semántica, definida mediante la postimagen.
 La relación entre ambas nociones será establecida por el Teorema de Soundness.
 Las reglas de inferencia se presentan en la \autoref{fig:reglas-il}.
 
@@ -562,10 +591,10 @@ Las reglas de inferencia se presentan en la \autoref{fig:reglas-il}.
 \label{fig:reglas-il}
 \end{figure}
 
-Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la post-imagen.
+Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la postimagen.
 La regla de \textsc{Consecuencia} permite debilitar la precondición y fortalecer la postcondición para achicar el espacio de estados.
 La regla de la \textsc{Disyunción} permite combinar derivaciones obtenidas independientemente desde diferentes conjuntos de estados iniciales.
-Esto se corresponde con el hecho de que la post-imagen preserva uniones, establecido en el Lema~\ref{lem:prop-pi}.
+Esto se corresponde con el hecho de que la postimagen preserva uniones, establecido en el Lema~\ref{lem:prop-pi}.
 
 \textsc{Skip} proporciona las aserciones esperadas para la terminación normal, es decir, no existe una ejecución de \texttt{skip} que finalice en el canal de error.
 Por el contrario, en la regla \textsc{Error} todo el estado va al canal anormal (\emph{er}).
@@ -595,7 +624,7 @@ La regla \textsc{Kleene (paso)} utiliza estructuralmente la forma $C^\star; C$ e
 En este escenario, pasarán iteraciones exitosas y el error se disparará en la última de ellas.
 Finalmente, la regla \textsc{Kleene (variante)} introduce el principio de inducción matemática sobre variables naturales para generalizar y propagar hacia adelante estos estados alcanzables que incrementan de forma predecible en cada vuelta.
 
-\subsection*{La Regla de Consecuencia y la sub-aproximación}
+\subsection*{La Regla de Consecuencia y la subaproximación}
 Una de las diferencias lógicas más contraintuitivas de la IL respecto a la verificación clásica es el comportamiento de su Regla de Consecuencia.
 En correctitud, la Regla de Consecuencia permite olvidar información debilitando la postcondición para cubrir todos los caminos posibles, por ejemplo, eliminando conjunciones lógicas:
 
@@ -604,7 +633,7 @@ Esto es válido porque, si todos los estados alcanzables satisfacen $q_1 \land q
 
 En la IL, debilitar la postcondición de esta forma no es válido.
 El sistema exige retener el contexto exacto del camino evaluado para garantizar que los estados sigan siendo alcanzables.
-En su lugar, la sub-aproximación permite descartar caminos enteros de ejecución basándose en su propia Regla de Consecuencia.
+En su lugar, la subaproximación permite descartar caminos enteros de ejecución basándose en su propia Regla de Consecuencia.
 Esta se define de la siguiente manera:
 
 \[
@@ -618,7 +647,7 @@ Por lo tanto, la regla permite ampliar el conjunto de estados iniciales y reduci
 La dirección de estas inclusiones puede justificarse utilizando las definiciones anteriores y el Lema~\ref{lem:prop-pi}.
 Si la tripleta original es semánticamente válida, entonces:
 $$q \subseteq post_\epsilon(C)(p)$$
-Como $p \subseteq p'$, por monotonía de la post-imagen:
+Como $p \subseteq p'$, por monotonía de la postimagen:
 $$post_\epsilon(C)(p) \subseteq post_\epsilon(C)(p')$$
 Además, $q' \subseteq q$.
 Por transitividad:
@@ -648,7 +677,7 @@ Permite que las herramientas de análisis automático enfoquen su exploración e
     }
     \end{verbatim}
 
-    ¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$ es una sub-aproximación de los estados alcanzables por este código partiendo de la presunción?
+    ¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$ es una subaproximación de los estados alcanzables por este código partiendo de la presunción?
 
     Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida, la Definición~\ref{def:trip-inc} exige:
     $$q \subseteq post_{ok}(C)(p)$$
@@ -658,7 +687,7 @@ Permite que las herramientas de análisis automático enfoquen su exploración e
     $$q \nsubseteq post_{ok}(C)(p),$$
     y la tripleta no es válida.
 
-    Un resultado sub-aproximado válido debe conservar las condiciones que justifican la ejecución de la asignación.
+    Un resultado subaproximado válido debe conservar las condiciones que justifican la ejecución de la asignación.
     Por ejemplo:
     $$\itriple{z = 11}{C}{ok: z = 42 \land (x \mod 2 = 0) \land (y \mod 2 \ne 0)}$$
 \end{ejemplo}
@@ -668,12 +697,12 @@ El análisis de los bucles iterativos es el mayor cuello de botella en la verifi
 En la HL, para razonar sobre un bucle, es obligatorio encontrar un invariante, es decir, una propiedad matemática que englobe todos los estados posibles y se mantenga verdadera sin importar cuántas veces se ejecute el ciclo.
 Esta tarea no es trivial y a menudo requiere invención humana o dominios abstractos complejos, lo que dificulta la escalabilidad y automatización de las herramientas.
 
-La IL simplifica este problema, ya que los invariantes de bucle no juegan un rol central en el razonamiento sub-aproximado.
+La IL simplifica este problema, ya que los invariantes de bucle no juegan un rol central en el razonamiento subaproximado.
 Como el objetivo de la IL no es garantizar un comportamiento seguro para todos los caminos de ejecución posibles, sino demostrar que ciertos estados son efectivamente alcanzables desde un estado inicial, puede concentrarse en una cantidad finita de iteraciones.
 
 La herramienta consiste en desenrollar el bucle.
 Esto le permite a la IL analizar un bucle simplemente simulando la ejecución de su cuerpo un número finito y acotado de veces.
-Como la IL es sub-aproximada y permite descartar caminos, encontrar un error luego de desenrollar el bucle un par de veces produce una precondición lógicamente válida, eliminando la necesidad de deducir matemáticamente qué ocurriría en iteraciones infinitas.
+Como la IL es subaproximada y permite descartar caminos, encontrar un error luego de desenrollar el bucle un par de veces produce una precondición lógicamente válida, eliminando la necesidad de deducir matemáticamente qué ocurriría en iteraciones infinitas.
 
 Para casos donde se requiere un razonamiento paramétrico, la IL introduce la Regla de la Variante Hacia Atrás (\textsc{Kleene (variante)}).
 Su premisa tiene la forma:
@@ -683,7 +712,7 @@ Repitiendo este argumento, es posible reconstruir una traza finita hasta un esta
 De esta forma, la regla permite obtener:
 $$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n)}$$
 
-La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores exigida por la interpretación sub-aproximada de las tripletas.
+La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores exigida por la interpretación subaproximada de las tripletas.
 En la búsqueda automática de errores, esta técnica permite calcular un resumen general de los estados alcanzables tras múltiples iteraciones exitosas, para luego acoplarlo con un paso final donde se dispara la condición de error.
 
 \subsection*{Soundness de la IL}
@@ -961,27 +990,27 @@ El Lema~\ref{lem:localidad} establece que el mismo fragmento $h_f$ puede agregar
 El comando transforma el \emph{heap} $h$ en $h'$, mientras que $h_f$ no se modifica.
 
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
-Sin embargo, combinar su modelo clásico de \emph{heap} con la sub-aproximación de la IL presenta una dificultad.
+Sin embargo, combinar su modelo clásico de \emph{heap} con la subaproximación de la IL presenta una dificultad.
 En la semántica tradicional, la liberación de una celda elimina el recurso correspondiente del \emph{heap}.
-Al aplicar la Regla del Marco en un sistema sub-aproximado, esta desaparición puede transformar una presunción inconsistente en un resultado satisfacible, violando la garantía de alcanzabilidad establecida por el Teorema de Soundness~\ref{teo:sound-il}.
+Al aplicar la Regla del Marco en un sistema subaproximado, esta desaparición puede transformar una presunción inconsistente en un resultado satisfacible, violando la garantía de alcanzabilidad establecida por el Teorema de Soundness~\ref{teo:sound-il}.
 
 \section{Lógica de Incorrectitud de Separación (ISL)}
 \label{sec:logincsep}
 La SL proporciona técnicas novedosas para el razonamiento local, permitiendo que la verificación formal escale a bases de código muy grandes.
-Por su lado, la IL permite demostrar la alcanzabilidad de estados concretos mediante sub-aproximación.
+Por su lado, la IL permite demostrar la alcanzabilidad de estados concretos mediante subaproximación.
 La Lógica de Incorrectitud de Separación, introducida por \citet{isl} fusiona el razonamiento local proporcionado por la conjunción separadora y la Regla del Marco de la SL con las tripletas de sub-aproximación de la IL.
 
 Una tripleta de la ISL conserva la forma presentada para la IL:
 $\itriple{p}{C}{\epsilon : q}$
 , pero ahora $p$ y $q$ son aserciones espaciales sobre estados compuestos por un \emph{store} y un \emph{heap}.
-Su interpretación semántica sigue siendo sub-aproximada:
+Su interpretación semántica sigue siendo subaproximada:
 $$\models_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \iff \forall \sigma_q \in q. \; \exists \sigma_p \in p. \; (\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$$
 Por lo tanto, todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
 
 \subsection*{Heaps negativos}
 Intentar construir la ISL combinando linealmente la semántica de la SL tradicional y la IL produce un sistema inválido.
 En el modelo clásico de la SL, la operación de liberación ($\mathsf{free}$) remueve la locación del \emph{heap}, haciendo que el estado vuelva a ser una porción vacía.
-Si intentamos aplicar la Regla de Marco bajo el pensamiento de sub-aproximación, el sistema colapsa porque nos permite deducir un estado final válido partiendo de una precondición imposible.
+Si intentamos aplicar la Regla de Marco bajo el pensamiento de subaproximación, el sistema colapsa porque nos permite deducir un estado final válido partiendo de una precondición imposible.
 
 En el modelo clásico de la SL, la regla local para liberar una celda puede expresarse como:
 $$\itriple{x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp}}$$
@@ -995,9 +1024,9 @@ Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda des
 La presunción $x \mapsto - * x \mapsto -$ es inconsistente porque exige que dos fragmentos disjuntos posean la misma dirección.
 No existe ningún estado que la satisfaga.
 Sin embargo, el resultado $\mathsf{emp} * x \mapsto -$ es satisfacible.
-Esto produciría una tripleta que pretende alcanzar un estado real a partir de un conjunto vacío de estados iniciales, contradiciendo la interpretación sub-aproximada.
+Esto produciría una tripleta que pretende alcanzar un estado real a partir de un conjunto vacío de estados iniciales, contradiciendo la interpretación subaproximada.
 
-El problema no pertenece a la IL en sí misma, sino a la combinación directa de la sub-aproximación, la semántica clásica de liberación y la Regla del Marco.
+El problema no pertenece a la IL en sí misma, sino a la combinación directa de la subaproximación, la semántica clásica de liberación y la Regla del Marco.
 El modelo clásico no permite distinguir entre una dirección sobre la cual no se posee información y una dirección que se sabe que fue liberada.
 Esta distinción es la que introducen los \emph{heaps} negativos.
 
@@ -1254,18 +1283,18 @@ En el \autoref{cap:formalizacion-isl} se mecanizan ambas direcciones del Teorema
 La dirección local a global se obtiene mediante la extensión operacional por marco, mientras que la dirección global a local demuestra que toda ejecución admite una descomposición en una transición mínima y un marco disjunto.
 
 \subsection*{Begin-Anywhere}
-La combinación de razonamiento local, monotonía del \emph{heap} y sub-aproximación permite construir análisis de ejecución simbólica capaces de comenzar desde un fragmento de código sin conocer previamente todo el estado global.
+La combinación de razonamiento local, monotonía del \emph{heap} y subaproximación permite construir análisis de ejecución simbólica capaces de comenzar desde un fragmento de código sin conocer previamente todo el estado global.
 Esta estrategia se conoce como \emph{Begin-Anywhere}.
 En las herramientas de verificación clásicas, siempre se debe empezar desde un punto de entrada raíz (como la función $\mathsf{main}$) para tener todo el contexto del heap.
 Sin este contexto, el analizador no sabría qué hay en la memoria al llegar a una función intermedia y fallaría.
 
-En la ISL, el análisis puede empezar en cualquier procedimiento de forma aislada gracias a la técnica de bi-abducción adaptada a la sub-aproximación~\cite{biabd}.
+En la ISL, el análisis puede empezar en cualquier procedimiento de forma aislada gracias a la técnica de bi-abducción adaptada a la subaproximación~\cite{biabd}.
 Podemos definir la bi-abducción como la capacidad del analizador para sintetizar lógicamente las precondiciones faltantes sobre la marcha.
 Si al analizar una instrucción falta un recurso en el estado actual, la herramienta infiere que ese recurso debió existir en el estado inicial para que la ejecución fuera posible.
 En esta tesina no se implementa dicho procedimiento automático, las presunciones, los caminos y las derivaciones se construyen de forma explícita, y \fstar{} verifica su validez.
 
 Al sintetizar el contexto necesario paso a paso enfocándose estrictamente en la huella mínima del comando, la herramienta puede descubrir vulnerabilidades de forma modular.
-Debido a que la ISL trabaja bajo el paradigma de la sub-aproximación, esta técnica es muy potente.
+Debido a que la ISL trabaja bajo el paradigma de la subaproximación, esta técnica es muy potente.
 Cada error que el sistema encuentre partiendo de estas precondiciones sintetizadas es un escenario real y alcanzable.
 
 \section{El lenguaje \fstar{}}
@@ -1394,7 +1423,7 @@ Cuando el \emph{solver} no puede resolver una obligación automáticamente, es n
 
 Además, las funciones recursivas tienen que demostrar su terminación.
 Cuando esto no resulta evidente de manera automática, \fstar{} permite indicar una medida decreciente mediante la cláusula \texttt{decreases}.
-En las demostraciones de \emph{soundness}, la medida utilizada es la propia derivación, ya que cada llamada recursiva se realiza sobre una sub-derivación estrictamente menor.
+En las demostraciones de \emph{soundness}, la medida utilizada es la propia derivación, ya que cada llamada recursiva se realiza sobre una subderivación estrictamente menor.
 
 Estas características determinan la estrategia de mecanización utilizada en los capítulos siguientes.
 Las aserciones se representan como predicados sobre estados; las semánticas operacionales y los sistemas deductivos, como tipos inductivos indexados; y sus propiedades metateóricas, como funciones recursivas y lemas fantasma.
@@ -1623,7 +1652,7 @@ La regla \texttt{R\_Seq} establece que si la primera instrucción \texttt{p} ter
 Sin embargo, el comportamiento cambia en la regla \texttt{R\_SeqEr}.
 Si la semántica garantiza que el comando \texttt{p} abortó dejando un estado de error \texttt{t}, la regla corta la ejecución.
 El comando secundario \texttt{q} nunca se menciona en las premisas, lo que significa matemáticamente que no se evalúa.
-El estado de error \texttt{t} se propaga hacia la superficie de la secuencia, garantizando la interrupción que la sub-aproximación requiere para capturar \emph{bugs} tempranos.
+El estado de error \texttt{t} se propaga hacia la superficie de la secuencia, garantizando la interrupción que la subaproximación requiere para capturar \emph{bugs} tempranos.
 
 La elección no determinista posee una regla para cada rama:
 
@@ -1703,7 +1732,7 @@ Conserva el \emph{store} descrito por la presunción, pero cambia el modo de ter
 \texttt{I\_Assume} incorpora la condición evaluada al resultado.
 La postcondición conserva solo los estados que satisfacen la presunción y para los cuales la expresión es verdadera.
 
-Como se mencionó en la introducción, la sub-aproximación requiere descartar el axioma de sustitución hacia atrás de la HL, ya que este es inválido para garantizar la alcanzabilidad.
+Como se mencionó en la introducción, la subaproximación requiere descartar el axioma de sustitución hacia atrás de la HL, ya que este es inválido para garantizar la alcanzabilidad.
 En su lugar, la IL exige el uso del razonamiento hacia adelante.
 La regla de asignación debe conservar suficiente información histórica para justificar la alcanzabilidad del estado final:
 
@@ -1760,7 +1789,7 @@ La IL permite justificar una ejecución no determinista seleccionando solo una r
   il_triple (is_ok pre) (Choice p q) post
 \end{lstlisting}
 
-A diferencia de un análisis que intenta cubrir todos los caminos, una derivación que se da por una sub-aproximación puede centrarse en una única rama capaz de alcanzar el resultado deseado.
+A diferencia de un análisis que intenta cubrir todos los caminos, una derivación que se da por una subaproximación puede centrarse en una única rama capaz de alcanzar el resultado deseado.
 Esta posibilidad no significa que la lógica determine automáticamente qué rama conduce a un error.
 En la formalización, la rama relevante es seleccionada explícitamente al construir el árbol de derivación.
 
@@ -1787,7 +1816,7 @@ Además, la formalización incluye una regla paramétrica basada en una familia 
 La premisa demuestra que cada estado perteneciente a \texttt{variant (n + 1)} puede reconstruirse a partir de un estado perteneciente a \texttt{variant n}.
 Repitiendo este argumento es posible obtener una traza finita que comienza en \texttt{variant 0}.
 
-Como se observó en el Lema~\ref{lem:prop-pi}, la post-imagen preserva uniones.
+Como se observó en el Lema~\ref{lem:prop-pi}, la postimagen preserva uniones.
 Esta propiedad se refleja mediante:
 
 \begin{lstlisting}[style=fstar]
@@ -1804,10 +1833,10 @@ La regla permite combinar derivaciones obtenidas a partir de conjuntos diferente
 \section{La Regla de Consecuencia}
 \label{sec:il-consecuencia}
 Una de las diferencias estructurales entre la IL y la verificación clásica es el comportamiento de su Regla de Consecuencia.
-Como vimos en la \autoref{sec:loginc}, la sub-aproximación exige invertir la dirección de las implicaciones.
+Como vimos en la \autoref{sec:loginc}, la subaproximación exige invertir la dirección de las implicaciones.
 El sistema permite debilitar la precondición y fortalecer la postcondición.
 Esto es para no exigir estados iniciales innecesarios y para enfocar el análisis en un subconjunto de estados finales de interés, descartando lógicamente otras ramas.
-La validez de estas direcciones se justificó utilizando la monotonía de la post-imagen establecida en el Lema~\ref{lem:prop-pi}.
+La validez de estas direcciones se justificó utilizando la monotonía de la postimagen establecida en el Lema~\ref{lem:prop-pi}.
 
 Si una tripleta satisface $\operatorname{post} \subseteq \operatorname{post}(C)(\operatorname{pre})$, entonces las condiciones $\operatorname{pre} \subseteq \operatorname{pre}'$ y $\operatorname{post}' \subseteq \operatorname{post}$ permiten concluir:
 $$\operatorname{post}' \subseteq \operatorname{post}'(C)(\operatorname{pre}')$$
@@ -1923,7 +1952,7 @@ Para satisfacer la comprobación de tipos dependientes al atar el paso operacion
 El caso de \texttt{Nondet} sigue el mismo patrón.
 La postcondición proporciona un valor histórico que permite reconstruir un estado inicial, mientras que la ejecución se instancia con el valor final de \texttt{x}.
 
-La demostración para la secuenciación de comandos \texttt{I\_Seq} ilustra cómo la sub-aproximación captura flujos anormales.
+La demostración para la secuenciación de comandos \texttt{I\_Seq} ilustra cómo la subaproximación captura flujos anormales.
 La regla deductiva afirma que el resultado de \texttt{Seq p q} puede derivar del éxito final de \texttt{q} o de un fallo prematuro en \texttt{p}.
 Por lo tanto, el teorema de soundness debe inspeccionar el estado final \texttt{s1} para decidir qué fragmento de la semántica reconstruir:
 
@@ -2001,7 +2030,7 @@ Sin embargo, el modelo de memoria que se utilizó es insuficiente para analizar 
 Al introducir referencias de memoria dinámica surge el problema de \emph{aliasing}.
 
 En este capítulo presentamos la formalización mecanizada de la ISL.
-No se reexplicarán los fundamentos de la sub-aproximación, los cuales se mantienen idénticos al capítulo anterior, sino detallar cómo la arquitectura de nuestra formalización en \fstar{} debió evolucionar para incorporar el razonamiento local sobre porciones disjuntas de memoria, la conjunción separadora y la detección de \emph{bugs} especiales como el \emph{Use After Free}.
+No se reexplicarán los fundamentos de la subaproximación, los cuales se mantienen idénticos al capítulo anterior, sino detallar cómo la arquitectura de nuestra formalización en \fstar{} debió evolucionar para incorporar el razonamiento local sobre porciones disjuntas de memoria, la conjunción separadora y la detección de \emph{bugs} especiales como el \emph{Use After Free}.
 
 \section{Extensión del lenguaje y del modelo de estado}
 \label{sec:isl-estado}
@@ -2307,7 +2336,7 @@ Luego, será reutilizada tanto en la prueba de \emph{soundness} de la Regla del 
 \label{sec:isl-tipoind}
 Estamos en condiciones de mecanizar el sistema deductivo de la ISL.
 Al igual que en el \autoref{cap:formalizacion-il}, representamos la relación de derivabilidad mediante un tipo inductivo en \fstar{}, al que denominaremos \texttt{isl\_triple}.
-Su firma mantiene la estructura fundamental de la sub-aproximación, separando los canales de éxito y error, pero ahora sus precondiciones y postcondiciones evalúan la forma del \emph{heap}:
+Su firma mantiene la estructura fundamental de la subaproximación, separando los canales de éxito y error, pero ahora sus precondiciones y postcondiciones evalúan la forma del \emph{heap}:
 
 \begin{lstlisting}[style=fstar]
 noeq type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
@@ -2425,7 +2454,7 @@ let rec soundness
   : GTot (s0 : state { pre s0 } & runsto p s0 s1) (decreases pf)
 \end{lstlisting}
 
-La firma constituye la misma traducción de la caracterización sub-aproximada utilizada en el \autoref{cap:formalizacion-il}:
+La firma constituye la misma traducción de la caracterización subaproximada utilizada en el \autoref{cap:formalizacion-il}:
 \begin{itemize}
   \item \texttt{s1 : state \{ post s1 \}} representa un estado final perteneciente al resultado;
   \item \texttt{s0 : state \{ pre s0 \}} representa el estado inicial testigo;
@@ -2821,7 +2850,7 @@ Como el estado final está en modo \texttt{Er}, no es necesario construir una hu
 
 El caso de \texttt{R\_Seq} es la parte central de la prueba.
 Supongamos una ejecución operacional $s_0 \xrightarrow{p} t \xrightarrow{q} s_1$.
-Las llamadas recursivas producen descomposiciones de ambas sub-ejecuciones \texttt{framed\_footprint p s0 t} y \texttt{framed\_footprint q t s1}.
+Las llamadas recursivas producen descomposiciones de ambas subejecuciones \texttt{framed\_footprint p s0 t} y \texttt{framed\_footprint q t s1}.
 Cada una divide el \emph{heap} intermedio de manera diferente.
 La primera como
 $$h_t = h_p^{local} \uplus h_p^{frame},$$
@@ -2856,7 +2885,7 @@ type cross_split_witness (h1 h2 h3 h4 : heap) = {
 En la composición secuencial, estos cuatro componentes se interpretan como $h_{13} = h_{common}$, $h_{14} = h_p$, $h_{23} = h_q$ y $h_{24} = h_{ext}$.
 El \emph{heap} $h_{common}$ sería el de las huellas locales de ambos comandos.
 El \emph{heap} $h_p$ pertenece a la huella del primer comando, mientras que $h_q$ a la del segundo.
-Por último, $h_{ext}$ representa a los marcos de ambas sub-ejecuciones y puede usarse como marco exterior de toda la secuencia.
+Por último, $h_{ext}$ representa a los marcos de ambas subejecuciones y puede usarse como marco exterior de toda la secuencia.
 
 A partir de esta partición, las huellas obtenidas por las hipótesis inductivas se transportan con \texttt{F\_Ext} a los estados que necesita \texttt{F\_Seq}.
 Luego, se construye una huella local de \texttt{Seq p q} con \texttt{F\_Seq}.
@@ -3039,7 +3068,7 @@ La primera lectura almacena en \texttt{x} la dirección original de la estructur
 La postcondición correspondiente registra el valor cargado en \texttt{x}, la celda que contiene la referencia de la estructura y la memoria activa a la que apunta dicha referencia.
 
 Para demostrar el error no es necesario analizar las dos ramas de \texttt{push\_back}.
-La interpretación sub-aproximada permite seleccionar la rama que conduce al estado de interés.
+La interpretación subaproximada permite seleccionar la rama que conduce al estado de interés.
 En este caso, la derivación usa \texttt{p\_push\_back\_raw = ISL\_ChoiceL p\_seq\_pb1}.
 Esto no afirma que la rama derecha sea imposible, sino que la rama izquierda tiene una ejecución válida que alcanza la postcondición buscada.
 
@@ -3082,7 +3111,7 @@ Luego, la derivación de \texttt{push\_back} se compone con la lectura inicial y
 
 La rama \texttt{Skip}, en la que el bloque no se reasigna, no forma parte de este árbol de prueba.
 Esto no implica que se la considere errónea o imposible.
-La sub-aproximación permite omitirla porque el objetivo consiste en justificar la existencia de una ejecución que produzca un fallo.
+La subaproximación permite omitirla porque el objetivo consiste en justificar la existencia de una ejecución que produzca un fallo.
 
 Este caso muestra que la formalización puede relacionar un error espacial con una modificación intermedia realizada a través de otro alias.
 La celda negativa conserva la historia del bloque original, mientras que el no determinismo permite seleccionar la ejecución de reasignación.
@@ -3090,10 +3119,10 @@ La celda negativa conserva la historia del bloque original, mientras que el no d
 \section{No determinismo y razonamiento paramétrico sobre bucles}
 \label{sec:bucle}
 A lo largo del desarrollo de software, la presencia de bucles combinados con comportamientos no deterministas supone una barrera para las técnicas de verificación tradicionales.
-Para comprender los límites prácticos de dichas metodologías frente a la sub-aproximación, evaluaremos un programa semi-realista con una alta cantidad de iteraciones y decisiones no deterministas.
+Para comprender los límites prácticos de dichas metodologías frente a la subaproximación, evaluaremos un programa semi-realista con una alta cantidad de iteraciones y decisiones no deterministas.
 El caso busca mostrar dos propiedades del sistema deductivo:
 \begin{enumerate}
-  \item una derivación sub-aproximada puede seleccionar un único camino entre varias alternativas (en la \autoref{sec:pushback} se vio en menor magnitud);
+  \item una derivación subaproximada puede seleccionar un único camino entre varias alternativas (en la \autoref{sec:pushback} se vio en menor magnitud);
   \item la Regla de la Variante de Kleene permite representar paramétricamente una familia de iteraciones sin construir una derivación distinta para cada una.
 \end{enumerate}
 
@@ -3127,7 +3156,7 @@ Assign "j" (Plus (Var "j") (Const 1)) ||| Skip
 \end{lstlisting}
 
 Para construir la ejecución que lleva al error, la derivación usa \texttt{ISL\_ChoiceL} y selecciona la rama de incremento en el cuerpo del bucle.
-En una teoría de sobre-aproximación, el axioma de esta instrucción nos obligaría a arrastrar una disyunción en la postcondición, ramificando el estado lógico en cada iteración.
+En una teoría de sobreaproximación, el axioma de esta instrucción nos obligaría a arrastrar una disyunción en la postcondición, ramificando el estado lógico en cada iteración.
 
 A pesar de poder elegir una sola rama, construir un millón de aplicaciones de la regla de Kleene produciría una derivación enorme.
 Para evitar ese desenrollado se usa \texttt{ISL\_KleeneVariant}.
@@ -3362,7 +3391,7 @@ El primero valida el mecanismo básico de \emph{heaps} negativos, mostrando que 
 El segundo muestra que esta información puede propagarse a través de una secuencia más compleja que involucra aliases y una llamada no determinista.
 La derivación selecciona el comportamiento de reasignación y conserva la dirección histórica que usa después el cliente.
 
-El tercer caso muestra que la sub-aproximación permite concentrarse en una única secuencia de decisiones.
+El tercer caso muestra que la subaproximación permite concentrarse en una única secuencia de decisiones.
 La Regla de la Variante de Kleene permite expresar el efecto de una cantidad arbitraria de iteraciones con una familia de aserciones, sin materializar un árbol diferente para cada valor concreto.
 
 Finalmente, el recorrido de la lista enlazada combina el razonamiento paramétrico con predicados espaciales recursivos.
@@ -3440,7 +3469,7 @@ En los dos casos, las propiedades del sistema lógico no dependen solo de una ar
 
 La diferencia principal se encuentra en la interpretación de las tripletas.
 El trabajo de Myreen y Gordon se orienta al razonamiento de correctitud.
-En esta tesina, en cambio, las tripletas de IL e ISL tienen una interpretación sub-aproximada y se usan para demostrar estados descritos por la postcondición son alcanzables.
+En esta tesina, en cambio, las tripletas de IL e ISL tienen una interpretación subaproximada y se usan para demostrar estados descritos por la postcondición son alcanzables.
 
 También difiere el nivel de abstracción.
 Myreen y Gordon trabajan directamente con código máquina y tienen que representar varios detalles de la arquitectura.
@@ -3463,7 +3492,7 @@ Appel y Blazy usan la SL para demostrar propiedades de correctitud y seguridad d
 Esta tesina formaliza la ISL, cuyo objetivo es demostrar la existencia de ejecuciones que alcanzan determinadas postcondiciones, incluidos estados de error.
 Esta diferencia se refleja en los teoremas de \emph{soundness}.
 En el razonamiento de correctitud, la prueba debe garantizar que toda ejecución respete la postcondición.
-En la interpretación sub-aproximada, debe demostrarse que cada estado descrito por la postcondición tiene al menos una ejecución que lo alcanza desde algún estado que satisface la presunción.
+En la interpretación subaproximada, debe demostrarse que cada estado descrito por la postcondición tiene al menos una ejecución que lo alcanza desde algún estado que satisface la presunción.
 
 Otra diferencia es la incorporación de \emph{heaps} negativos.
 La formalización desarrollada en esta tesina distingue entre celdas activas, celdas liberadas y direcciones que no pertenecen al fragmento local.
@@ -3502,7 +3531,7 @@ En ambos casos, los predicados inductivos permiten representar estructuras enlaz
 
 La diferencia principal reside nuevamente en la interpretación lógica.
 VeriFast usa SL para verificar que los programas respeten sus contratos y no produzcan determinados errores.
-La ISL formalizada en esta tesina usa sub-aproximaciones para demostrar que existen ejecuciones que alcanzan estados determinados, incluidos estados que representan accesos inválidos.
+La ISL formalizada en esta tesina usa subaproximaciones para demostrar que existen ejecuciones que alcanzan estados determinados, incluidos estados que representan accesos inválidos.
 
 También difieren en el grado de automatización.
 VeriFast selecciona automáticamente los pasos de ejecución simbólica y aplica las reglas necesarias para procesar la estructura del programa.
@@ -3518,7 +3547,7 @@ La comparación permite mostrar una posible línea de investigación futura, usa
 El desarrollo se encuentra mecanizado en Rocq sobre el framework Iris y cuenta con demostraciones de \emph{soundness} y \emph{completeness}.
 Mientras que \emph{soundness} garantiza que una derivación de Mizzle está respaldada por una ejecución real, \emph{completeness} establece que toda ejecución incorrecta considerada por el modelo puede representarse mediante una derivación de la lógica.
 
-Este trabajo es el más cercano a esta tesina porque los dos mecanizan razonamiento sub-aproximado junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
+Este trabajo es el más cercano a esta tesina porque los dos mecanizan razonamiento subaproximado junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
 Sin embargo, los dos desarrollos persiguen objetivos diferentes.
 Mizzle se enfoca en un lenguaje más expresivo, con funciones de orden superior y concurrencia, mientras que en esta tesina se usa un lenguaje imperativo simplificado para estudiar la estructura metateórica de la ISL.
 Por otro lado, Mizzle no incorpora liberación de memoria, mientras que la formalización desarrollada en esta tesina modela la liberación con \emph{heaps} negativos y usa esta información para demostrar errores de \emph{use after free} o \emph{double free}.
@@ -3545,7 +3574,7 @@ Sin embargo, muestra que la formalización puede usarse como un lenguaje objetiv
 La formalización propuesta en este trabajo se encuentra de alguna forma entre todos los desarrollos antes mencionados.
 Al igual que varios de los desarrollos anteriores, se concentra en dar una representación mecanizada de la semántica, las reglas lógicas y sus propiedades.
 Al igual que VeriFast, incorpora aserciones espaciales y predicados sobre memoria mutable.
-Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpretación sub-aproximada de la IL junto con el razonamiento local de la SL, incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos.
+Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpretación subaproximada de la IL junto con el razonamiento local de la SL, incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos.
 
 El resultado no alcanza todavía el nivel de IsaBIL o VeriFast ni pretende analizar un lenguaje industrial.
 Su aporte consiste en dar un núcleo formal en el que las derivaciones de la IL e ISL son objetos explícitos y sus propiedades de \emph{soundness}, localidad y descomposición por huellas son verificadas dentro de \fstar{}.
@@ -3581,13 +3610,13 @@ La evaluación realizada en esta tesina es cualitativa y se concentra en la expr
 Una implementación con más automatización permitiría estudiar experimentalmente su comportamiento.
 
 Podrían medirse los tiempos de verificación, el tamaño de las condiciones generadas, el consumo de memoria, la participación del solucionador SMT y la variación de los valores frente a programas de distintas dimensiones.
-También sería posible comparar diferentes estrategias de exploración y estudiar hasta qué punto la construcción de derivaciones sub-aproximadas permite controlar el crecimiento producido por las elecciones no deterministas y los bucles.
+También sería posible comparar diferentes estrategias de exploración y estudiar hasta qué punto la construcción de derivaciones subaproximadas permite controlar el crecimiento producido por las elecciones no deterministas y los bucles.
 
 \subsection*{Concurrencia}
 Otra posible extensión es incorporar programas concurrentes.
 Esto requeriría incorporar construcciones de composición paralela y una semántica operacional que represente las posibles intercalaciones entre los pasos de los distintos hilos.
 
-\citet{cisl} presentan la Lógica de Incorrectitud de Separación Concurrente (CISL), que extiende la ISL al razonamiento sub-aproximado sobre programas concurrentes.
+\citet{cisl} presentan la Lógica de Incorrectitud de Separación Concurrente (CISL), que extiende la ISL al razonamiento subaproximado sobre programas concurrentes.
 Mecanizar las propiedades de concurrencia en \fstar{} permitiría estudiar errores que no aparecen en programas secuenciales, como \emph{race conditions}, \emph{deadlocks} y fallas dependientes del orden de ejecución.
 
 % \appendix

@@ -72,26 +72,32 @@ Finalmente, se describe la organización del documento y se resume el contenido 
 \section{Motivación}
 \label{sec:motivacion}
 La verificación formal busca establecer propiedades sobre el comportamiento de los programas mediante modelos y demostraciones matemáticas.
-Con los trabajos fundacionales de \citet{floyd67} y \citet{hoare}, una parte importante de esta disciplina se ha concentrado en demostrar que los programas satisfacen sus especificaciones y, como consecuencia, que determinadas clases de errores no pueden producirse.
+Con los trabajos fundacionales de \citet{floyd67} y \citet{hoare},
+una parte importante de esta disciplina se ha concentrado en demostrar \changed{la \emph{correctitud} de los programas,
+entendida como el cumplimiento de sus especificaciones.}
+\changed{Estas especificaciones permiten expresar, entre otras propiedades,} que determinadas clases de errores no pueden producirse.
+
 A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas.
 \changed{La lógica de \citet{concurrence} extendió el razonamiento axiomático a programas concurrentes, mientras que la Lógica Temporal de \citet{templog}
 permitió expresar propiedades sobre la evolución de las ejecuciones, como \emph{liveness} y \emph{safety}.
 La Lógica Dinámica de \citet{dinlog} incorporó los programas como modalidades dentro de las fórmulas lógicas.
-Luego, la Lógica de Hoare Relacional~\cite{hlrel} permitió comparar dos ejecuciones y demostrar propiedades
+Posteriormente, la Lógica de Hoare Relacional~\cite{hlrel} permitió comparar dos ejecuciones y demostrar propiedades
 como equivalencia de programas.
 También se desarrollaron lógicas para programas probabilísticos, utilizadas, por ejemplo, para verificar propiedades de construcciones criptográficas~\cite{cripto}.}
 \guido{para después: estaría bueno agregar citas}
 
-Los métodos deductivos \changed{orientados a la correctitud,} como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
-permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un programa produce comportamientos indeseados.} 
+\changed{La aplicación de estos sistemas lógicos a programas de gran escala,
+sin embargo, puede demandar un gran esfuerzo.}
+\changed{En particular,} los métodos deductivos \changed{orientados a la correctitud,} como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
+%permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un programa produce comportamientos indeseados.} 
 \remove{que un programa satisface una especificación,}
+%\changed{Estas demostraciones proporcionan garantías matemáticas,}
+suelen exigir anotaciones y demostraciones
+\changed{difíciles de adaptar directamente en bases de código extensas.}
 \guido{la IL también! seria mas explicito, algo como no contiene
 comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda}
-\changed{Estas demostraciones proporcionan garantías matemáticas,}
-aunque suelen requerir un gran esfuerzo de anotación y prueba,
-\changed{lo que dificulta su aplicación directa a programas de gran escala.}
 
-\changed{Por otro lado, los analizadores estáticos son herramientas
+\changed{Frente a este esfuerzo, los analizadores estáticos son herramientas
 automatizadas que examinan un programa sin necesidad de ejecutarlo sobre entradas concretas,
 con el objetivo de encontrar posibles errores comunes.
 En general, estos analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
@@ -112,8 +118,11 @@ Con este propósito, \citet{inclog} introdujo recientemente %\guido{recientement
 la Lógica de Incorrectitud (IL), una propuesta %\remove{reciente}
 que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
 
-La IL se basa en la subaproximación, sus postcondiciones describen únicamente estados que pueden obtenerse mediante ejecuciones reales.
-En consecuencia, si el sistema permite derivar una \changed{tripleta que contiene un estado de} error, existe una traza de ejecución que conduce hasta él.
+La IL se basa en la \emph{subaproximación},
+es decir, permite describir únicamente conjuntos formados por los estados que pueden obtenerse mediante ejecuciones reales.
+%En consecuencia, si el sistema permite derivar una \changed{tripleta que contiene un estado de} error, existe una traza de ejecución que conduce hasta él.
+\changed{Al demostrar la alcanzabilidad de uno estos conjuntos,
+no es necesario describir todos los comportamientos posibles ni todos los errores existentes.}
 \remove{La lógica puede no representar todos los comportamientos posibles}
 \guido{acá creo que querés decir que una \emph{tripleta} puede no modelar
 todos los comportamientos, que está bien aclarar, pero que la \emph{lógica} pueda
@@ -121,9 +130,8 @@ hacerlo es otro tema (puede todo error en un comando de los nuestros demostrarse
 Creo que habíamos visto un paper sobre completitud relativa y la repuesta era que
 sí?}
 \remove{y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.}
-\changed{Una tripleta de incorrectitud puede representar solo una parte de los comportamientos alcanzables del programa y,
-por lo tanto, no tiene que describir todos los errores existentes.
-Sin embargo, los errores incluidos en una tripleta semánticamente válida están respaldados por ejecuciones reales y no constituyen falsos positivos.}
+\changed{Sin, embargo,
+los errores incluidos en el conjunto están respaldados por ejecuciones reales y, por lo tanto, no constituyen falsos positivos.}
 
 \guido{la primera oración me parece que pierde flujo, por ahí ``la
 versión original de IL presentada por O'Hearn era análoga a la lógica original
@@ -171,6 +179,7 @@ es también semánticamente válida.}
 \changed{Estas propiedades} pueden demostrarse matemáticamente sobre un papel.
 \guido{explicar qué es una metapropiedad, qué es soundness}
 Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar.
+
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas, de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
 En esta tesina se usa \fstar{}, un lenguaje de programación orientado a pruebas que combina tipos dependientes, especificaciones lógicas y automatización mediante el solucionador SMT Z3.
 

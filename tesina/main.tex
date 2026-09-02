@@ -79,7 +79,7 @@ Estas especificaciones permiten expresar, entre otras propiedades, que determina
 \guido{OK}
 
 A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas.
-La lógica de \citet{concurrence} extendió el razonamiento axiomático a programas concurrentes, mientras que la Lógica Temporal de \citet{templog}
+Por ejemplo, la lógica de \citet{concurrence} extendió el razonamiento axiomático a programas concurrentes, mientras que la Lógica Temporal de \citet{templog}
 permitió expresar propiedades sobre la evolución de las ejecuciones, como \emph{liveness} y \emph{safety}.
 La Lógica Dinámica de \citet{dinlog} incorporó los programas como modalidades dentro de las fórmulas lógicas.
 Posteriormente, la Lógica de Hoare Relacional~\cite{hlrel} permitió comparar dos ejecuciones y demostrar propiedades
@@ -88,7 +88,7 @@ También se desarrollaron lógicas para programas probabilísticos, utilizadas, 
 \guido{OK}
 
 La aplicación de estos sistemas lógicos a programas de gran escala,
-sin embargo, puede demandar un gran esfuerzo.
+sin embargo, suele demandar un gran esfuerzo.
 En particular, los métodos deductivos orientados a la correctitud, como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
 %permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un programa produce comportamientos indeseados.}
 %\remove{que un programa satisface una especificación,}
@@ -98,6 +98,10 @@ difíciles de adaptar directamente en bases de código extensas,
 \changed{y por ello, la verificación formal ha tenido poca aplicación en la industria.}
 %\guido{la IL también! seria mas explicito, algo como no contiene
 %comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda}
+\guido{El esfuerzo de verificar es muy alto,
+buscar proyectos como seL4, Proyecto Everest
+(https://dl.acm.org/doi/10.1145/3805702),
+DeepSpec}
 
 \guido{acá se rompe el flujo. podes terminar el parrafo anterior
 con anterior ``y por ello, la verificacion formal ha tenido poca aplicacion
@@ -197,7 +201,7 @@ Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \agustina{Cambio un poco el párrafo siguiente para que fluya más con lo anterior.
 Además, hacía mención a tripletas derivables y semántica válida que explico más adelante.}
 
-\changed{La ISL contiene, entonces, el razonamiento sobre errores alcanzables de la IL,
+\changed{La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL,
 con el razonamiento local sobre memoria dinámica de la SL.}
 \changed{Sin embargo, para confiar en las conclusiones obtenidas con este sistema,
 no basta con definir sus aserciones y reglas de inferencia,

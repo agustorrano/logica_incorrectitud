@@ -1,5 +1,4 @@
 \documentclass[a4paper,	11pt]{report}
-
 % Include preambles
 \input{preamble.tex}
 
@@ -64,16 +63,11 @@ Agradezco a ...
 \raggedleft --- C. A. R. Hoare
 \end{quote}
 
-En este primer capítulo se presenta el propósito general del trabajo.
-En primer lugar, se expone la motivación que dio origen a la tesina y el problema que se busca abordar.
-Luego, se formulan sus objetivos generales.
-Finalmente, se describe la organización del documento y se resume el contenido de cada uno de los capítulos.
-
 \section{Motivación}
 \label{sec:motivacion}
 La verificación formal busca establecer propiedades sobre el comportamiento de los programas mediante modelos y demostraciones matemáticas.
 Con los trabajos fundacionales de \citet{floyd67} y \citet{hoare},
-una parte importante de esta disciplina se ha concentrado en demostrar la \emph{correctitud} de los programas,
+la mayor parte de esta disciplina se ha concentrado en demostrar la \emph{correctitud} de los programas,
 entendida como el cumplimiento de sus especificaciones.
 Estas especificaciones permiten expresar, entre otras propiedades, que determinadas clases de errores no pueden producirse.
 \guido{OK}
@@ -88,82 +82,46 @@ También se desarrollaron lógicas para programas probabilísticos, utilizadas, 
 \guido{OK}
 
 La aplicación de estos sistemas lógicos a programas de gran escala,
-sin embargo, suele demandar un gran esfuerzo.
+sin embargo, puede requerir un esfuerzo considerable.
 En particular, los métodos deductivos orientados a la correctitud, como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
-%permiten demostrar, \changed{respecto de un modelo y una especificación, que ninguna ejecución de un programa produce comportamientos indeseados.}
-%\remove{que un programa satisface una especificación,}
-%\changed{Estas demostraciones proporcionan garantías matemáticas,}
-suelen exigir anotaciones y demostraciones
-difíciles de adaptar directamente en bases de código extensas,
-\changed{y por ello, la verificación formal ha tenido poca aplicación en la industria.}
-%\guido{la IL también! seria mas explicito, algo como no contiene
-%comportamientos indeseados, o que no se producen errores, etc, y recalcar que demostrar significa sin lugar a duda}
-\guido{El esfuerzo de verificar es muy alto,
-buscar proyectos como seL4, Proyecto Everest
-(https://dl.acm.org/doi/10.1145/3805702),
-DeepSpec}
+\changed{requieren especificar formalmente las propiedades que debe cumplir el programa
+y construir demostraciones que cubran sus distintos caminos de ejecución.
+Además, las demostraciones deben mantenerse y adaptarse a medida que el programa cambia.}
 
-\guido{acá se rompe el flujo. podes terminar el parrafo anterior
-con anterior ``y por ello, la verificacion formal ha tenido poca aplicacion
-en la industria''. Despues seguir con ``una familia de herramientas que sí ha
-tenido éxito son...''}
+\changed{La magnitud de este esfuerzo puede observarse en proyectos como seL4~\cite{sel4}:
+aunque se trata de un microkernel con un núcleo de aproximadamente 10.000 líneas de código,
+su prueba de correctitud demandó cerca de veinte años-persona.
+Project Everest~\cite{everest}, por su parte, comenzó con la expectativa de cinco años de duración
+y el objetivo de desarrollar componentes verificados del ecosistema HTTPS,
+incluidos TLS, sus algoritmos criptográficos y protocolos relacionados.
+Aunque este proyecto produjo varios componentes verificados, el resultado final fue más acotado que la meta inicial.
+Estos proyectos muestran que la verificación de sistemas reales es posible,
+pero también que requiere una gran inversión de recursos,
+lo que ha hecho que haya poca aplicación en la industria.}
+%\guido{El esfuerzo de verificar es muy alto,
+%buscar proyectos como seL4, Proyecto Everest
+%(https://dl.acm.org/doi/10.1145/3805702),
+%DeepSpec}
 
-\changed{Una familia de herramientas que sí ha tenido éxito son los analizadores estáticos.
-Estos son
-herramientas automatizadas que examinan un programa sin necesidad de ejecutarlo sobre entradas concretas,
+Frente a este costo, los analizadores estáticos son una familia de herramientas que ha tenido una adopción más amplia.
+Estos son herramientas automatizadas que examinan un programa sin necesidad de ejecutarlo sobre entradas concretas,
 con el objetivo de encontrar posibles errores comunes.
-En general, estos analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
+En general, los analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
 pero pueden perder precisión y dar lugar a falsos positivos.
-Esta necesidad de aproximar se debe a la indecibilidad de las propiedades semánticas no triviales de los programas,
+La necesidad de aproximar está relacionada con la indecibilidad de las propiedades semánticas no triviales de los programas,
 establecida por el Teorema de Rice~\cite{riceteo}.
 Por lo tanto, los analizadores estáticos tienen una tensión inevitable
-entre reportar todos los posibles errores y evitar falsas advertencias.}
-%\remove{En cambio, los analizadores estáticos priorizan la automatización y la escalabilidad, pero las aproximaciones que utilizan pueden reducir su precisión y dar lugar a falsos positivos.}
-%\guido{empezaria incluso explicando qué es un analizador estático. E.g.
-%``por otro lado, los \emph{analizadores estáticos} son herramientas
-%automatizadas que se corren sobre un programa para encontrar posibles
-%errores comunes. En general, estos analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización, pero pueden perder precisión y dar lugar a falsos positivos. Debido a la indecibilidad del problema de verificación
-%(teorema de Rice), los analizadores estáticos tienen una tensión inevitable
-%entre reportar todos los posibles errores y no reportar falsas advertencias''}
+entre reportar todos los posibles errores y evitar falsas advertencias.
 
-\changed{Eliminar por completo los falsos positivos es deseable.
-Para reducirlos, los analizadores suelen ajustar sus herurísticas de manera \emph{ad-hoc}.
-En 2019, \citet{inclog} proponen una alternativa:
-una lógica de \emph{incorrectitud} que permite demostrar axiomaticamente la presencia de errores verdaderos.}
-%Para proporcionar garantías rigurosas sobre los errores reportados,
-
-\guido{qué ``garantias rigurosas''? yo diria directamente ``eliminar por completo
-los falsos positivos es deseable. usualmente, las heuristicas de un analizador
-se modifican para evitarlos de manera ad-hoc. En 2019, O'Hearn propone una alternativa:
-una lógica de \emph{incorrectitud} que permite demostrar axiómaticamente la presencia
-de errores verdaderos''}
-%estos análisis deben tener base en algún marco teórico apropiado y bien entendido.
-%Con este propósito, \citet{inclog} introdujo recientemente
-%la Lógica de Incorrectitud (IL), una propuesta
-%que invierte el paradigma tradicional al centrarse en la demostración de errores alcanzables, aportando una base teórica sólida para imposibilitar los falsos positivos.
-
-%\guido{creo que sacaría este parrafo entero. Lo vamos a explicar después en detalle.}
-%La IL se basa en la \emph{subaproximación},
-%es decir, permite describir únicamente conjuntos formados por los estados que pueden obtenerse mediante ejecuciones reales.
-%%En consecuencia, si el sistema permite derivar una \changed{tripleta que contiene un estado de} error, existe una traza de ejecución que conduce hasta él.
-%\changed{Al demostrar la alcanzabilidad de uno estos conjuntos,
-%no es necesario describir todos los comportamientos posibles ni todos los errores existentes.}
-%\remove{La lógica puede no representar todos los comportamientos posibles}
-%\guido{acá creo que querés decir que una \emph{tripleta} puede no modelar
-%todos los comportamientos, que está bien aclarar, pero que la \emph{lógica} pueda
-%hacerlo es otro tema (puede todo error en un comando de los nuestros demostrarse?).
-%Creo que habíamos visto un paper sobre completitud relativa y la repuesta era que
-%sí?}
-%\remove{y, por lo tanto, puede omitir ciertos errores, pero los errores demostrados no constituyen falsos positivos.}
-%\changed{Sin, embargo,
-%los errores incluidos en el conjunto están respaldados por ejecuciones reales y, por lo tanto, no constituyen falsos positivos.}
-
-% \guido{la primera oración me parece que pierde flujo, por ahí ``la
-% versión original de IL presentada por O'Hearn era análoga a la lógica original
-% de Hoare, i.e. definida sobre un lenguaje de comandos con un \emph{store}
-% pero sin un \emph{heap} y por lo tanto sin estrucutras de datos mutables.''}
-
-%\remove{La IL es análoga a la HL para incorrectitud.}
+\changed{En este contexto, eliminar por completo los falsos positivos resulta importante,
+ya que un exceso de reportes incorrectos puede reducir la confianza de los desarrolladores en el analizador
+y hacer que sus advertencias sean ignoradas.
+Para reducir estas advertencias, los analizadores suelen ajustar sus heurísticas de manera \emph{ad-hoc},
+sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
+La experiencia de Facebook constituye un antecedente de una perspectiva diferente:
+sus analizadores se utilizaban para identificar regresiones concretas introducidas durante la evolución del código~\cite{facebook}.
+Este interés por demostrar la presencia de errores reales,
+motivó a \citet{inclog} a proponer una lógica de \emph{incorrectitud}.}
 
 La versión original de la IL presentada por O'Hearn es análoga a la Lógica de Hoare clásica,
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
@@ -173,9 +131,6 @@ En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \guido{OK}
-
-% \guido{por ahí un cuadradito con HL, IL, SL, ISL ayuda al lector? no sé,
-% queda medio choto capaz}
 \begin{table}[h]
 \centering
 \small
@@ -196,24 +151,18 @@ Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \label{tab:relacion-logicas}
 \end{table}
 
-\guido{se pierde flujo acá}
-
-\agustina{Cambio un poco el párrafo siguiente para que fluya más con lo anterior.
-Además, hacía mención a tripletas derivables y semántica válida que explico más adelante.}
-
-\changed{La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL,
-con el razonamiento local sobre memoria dinámica de la SL.}
-\changed{Sin embargo, para confiar en las conclusiones obtenidas con este sistema,
+La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL,
+con el razonamiento local sobre memoria dinámica de la SL.
+Sin embargo, para confiar en las conclusiones obtenidas con este sistema,
 no basta con definir sus aserciones y reglas de inferencia,
 también es necesario demostrar sus \emph{metapropiedades}, es decir,
 propiedades del propio sistema lógico y de su relación con la semántica de los programas.
 Una de las más importantes es la \emph{solidez} (\emph{soundness}),
 que garantiza que toda conclusión obtenida mediante las reglas de la lógica corresponde a
-un comportamiento admitido por la semántica.}
+un comportamiento admitido por la semántica.
 
-\changed{Estas propiedades} pueden demostrarse matemáticamente sobre un papel.
-%\guido{explicar qué es una metapropiedad, qué es soundness}
-Sin embargo, estos razonamientos pueden contener errores u omisiones difíciles de identificar.
+Estas propiedades pueden demostrarse matemáticamente sobre un papel.
+Sin embargo, este tipo de razonamientos pueden contener errores u omisiones difíciles de identificar.
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas,
 de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
 En esta tesina se usa \fstar{}, un lenguaje de programación orientado a pruebas que combina tipos dependientes,
@@ -221,48 +170,42 @@ especificaciones lógicas y automatización mediante el solucionador SMT Z3.
 
 \section{Objetivos del trabajo}
 \label{sec:objetivos}
-El objetivo general de esta tesina es formalizar la ISL en el asistente de pruebas \fstar{} y demostrar su solidez respecto de una semántica operacional explícita.
+El objetivo general de esta tesina es formalizar la ISL en el asistente de pruebas \fstar{}
+y demostrar su solidez (\emph{soundness}) respecto de una semántica operacional explícita.
 Esta formalización se desarrolla de manera incremental.
 
-En una primera etapa se mecaniza la IL sobre un lenguaje imperativo simplificado, sin operaciones sobre memoria dinámica.
-\changed{Su memoria se representa mediante un \emph{store} y su semántica distingue terminaciones normales y con error.}
+En una primera etapa, se mecaniza la IL sobre un lenguaje imperativo simplificado,
+sin operaciones sobre memoria dinámica.
+La memoria se representa mediante un \emph{store} y la semántica distingue entre terminaciones normales y con error.
 Esta primera formalización permite estudiar de forma aislada las características propias de la subaproximación,
 el no determinismo, la composición secuencial y el razonamiento sobre bucles.
+\changed{Sobre este modelo se demuestra la solidez de la IL respecto de la semántica operacional.}
 
-En una segunda etapa se extiende el modelo para incorporar memoria mutable y razonamiento espacial.
-Para ello, \changed{el estado, representado inicialmente con un \emph{store}, se amplía con}
-un \emph{heap}, manteniendo la distinción \changed{que hace la semántica} entre \remove{modos de terminación}
-\changed{una terminación normal y una con error}
-\guido{primera mención de modos
-de terminación?}.
+En una segunda etapa, se extiende el modelo para incorporar memoria mutable y razonamiento espacial.
+Para ello, el estado, representado inicialmente con un \emph{store},
+se amplía con un \emph{heap}, manteniendo la distinción entre terminaciones normales y con error.
 Además, se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.
-% \guido{la étapa previa ya tenía store, no?}
-% \agustina{Si, ahí creo que esta más claro.}
+\changed{Sobre esta extensión se formaliza la ISL, se demuestra su solidez y se prueba el Teorema de la Huella,
+que fundamenta una de las propiedades del razonamiento espacial desarrollado en el trabajo.}
 
-%\remove{Además, se busca que la formalización mantenga una separación entre el núcleo lógico de la ISL y la sintaxis del lenguaje imperativo utilizado.
-%Esto pretende facilitar futuras extensiones del modelo y su posible adaptación a lenguajes más expresivos.
-%Sin embargo, la reutilización directa del núcleo para distintos lenguajes concretos y la construcción de un analizador automático completo queda fuera del alcance de esta tesina.}
-%\guido{creo que este párrafo no agrega mucho}
-
-\changed{A partir de estas dos etapas,
-el trabajo busca demostrar las metapropiedades de las lógicas formalizadas
-y aplicarlas a programas considerados como casos de estudio.
-En particular, la mecanización permite construir certificados formales que garantizan la alcanzabilidad
-de determinados errores y usar \fstar{} para verificar que las derivaciones sean válidas.}
+\changed{A partir de las formalizaciones desarrolladas en estas dos etapas,
+la mecanización permite representar explícitamente las derivaciones y verificar sus aplicaciones a programas concretos.
+En particular, \fstar{} comprueba paso a paso las demostraciones de solidez de la IL y de la ISL,
+lo que proporciona un alto grado de confianza en su validez.
+Además, permite construir certificados formales de error y
+verificar que cada certificado está respaldado por una derivación válida.}
 
 La formalización no tiene como objetivo construir
-\guido{que ``formalización desarrollada''? hasta acá no dijimos cuál es el propósito de la tesina,
-tal vez va abajo en 1.2}
 un analizador automático completo ni implementar un procedimiento general para descubrir errores de manera autónoma.
-Las aserciones iniciales \remove{precondiciones}, las derivaciones y los caminos de ejecución relevantes son construidos explícitamente,
+Las aserciones iniciales, las derivaciones y los caminos de ejecución que sustentan los certificados son construidos explícitamente,
 mientras que \fstar{} verifica que cada paso sea matemáticamente válido.
-El trabajo se concentra, por lo tanto, en establecer un núcleo lógico mecanizado
+El trabajo se concentra, entonces, en establecer un núcleo lógico mecanizado
 que pueda servir como base para el desarrollo futuro de herramientas automáticas de detección de errores.
 
-\guido{podrías agregar que permite ademas construir certificados de error (tripletas)
-en un lenguaje verificado, o sea, no solo demostramos que la lógica es sound de forma
-mecanizada (por lo cual tenemos alta confianza en esa prueba) sino que tambien tenemos una
-forma de chequear derivaciones, como tus ejemplos}
+%\guido{podrías agregar que permite ademas construir certificados de error (tripletas)
+%en un lenguaje verificado, o sea, no solo demostramos que la lógica es sound de forma
+%mecanizada (por lo cual tenemos alta confianza en esa prueba) sino que tambien tenemos una
+%forma de chequear derivaciones, como tus ejemplos}
 
 \section{Estructura de la tesina}
 \label{sec:estructura}
@@ -277,11 +220,15 @@ El \autoref{cap:formalizacion-il} desarrolla la formalización de la IL.
 Se definen  el lenguaje imperativo, su semántica operacional y la demostración de su solidez.
 
 El \autoref{cap:formalizacion-isl} extiende esta formalización para incorporar memoria dinámica.
-Se presenta el modelo de \emph{heaps}, aserciones espaciales, \emph{heaps} negativos, la conjunción separadora, la Regla del Marco y la demostración de la solidez de la ISL.
+Se presenta el modelo de \emph{heaps}, aserciones espaciales, \emph{heaps} negativos,
+la conjunción separadora y la Regla del Marco.
+Además, se demuestran la solidez de la ISL y el Teorema de la Huella.
 
-El \autoref{cap:evaluacion} presenta distintos ejemplos verificados mediante la formalización, incluyendo casos relacionados con errores de memoria, no determinismo, bucles y estructuras enlazadas.
+El \autoref{cap:evaluacion} presenta distintos ejemplos verificados mediante la formalización,
+incluyendo casos relacionados con errores de memoria, no determinismo, bucles y estructuras enlazadas.
 
-Finalmente, el \autoref{cap:conclusiones} resume los resultados obtenidos, los trabajos relacionados, las limitaciones de la propuesta y posibles líneas de trabajo futuro.
+Finalmente, el \autoref{cap:conclusiones} resume los resultados obtenidos, los trabajos relacionados,
+las limitaciones de la propuesta y posibles líneas de trabajo futuro.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,9 +255,10 @@ Para describir formalmente el comportamiento de un programa es necesario represe
 disponible durante su ejecución como las transformaciones que el programa puede producir sobre ella.
 Con esto en mente, sea $\Sigma$ un conjunto de estados posibles de un programa.
 \changed{Un estado $\sigma \in \Sigma$ representa el contenido de la memoria del programa en un momento de su ejecución.}
-\guido{estado = contenido de la memoria? no incluye program counter, stack, etc}
-\agustina{¿debería explicar más qué significa un estado?}
-\guido{creo que esta bien así. representa el contenido del store y del heap si es que hay}
+
+%\guido{estado = contenido de la memoria? no incluye program counter, stack, etc}
+%\agustina{¿debería explicar más qué significa un estado?}
+%\guido{creo que esta bien así. representa el contenido del store y del heap si es que hay}
 
 Para describir propiedades de estos estados utilizamos aserciones.
 Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop}$\changed{,
@@ -325,7 +273,8 @@ Por lo tanto, las expresiones $\sigma \in p$ y $p(\sigma)$ se considerarán equi
 
 \subsection*{Relaciones entre estados}
 Además de describir conjuntos de estados, es necesario expresar cómo un estado puede transformarse en otro
-\guido{``mediante la ejecucion de un programa?'' no sé, sugerencia}.
+\changed{mediante la ejecución de un programa}.
+%\guido{``mediante la ejecucion de un programa?'' no sé, sugerencia}.
 Para esto se utilizan relaciones binarias sobre $\Sigma$.
 Sea $R \subseteq \Sigma \times \Sigma$ una relación binaria entre estados.
 La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma$ está relacionado mediante $R$
@@ -363,51 +312,61 @@ sus posibles estados iniciales y finales.
 Sin embargo, además del estado final, es interesante distinguir la manera en que concluye la ejecución.
 \guido{muy bien!}
 
-Para ello, consideramos los modos de terminación $\epsilon \in \{ok, er\}$,
+Para ello, consideramos los \emph{modos de terminación} $\epsilon \in \{ok, er\}$,
 donde $ok$ representa una terminación normal, y $er$ una terminación provocada por un error.
 Para cada comando $C$ y modo de terminación $\epsilon$, se define una relación semántica:
 $$[\![C]\!]_\epsilon \subseteq \Sigma \times \Sigma$$
 La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\epsilon$ indica que existe una ejecución completa y terminante de $C$ que empieza en el estado
 $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\epsilon$.
 En este sentido, $[\![C]\!]_\epsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step}.
-\agustina{¿está bien que nombre \emph{big-step}? ¿o no lo puedo asumir como sabido?}
-\guido{para mí está bien}
+%\agustina{¿está bien que nombre \emph{big-step}? ¿o no lo puedo asumir como sabido?}
+%\guido{para mí está bien}
 
 Aplicando la definición de postimagen a la relación semántica de un comando, definimos
-$$\operatorname{post}_\epsilon(C)(p) = \operatorname{post}([\![C]\!]_\epsilon)(p)$$
+$$\operatorname{post}_\epsilon(C)(p) = \operatorname{post}([\![C]\!]_\epsilon)(p).$$
 Desarrollando esta definición, obtenemos
-$$\operatorname{post}_\epsilon(C)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in [\![C]\!]_\epsilon\}$$
+$$\operatorname{post}_\epsilon(C)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in [\![C]\!]_\epsilon\}.$$
 Por lo tanto, $\operatorname{post}_\epsilon(C)(p)$ contiene los estados que pueden obtenerse como
 resultado de una ejecución terminante de $C$ que inicia en algún estado que satisface $p$
 y que termina con el modo $\epsilon$.
+\changed{De ahora en adelante, cuando no exista riesgo de ambigüedad,
+se utilizará $C$ tanto para hacer referencia al comando como a la relación semántica que representa su comportamiento;
+el modo de terminación $\epsilon$ estará indicado explícitamente.}
 \guido{esperaba que digas que a veces usamos C equivalentemente tanto como para un programa
 como para su relacion semantica}
 
-La representación mediante relaciones permite que un comando tenga distintos resultados desde un mismo estado incial.
-En particular, si existen dos ejecuciones de $C$ desde $\sigma$ que terminan con el mismo modo $\epsilon$
-en estados distintos $\sigma_1$ y $\sigma_2$, entonces
-$$(\sigma, \sigma_1) \in [\![C]\!]_\epsilon \land (\sigma, \sigma_2) \in [\![C]\!]_\epsilon.$$
-Este caso representa un comportamiento no determinista y ambos estados finales pertenecen a la postimagen de cualquier aserción que contenga a $\sigma$.
+
+Esta representación mediante relaciones permite que un comando tenga distintos resultados desde un mismo estado incial.
+Además, la ausencia de resultados para un modo de terminación determinado no implica necesariamente divergencia.
+Por ejemplo, si una ejecución produce una división por cero o desreferencia un puntero nulo,
+puede no tener un resultado normal, pero sí uno correspondiente al modo de error.
+En cambio, si no existe ningún resultado para ninguno de los modos considerados,
+una posible causa es que todas las ejecuciones continúen indefinidamente.
+
+%En particular, si existen dos ejecuciones de $C$ desde $\sigma$ que terminan con el mismo modo $\epsilon$
+%en estados distintos $\sigma_1$ y $\sigma_2$, entonces
+%$$(\sigma, \sigma_1) \in [\![C]\!]_{\epsilon} \land (\sigma, \sigma_2) \in [\![C]\!]_\epsilon$$
+%Este caso representa un comportamiento no determinista y ambos estados finales pertenecen a la postimagen de cualquier aserción que contenga a $\sigma$.
 \guido{la primera oracion bien, el resto creo que no agrega nada.}
 
-Las relaciones semánticas también permiten representar la ausencia de resultados.
+\remove{Las relaciones semánticas también permiten representar la ausencia de resultados.
 Si, para un estado inicial $\sigma$, no existe ningún estado final $\sigma'$ tal que
 $(\sigma, \sigma') \in [\![C]\!]_\epsilon$,
 entonces el comando no tiene una ejecución desde $\sigma$ que termine con el modo $\epsilon$.
 Esto no implica necesariamente divergencia,
 ya que podrían existir ejecuciones que finalicen con otro modo.
 También puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
-por ejemplo, cuando todas las ejecuciones desde $\sigma$ continúan indefinidamente.
+por ejemplo, cuando todas las ejecuciones desde $\sigma$ continúan indefinidamente.}
 \guido{falta el caso importante, cuando realmente hay un error tipo dividir por cero
 o desreferenciar null!}
 
 \section{Lógica de Hoare}
 \label{sec:hoare}
 La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación.
-Su unidad básica es la tripleta de Hoare:
+Su unidad básica es la \emph{tripleta de Hoare}:
 $$\triple{p}{C}{q}$$
 donde $p$ y $q$ son aserciones y $C$ es un comando.
-La aserción $p$ se denomina precondición, mientras que $q$ se denomina postcondición.
+La aserción $p$ se denomina \emph{precondición}, mientras que $q$ se denomina \emph{postcondición}.
 
 Existen versiones parciales y totales de la HL.
 \changed{En este trabajo se considera la versión decorrectitud parcial de la HL,
@@ -430,10 +389,10 @@ $$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \su
 \changed{En una tripleta de Hoare válida,
 entonces, $q$ es una sobreaproximación de la postimagen de $p$ mediante $C$,
 es decir, contiene todos los estados alcanzables mediante ejecuciones normales de $C$
-desde $p$, pudiendo contener \remove{muchos} más estados de los que realmente se alcanzan.
-Cuando los conjuntos $\operatorname{post}_{ok}(C)(p)$ y $q$ coinciden, entonces la postcondición describe
-exactamente esos resultados.}
-\guido{borraria la ultima oracion}
+desde $p$, pudiendo contener \remove{muchos} más estados de los que realmente se alcanzan.}
+%Cuando los conjuntos $\operatorname{post}_{ok}(C)(p)$ y $q$ coinciden, entonces la postcondición describe
+%exactamente esos resultados.}
+%\guido{borraria la ultima oracion}
 %\guido{arranca raro el parrafo sig, yo diria: en una tripleta de hoare,
 %entonces, $q$ es una \emph{sobreaproximación} de la postimagen de $p$ mediante $C$,
 %pudiendo contener muchos más estados de los que realmente se alcanzan.}
@@ -445,34 +404,58 @@ exactamente esos resultados.}
 %La relación entre los dos niveles se expresa mediante propiedades como \emph{soundness}:
 %un sistema es sólido cuando toda especificación derivable mediante sus reglas es también semánticamente válida.}
 
-La validez semántica de una tripleta debe distinguirse de su derivabilidad dentro de un sistema de prueba
-\guido{axiomatico o formal}.
-Mientras que
-$\models_\mathrm{HL} \triple{p}{C}{q}$
-indica que la tripleta es válida respecto de la semántica del comando,
-se escribe
+\changed{Además de esta interpretación semántica, la HL cuenta con un sistema axiomático
+formado por axiomas y reglas de inferencia.
+Por ejemplo, el axioma de asignación establece:
+\begin{mathpar}
+\inferrule []
+  {}
+  {\triple{p[e/x]}{x := e}{p},}
+\end{mathpar}
+donde la expresión $p[e/x]$ representa la sustitución de las apariciones libres de $x$ en $p$ por la expresión $e$.}
+
+Una de las reglas de inferencia fundamentales de la HL es la Regla de Consecuencia:
+\begin{mathpar}
+\inferrule []
+  {p' \implies p \\ \triple{p}{C}{q} \\ q \implies q'}
+  {\triple{p'}{C}{q'}}
+\end{mathpar}
+Esta regla permite
+fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
+
+\begin{ejemplo}
+Se tiene un programa que incrementa en 2 el valor de la variable $x$:
+$$x := x + 2.$$
+
+Mediante el axioma de asignación se obtiene:
+$$\triple{x + 2 > 1}{x := x + 2}{x > 1}.$$
+Como $x > 0 \implies x + 2 > 1$, la Regla de Consecuencia permite deducir:
+$$\triple{x > 0}{x := x + 2}{x > 1}.$$
+\end{ejemplo}
+
+%La validez semántica de una tripleta debe distinguirse de su derivabilidad dentro de un sistema de prueba
+%\changed{axiomático}.
+%\guido{axiomatico o formal}.
+%Mientras que
+%$\models_\mathrm{HL} \triple{p}{C}{q}$
+%indica que la tripleta es válida respecto de la semántica del comando,
+Se escribe
 $$\vdash_\mathrm{HL} \triple{p}{C}{q}$$
-cuando la tripleta puede obtenerse con las reglas de inferencia de la HL.
-Por lo tanto, el símbolo $\models_\mathrm{HL}$ expresa una relación semántica,
+cuando la tripleta puede obtenerse mediante los axiomas y las reglas de inferencia de la HL.
+Esta derivabilidad se distingue de la validez semántica, ya que
+el símbolo $\models_\mathrm{HL}$ afirma que la tripleta es válida respecto de la relación semántica,
 mientras que $\vdash_\mathrm{HL}$ expresa la existencia de una derivación formal.
 \guido{mejor si agregamos algunas reglas antes y damos un ejemplo super pequeño, tipo
 $\triple{x > 0}{x := x + 2}{x > 1}$}
 
+
+%Además, refleja la característica sobreaproximante de la HL, dado
+%que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente, sin afectar la validez de la tripleta.
 %\remove{También se asume familiaridad con la Regla de Consecuencia de la HL, que permite debilitar la postcondición y fortalecer la precondición de una tripleta ya demostrada:}
 %\guido{Recordamos tambien la regla de consecuencia de la HL, que permite
 %fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
 %Esta regla nuevamente refleja la característica sobreaproximante(?) de la HL, dado
 %que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente, sin afectar la validez de la tripleta.}
-Una de las reglas fundamentales de la HL es la regla de consecuencia,
-que permite
-fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
-Esta regla nuevamente refleja la característica sobreaproximante de la HL, dado
-que $q$ puede aumentarse arbitrariamente y $p$ puede disminuirse arbitrariamente, sin afectar la validez de la tripleta.
-\begin{mathpar}
-\inferrule []
-    {p' \implies p \\ \triple{p}{C}{q} \\ q \implies q'}
-    {\triple{p'}{C}{q'}}
-\end{mathpar}
 
 La IL, presentada en la siguiente sección, parte del mismo marco teórico para razonar sobre la alcanzabilidad de resultados.
 

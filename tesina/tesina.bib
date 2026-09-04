@@ -510,26 +510,6 @@
     url       = {https://api.semanticscholar.org/CorpusID:214793472}
 }
 
-@article{10.1145/982962.964003,
-author = {Benton, Nick},
-title = {Simple relational correctness proofs for static analyses and program transformations},
-year = {2004},
-issue_date = {January 2004},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {39},
-number = {1},
-issn = {0362-1340},
-url = {https://doi.org/10.1145/982962.964003},
-doi = {10.1145/982962.964003},
-abstract = {We show how some classical static analyses for imperative programs, and the optimizing transformations which they enable, may be expressed and proved correct using elementary logical and denotationaltechniques. The key ingredients are an interpretation of program properties as relations, rather than predicates, and a realization that although many program analyses are traditionally formulated in very intensional terms, the associated transformations are actually enabled by more liberal extensional properties.We illustrate our approach with formal systems for analysing and transforming while-programs. The first is a simple type system which tracks constancy and dependency information and can be used to perform dead-code elimination, constant propagation and program slicing as well as capturing a form of secure information flow. The second is a relational version of Hoare logic, which significantly generalizes our first type system and can also justify optimizations including hoisting loop invariants. Finally we show how a simple available expression analysis and redundancy elimination transformation may be justified by translation into relational Hoare logic.},
-journal = {SIGPLAN Not.},
-month = jan,
-pages = {14–25},
-numpages = {12},
-keywords = {types, security, program analysis, partial equivalence relations, optimizing compilation, information flow, dependency, denotational semantics, Hoare logic}
-}
-
 @inproceedings{
     hlrel,
     author    = {Benton, Nick},
@@ -547,26 +527,6 @@ keywords = {types, security, program analysis, partial equivalence relations, op
     keywords  = {types, security, program analysis, partial equivalence relations, optimizing compilation, information flow, dependency, denotational semantics, Hoare logic},
     location  = {Venice, Italy},
     series    = {POPL '04}
-}
-
-@article{10.1145/1594834.1480894,
-author = {Barthe, Gilles and Gr{\'e}goire, Benjamin and Zanella B{\'e}guelin, Santiago},
-title = {Formal certification of code-based cryptographic proofs},
-year = {2009},
-issue_date = {January 2009},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {44},
-number = {1},
-issn = {0362-1340},
-url = {https://doi.org/10.1145/1594834.1480894},
-doi = {10.1145/1594834.1480894},
-abstract = {As cryptographic proofs have become essentially unverifiable, cryptographers have argued in favor of developing techniques that help tame the complexity of their proofs. Game-based techniques provide a popular approach in which proofs are structured as sequences of games and in which proof steps establish the validity of transitions between successive games. Code-based techniques form an instance of this approach that takes a code-centric view of games, and that relies on programming language theory to justify proof steps. While code-based techniques contribute to formalize the security statements precisely and to carry out proofs systematically, typical proofs are so long and involved that formal verification is necessary to achieve a high degree of confidence. We present Certicrypt, a framework that enables the machine-checked construction and verification of code-based proofs. Certicrypt is built upon the general-purpose proof assistant Coq, and draws on many areas, including probability, complexity, algebra, and semantics of programming languages. Certicrypt provides certified tools to reason about the equivalence of probabilistic programs, including a relational Hoare logic, a theory of observational equivalence, verified program transformations, and game-based techniques such as reasoning about failure events. The usefulness of Certicrypt is demonstrated through various examples, including a proof of semantic security of OAEP (with a bound that improves upon existing published results), and a proof of existential unforgeability of FDH signatures. Our work provides a first yet significant step towards Halevi's ambitious programme of providing tool support for cryptographic proofs.},
-journal = {SIGPLAN Not.},
-month = jan,
-pages = {90–101},
-numpages = {12},
-keywords = {coq proof assistant, cryptographic proofs, observational equivalence, program transformations, relational hoare logic}
 }
 
 @inproceedings{
@@ -597,4 +557,46 @@ keywords = {coq proof assistant, cryptographic proofs, observational equivalence
     volume  = {74},
     pages   = {358-366},
     url     = {https://api.semanticscholar.org/CorpusID:120980829}
+}
+
+@article{
+    sel4,
+    author     = {Klein, Gerwin and Andronick, June and Elphinstone, Kevin and Murray, Toby and Sewell, Thomas and Kolanski, Rafal and Heiser, Gernot},
+    title      = {Comprehensive formal verification of an OS microkernel},
+    year       = {2014},
+    issue_date = {February 2014},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {32},
+    number     = {1},
+    issn       = {0734-2071},
+    url        = {https://doi.org/10.1145/2560537},
+    doi        = {10.1145/2560537},
+    abstract   = {We present an in-depth coverage of the comprehensive machine-checked formal verification of seL4, a general-purpose operating system microkernel.We discuss the kernel design we used to make its verification tractable. We then describe the functional correctness proof of the kernel's C implementation and we cover further steps that transform this result into a comprehensive formal verification of the kernel: a formally verified IPC fastpath, a proof that the binary code of the kernel correctly implements the C semantics, a proof of correct access-control enforcement, a proof of information-flow noninterference, a sound worst-case execution time analysis of the binary, and an automatic initialiser for user-level systems that connects kernel-level access-control enforcement with reasoning about system behaviour. We summarise these results and show how they integrate to form a coherent overall analysis, backed by machine-checked, end-to-end theorems.The seL4 microkernel is currently not just the only general-purpose operating system kernel that is fully formally verified to this degree. It is also the only example of formal proof of this scale that is kept current as the requirements, design and implementation of the system evolve over almost a decade. We report on our experience in maintaining this evolving formally verified code base.},
+    journal    = {ACM Trans. Comput. Syst.},
+    month      = feb,
+    articleno  = {2},
+    numpages   = {70},
+    keywords   = {Isabelle/HOL, L4, microkernel, operating systems, seL4}
+}
+
+@article{
+    everest,
+    author     = {Ahman, Danel and Bhargavan, Karthikeyan and Bond, Barry and Bosamiya, Jay and Brzuska, Christopher and Delignat-Lavaud, Antoine and Fournet, C{\'e}dric and Fromherz, Aymeric and Gibson, Sydney and Hawblitzel, Chris and Hriundefinedcu, C{\u a}t{\u a}lin and Kohlweiss, Markulf and Mart{\'i}nez, Guido and Ni, Haobin and Parno, Bryan and Protzenko, Jonathan and Ramananandro, Tahina and Rastogi, Aseem and Rivas, Exequiel and Swamy, Nikhil and Zanella-B{\'e}guelin, Santiago},
+    title      = {Project Everest: Perspectives from Developing Industrial-Grade High-Assurance Software},
+    year       = {2026},
+    issue_date = {June 2026},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {48},
+    number     = {2},
+    issn       = {0164-0925},
+    url        = {https://doi.org/10.1145/3805702},
+    doi        = {10.1145/3805702},
+    abstract   = {Project Everest began at Microsoft Research in 2016, aiming to spur research in program verification to produce industrial-grade software. In collaboration with INRIA and Carnegie Mellon University, Project Everest’s goal was to produce drop-in verified replacements of secure communications software used in the HTTPS ecosystem, including TLS, the underlying cryptography, and related subprotocols. Now, almost a decade later, we reflect on the project, sharing both its successes and failures, and look ahead to the next decade of program verification research.},
+    journal    = {ACM Trans. Program. Lang. Syst.},
+    month      = jun,
+    articleno  = {9},
+    numpages   = {64},
+    keywords   = {Program proof, Cryptographic software, Systems software, Communications software, Proof-oriented programming}
 }

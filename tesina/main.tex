@@ -779,10 +779,14 @@ Estos mecanismos son provistos por la Lógica de Separación, que se presenta a 
 \label{sec:logsep}
 La HL es efectiva para razonar sobre variables simples, pero su escalabilidad disminuye ante estructuras de datos mutables.
 El obstáculo principal es el \emph{aliasing}.
+\guido{pequeña explicación y/o citas del problema? se vuelve no escalable.
+también hay que introducir el termino aliasing}
 
-La SL introducida por \citet{sl} y desarrollada por \citet{sl2}, extiende la HL con aserciones que describen la estructura de la memoria.
+\guido{citar a CACM es medio raro, es una revista popular, digamos, y no un paper tecnico}
+La SL introducida por \citet{sl} y desarrollada por \citet{sl2}, extiende la HL con aserciones que describen la estructura de la memoria \guido{a diferencia de ...?}.
 Su objetivo es permitir el razonamiento local, es decir, demostrar el comportamiento de un comando considerando solo el fragmento del \emph{heap} que este utiliza, sin tener que describir el resto de la memoria.
 
+\guido{menor: tambien usar mathsf para Store/Heap?}
 Sean $\mathsf{Var}$ el conjunto de variables del programa, $\mathsf{Val}$ el conjunto de valores y $\mathsf{Loc}$ el conjunto de direcciones de memoria.
 Un \emph{store} es una función total:
 $$Store = \mathsf{Var} \rightarrow \mathsf{Val},$$
@@ -808,6 +812,8 @@ $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 En este tipo de programas, una modificación realizada a través de un puntero puede alterar el valor al que hace referencia otro puntero diferente.
 Entonces, para poder probar la correctitud de un programa con \textit{aliasing} mediante la lógica tradicional, el verificador debe añadir restricciones globales complejas que garanticen que ninguna operación de mutación afectará a otras referencias.
 Este es un proceso que, para programas de tamaño moderado, se le suma mucha dificultad y no escala.
+\guido{alguna cita estaria buena. Este paper de verus \url{https://dl.acm.org/doi/epdf/10.1145/3694715.3695952} menciona algunos problemas de escalabilidad con Lowstar, que no era logica de separacion
+sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
 
 \subsection*{La conjunción separadora y aserciones espaciales}
 Antes de definir las aserciones espaciales, es necesario especificar cuándo dos fragmentos de memoria son independientes.
@@ -823,6 +829,9 @@ $$h_1 \uplus h_2$$
 Esta operación contiene todas las celdas de ambos \emph{heaps}:
 $$\operatorname{dom}(h_1 \uplus h_2) = \operatorname{dom}(h_1) \cup \operatorname{dom}(h_2)$$
 Cuando sus dominios son disjuntos, ninguna dirección recibe dos valores diferentes y la unión se encuentra bien definida.
+\guido{explicitá que la union esta definida por casos. La ultima oracion me
+hace ruido porque no diste la definicion y porque $\uplus$ solo esta definida cuando
+son disjuntos (entonces decir ``cuando son disjuntos...'' no tiene sentido).}
 
 La SL incorpora aserciones específicas para describir fragmentos de memoria.
 Entre las más importantes se encuentran $\mathsf{emp}$, points-to y la conjunción separadora.
@@ -844,10 +853,15 @@ se satisface cuando el \emph{heap} contiene exactamente una celda, cuya direcci�
 Formalmente:
 $$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \; \ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s$$
 \end{definicion}
+\guido{aclarar que $e_1, e_2$ son expresiones que se evaluan segun el store?
+por cierto como está bien esto? Si tengo $x |-> 1$ donde x es una variable
+y hago $x := blah$ poniendo $x |-> 1$ en el frame, no rompo nada? o esta prohibido
+por la regla de frame?}
+\guido{leyendo más adelante me contesto que sí, aunque chequealo por favor}
 
 Por ejemplo, $x \mapsto 3$ describe un \emph{heap} formado exactamente por una celda ubicada en la dirección almacenada en $x$, cuyo contenido es 3.
-Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda, sino un fragmento compuesto únicamente por ella.
-Para describir otras celdas independientes deben agregarse nuevas aserciones mediante la conjunción separadora.
+Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda, sino un fragmento compuesto únicamente por ella.\guido{a veces llamado ``heaplet''}
+Para describir otras celdas independientes \sout{deben}pueden agregarse nuevas aserciones mediante la conjunción separadora.
 
 \begin{definicion}[Conjunción separadora]
 \label{def:sep-conj}
@@ -858,6 +872,7 @@ si el \emph{heap} $h$ puede dividirse en dos fragmentos disjuntos $h_1$ y $h_2$,
 Formalmente:
 $$(s, h) \models P * Q \iff \exists h_1, h_2 \in Heaps. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land (s, h_1) \models P \land (s, h_2) \models Q$$
 \end{definicion}
+\guido{dar alguna intuicion de por qué el store no se parte?}
 
 El contraste entre la conjunción clásica ($\land$) y la separadora ($*$) es lo que le otorga a la SL el poder de describir patrones de \emph{aliasing} o separación de forma concisa.
 Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$, la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente, y la aserción $y \mapsto 3, x$.
@@ -895,6 +910,8 @@ Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 \end{figure}
 
 Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$, la conjunción clásica dicta que ambos predicados se cumplen sobre la misma memoria exacta.
+\guido{acá querés decir \emph{\textbf{podría}} cumplirse sobre la misma memoria exacta, no?
+nada dicta que tenga que ser así}
 Físicamente, esto es posible si $x$ e $y$ son exactamente el mismo puntero, como se muestra en la \autoref{fig:conjuncion-clasica}.
 
 \begin{figure}[h]
@@ -940,6 +957,8 @@ Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estruct
 \end{figure}
 
 Luego, la prohibición de \emph{aliasing} indeseado queda construida a nivel lógico.
+\guido{al principio dijimos ``la SL tiene el poder de describir patrones de aliasing [...] de forma concisa'', pero creo que lo importante es la prohibicion del aliasing por defecto. De hecho
+expresar aliasing cuando uno sí lo quiere es un garrón}
 
 \begin{lema}[Propiedades de la conjunción separadora]
 Para todas las aserciones espaciales $P$, $Q$ y $R$:
@@ -954,6 +973,7 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
 Para poder operar sobre este nuevo modelo de memoria, la SL extiende el lenguaje de programación imperativo clásico con cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
 \begin{enumerate}
     \item \textbf{Asignación (allocation):}
+    \guido{asignacion y alocacion son dos cosas distintas}
     $$v := \texttt{cons}(e_1, \ldots, e_n)$$
     reserva $n$ celdas consecutivas del heap y guarda la dirección base en la variable $v$.
     \item \textbf{Lectura (lookup):}

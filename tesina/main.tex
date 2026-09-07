@@ -80,17 +80,22 @@ Posteriormente, la Lógica de Hoare Relacional~\cite{hlrel} permitió comparar d
 como equivalencia de programas.
 También se desarrollaron lógicas para programas probabilísticos, utilizadas, por ejemplo, para verificar propiedades de construcciones criptográficas~\cite{cripto}.
 \guido{OK}
+\guido{aca creo que todos los ejemplos deberían estar en la misma oracion}
 
 La aplicación de estos sistemas lógicos a programas de gran escala,
 sin embargo, puede requerir un esfuerzo considerable.
-En particular, los métodos deductivos orientados a la correctitud, como la Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},
-\changed{requieren especificar formalmente las propiedades que debe cumplir el programa
+En particular, los métodos deductivos orientados a la correctitud, como la
+Lógica de Hoare (HL) y la Lógica de Separación (SL)~\cite{sl},\guido{acá no
+sería mejor poder decir ``todas las lógicas del párrafo anterior''?}
+requieren especificar formalmente las propiedades que debe cumplir el programa
 y construir demostraciones que cubran sus distintos caminos de ejecución.
-Además, las demostraciones deben mantenerse y adaptarse a medida que el programa cambia.}
+Además, las demostraciones deben mantenerse y adaptarse a medida que el programa cambia.
+\guido{lo ultimo está bueno, es especialmente importante en un entorno industrial, porque
+trata de software, no de demostrar que algun algoritmo en un libro está bien o mal}
 
 \changed{La magnitud de este esfuerzo puede observarse en proyectos como seL4~\cite{sel4}:
 aunque se trata de un microkernel con un núcleo de aproximadamente 10.000 líneas de código,
-su prueba de correctitud demandó cerca de veinte años-persona.
+su prueba de correctitud demandó cerca de veinte años-persona \guido{y N lineas de prueba?}.
 Project Everest~\cite{everest}, por su parte, comenzó con la expectativa de cinco años de duración
 y el objetivo de desarrollar componentes verificados del ecosistema HTTPS,
 incluidos TLS, sus algoritmos criptográficos y protocolos relacionados.
@@ -98,6 +103,7 @@ Aunque este proyecto produjo varios componentes verificados, el resultado final 
 Estos proyectos muestran que la verificación de sistemas reales es posible,
 pero también que requiere una gran inversión de recursos,
 lo que ha hecho que haya poca aplicación en la industria.}
+\guido{mencionar cuanta gente trabajó en esto, creo que estimamos entre 50 y 100 años-persona}
 %\guido{El esfuerzo de verificar es muy alto,
 %buscar proyectos como seL4, Proyecto Everest
 %(https://dl.acm.org/doi/10.1145/3805702),
@@ -120,8 +126,14 @@ Para reducir estas advertencias, los analizadores suelen ajustar sus heurística
 sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
 La experiencia de Facebook constituye un antecedente de una perspectiva diferente:
 sus analizadores se utilizaban para identificar regresiones concretas introducidas durante la evolución del código~\cite{facebook}.
+\guido{no entiendo lo anterior, no me parece que eso sea muy interesante?
+pero sí que necesitaban 1) algo muy rápido y 2) que no diera falsos positivos}
 Este interés por demostrar la presencia de errores reales,
 motivó a \citet{inclog} a proponer una lógica de \emph{incorrectitud}.}
+
+\guido{acá saltás de mencionar la palabra ``incorrectitud'' a hablar de dos variantes
+y su comparación con la lógica de hoare, sin explicar qué es la incorrectitud. Agregaría un
+poco sobre qué es, y por qué tiene relación con los analizadores}
 
 La versión original de la IL presentada por O'Hearn es análoga a la Lógica de Hoare clásica,
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
@@ -167,6 +179,10 @@ Una forma de incrementar la confianza en estos resultados consiste en mecanizarl
 de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
 En esta tesina se usa \fstar{}, un lenguaje de programación orientado a pruebas que combina tipos dependientes,
 especificaciones lógicas y automatización mediante el solucionador SMT Z3.
+
+
+\guido{qué te parece de sacar la sección de objetivos, y solamente describir los
+resultados? la cosa está hecha ya}
 
 \section{Objetivos del trabajo}
 \label{sec:objetivos}

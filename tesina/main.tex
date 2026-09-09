@@ -346,17 +346,17 @@ y que termina con el modo $\varepsilon$.
 \end{definicion}
 
 \changed{En expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
-se utilizará el comando $C$ como abreviatura de la relación semántica $[\![C]\!]_\varepsilon$ que representa su comportamiento.
-El modo de terminación $\varepsilon$ se indica explícitamente para distinguir que tipo se terminaciones se consideran.}
+se utilizará el comando $C$ como una abreviación notacional de la relación semántica $[\![C]\!]_\varepsilon$.
+El modo de terminación $\varepsilon$ se indica explícitamente para distinguir qué tipos de terminaciones se consideran.}
 %\guido{esperaba que digas que a veces usamos C equivalentemente tanto como para un programa
 %como para su relacion semantica}
 
 \changed{Esta representación mediante relaciones permite que un comando
-pueda alcanzar distintos estados finales desde un mismo estado inicial.
-Además, puede no existir un resultado para un modo de terminación determinado.
-Por ejemplo, si una ejecución produce una división por cero o desreferencia un puntero nulo,
-puede no tener un resultado normal, pero sí uno correspondiente al modo de error.
-También puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
+alcance distintos estados finales desde un mismo estado inicial.
+También puede ocurrir que no exista un resultado para un modo de terminación determinado.
+Por ejemplo, si una ejecución produce, por ejemplo, una división por cero o desreferencia un puntero nulo,
+puede no existir un resultado asociado al modo normal, aunque sí uno asociado al modo de error.
+Además, puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
 por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.}
 
 %\guido{la primera oracion bien, el resto creo que no agrega nada.}
@@ -373,8 +373,8 @@ La aserción $p$ se denomina \emph{precondición}, mientras que $q$ se denomina 
 
 Para definir el significado de una tripleta,
 es necesario establecer qué requisito se impone sobre la terminación de las ejecuciones.
-Existen versiones de corrección parcial y de corrección total de la HL.
-\changed{En este trabajo se considera la versión de corrección parcial,
+Existen versiones de correctitud parcial y de correctitud total de la HL.
+\changed{En este trabajo se considera la versión de correctitud parcial,
 donde la tripleta denota que toda ejecución de $C$ iniciada en un estado que satisface $p$,
 si termina normalmente, alcanza un estado que satisface $q$.}
 \changed{No se exige que todas las ejecuciones terminen, a diferencia de las versiones totales.}
@@ -382,13 +382,15 @@ si termina normalmente, alcanza un estado que satisface $q$.}
 Con esta convención, la semántica de la tripleta se expresa mediante la postimagen de la Definición~\ref{def:post-comado}.
 Aunque la semántica operacional distingue entre distintos modos de terminación,
 las tripletas de la HL consideradas en este trabajo se refieren implícitamente a las terminaciones normales.
-\changed{Por esta razón, su validez semántica se define usando la postimagen asociada al modo $ok$}:
+\changed{No establece ninguna propiedad sobre las ejecuciones que terminan con error;
+el razonamiento sobre estos comportamientos se desarrollará mediante la IL.
+Por esta razón, su validez semántica se define usando la postimagen asociada al modo $ok$}:
 $$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q$$
 
-\changed{La inclusión anterior expresa una \emph{sobreaproximación}.
-La postcondición $q$ debe contener todos los estados finales normales que pueden alcanzarse desde estados que satisface $p$,
+\changed{La inclusión anterior expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
+Por lo tanto, $q$ debe contener todos esos estados,
 aunque también puede incluir estados que el programa no alcanza.
-Para obersvar esta propiedad, se presenta un ejemplo.}
+Para observar esta propiedad, se presenta un ejemplo.}
 
 \begin{ejemplo}
 \label{eje:sobreaprox}
@@ -407,9 +409,9 @@ $$\operatorname{post}_{ok}(C)(p) \subseteq \{\sigma \in \Sigma \mid \sigma(x) > 
 
 \changed{El ejemplo anterior muestra la validez de una tripleta desde el punto de vista semántico.
 Para obtener tripletas mediante un procedimiento formal de razonamiento,
-la HL cunta con un conjunto de axiomas y reglas de inferencia.}
+la HL cuenta con un conjunto de axiomas y reglas de inferencia.}
 
-\changed{El axioma de asignación constituye uno de los elemetos básicos de este sistema.
+\changed{El axioma de asignación constituye uno de los elementos básicos de este sistema.
 Establece que:
 \begin{mathpar}
 \inferrule []
@@ -418,10 +420,10 @@ Establece que:
 \end{mathpar}
 donde la expresión $p[e/x]$ representa la sustitución de las apariciones libres de $x$ en $p$ por la expresión $e$.}
 
-Este axioma permite razonar directamente sobre comandos de asignación,
-pero por sí solo tiene un alcance limitado:
-solo produce tripletas cuya precondición se obtiene mediante sustitución y no permite adaptar fácilmente esas tripletas a otras aserciones.
-Para utilizar una precondición más restricitva o una postcondición más general, se utiliza la Regla de Consecuencia:
+\changed{Este axioma de asignación permite obtener una tripleta cuya postcondición se elige de antemano y
+cuya precondición queda determinada por la sustitución de la expresión asignada en dicha postcondición.
+Sin embargo, esa precondición no siempre coincide con la que se desea utilizar en el razonamiento.
+La Regla de Consecuencia permite adaptar la tripleta a una precondición más restrictiva o una postcondición más general:}
 \begin{mathpar}
 \inferrule []
   {p' \implies p \\ \triple{p}{C}{q} \\ q \implies q'}
@@ -466,77 +468,138 @@ La IL, presentada en la siguiente sección, parte del mismo marco teórico para 
 %analizadores estaticos. Y putean porque marcan demasiados falsos positivos y los terminan
 %ignorando. Aca nos interesa eliminar este ultimo problema.}
 
-La Lógica de Incorrectitud (IL), introducida por \citet{inclog}, propone lo inverso a la Lógica de Hoare.
-La IL permite demostrar que determinados resultados pueden ser producidos por alguna ejecución.
-Para ello, la IL utiliza una noción denominada subaproximación.
-Como se explicó en la \autoref{sec:hoare}, una tripleta de Hoare válida usa una postcondición $q_\mathrm{sobre}$
-que contiene todos los estados alcanzables:
-$$\operatorname{post}_{ok}(C)(p) \subseteq q_\mathrm{sobre}.$$
-En cambio, una subaproximación $q_\mathrm{sub}$ contiene solo estados que son efectivamente alcanzables:
-$$q_\mathrm{sub} \subseteq \operatorname{post}_\epsilon(C)(p).$$
-Cuando se consideran las ejecuciones que terminan normalmente, la relación entre ambas aproximaciones puede resumirse como:
-$$q_\mathrm{sub} \subseteq \operatorname{post}_{ok}(C)(p) \subseteq q_\mathrm{sobre}.$$
-La IL también permite aplicar el mismo razonamiento subaproximado a las ejecuciones que terminan con error,
-utilizando en ese caso $\operatorname{post}_{er}(C)(p)$.
+La Lógica de Incorrectitud (IL), introducida por \citet{inclog},
+parte del mismo marco relacional, pero cambia el objetivo del razonamiento:
+\changed{en lugar de demostrar que ciertos comportamientos no pueden ocurrir,
+busca demostrar que resultados determinados son alcanzables mediante ejecuciones reales.}
 
-Por lo tanto, una subaproximación puede omitir algunos resultados del comando,
-pero no debe incluir estados finales cuya alcanzabilidad no pueda justificarse con una ejecución.
-Esta propiedad permite usar la IL como fundamento lógico de herramientas orientadas a detectar errores
-sin reportar estados de error imposibles.
+\changed{Las tripletas de la IL tienen la forma:
+$$\itriple{p}{C}{\varepsilon : q},$$
+donde $p$ es la precondición, $C$ es un comando, $\varepsilon$ es el modo de terminación considerado y
+$q$ es la postcondición.
+En esta notación, $\varepsilon$ se denomina \emph{condición de salida} (\emph{exit condition}).
+A diferencia de la HL, el modo de terminación aparece explícitamente porque la IL también permite demostrar
+la alcanzabilidad de estados producidos por errores.}
 
-\begin{definicion}(Tripleta de incorrectitud)
-\label{def:trip-inc}
-Sean $C$ un comando, $p$, $q \subseteq \Sigma$ dos aserciones y $\epsilon \in \{ok, er\}$ un modo de terminación.
-Una tripleta de incorrectitud se escribe:
-$$\itriple{p}{C}{\epsilon : q}$$
-La aserción $p$ se denomina presunción y $q$, postcondición.
-La tripleta expresa que cada estado descrito por $q$ puede alcanzarse mediante alguna ejecución de $C$
-que comienza en un estado que satisface $p$ y finaliza con el modo $\epsilon$.
-\end{definicion}
+%\guido{aca yo me preguntaria por qué la IL necesita el modo de terminacion y la HL no.
+%Creo que la respuesta es que en la HL los errores siempre estan ``mal'' pero acá sí nos
+%interesa poder demostrar tripletas que lleguen a ellos.}
 
-\guido{aca yo me preguntaria por qué la IL necesita el modo de terminacion y la HL no.
-Creo que la respuesta es que en la HL los errores siempre estan ``mal'' pero acá sí nos
-interesa poder demostrar tripletas que lleguen a ellos.}
+\changed{Una vez introducida la notación de las tripletas,
+definimos formalmente su validez semántica:
+$$\models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \iff q \subseteq \operatorname{post}_\varepsilon(C)(p).$$
+Esta inclusión expresa una \emph{subaproximación}:
+cada estado descrito por $q$ debe estar respaldado por al menos una ejecución de $C$
+que comienza en un estado que satisface $p$ y termina con el modo $\varepsilon$.
+La postcondición no tiene que describir todos los estados alcanzables,
+sino que puede incluir solo una parte de ellos.}
 
-La tripleta es semánticamente válida, lo que denotamos mediante:
-$$\models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$$
-si y solo si $q \subseteq \operatorname{post}_\epsilon(C)(p)$.
+\changed{Esta interpretación contrasta con la de la HL.
+En la HL se exige que todos los estados finales normales alcanzables desde $p$ estén incluidos en la postcondición.
+En la IL, en cambio, se exige que todos los estados descritos por $q$ sean resultados alcanzables.
+Por eso, la IL puede omitir comportamientos sin perder la validez de la tripleta,
+siempre que no incluya estados que no pueden producirse.
+La diferencia puede observarse en el siguiente ejemplo,
+que utiliza el mismo comando para ambas lógicas.}
 
-\guido{hay que introducir condicion de salida, no explicamos que
-el lenguaje puede lanzar errores. De hecho tampoco introducimos
-la sintaxis del lenguaje de comandos, aunque eso puede estar
-bien porque la nocion de esta logica es independiente del lenguaje concreto.}
-\agustina{Cambie a modo de terminación que está introducido más arriba.
-Lo de la sintaxis lo pense por lo que vos mencionas, de última puedo introducir algo
-como para el lector lo entienda más o explicar por que no lo hacemos?}
-\guido{está mucho mejor todo. que te parece dar ejemplos con un pequeño
-lenguaje imperativo, que no definimos en detalle, en donde dividir por cero
-lanza error?}
+\begin{ejemplo}
+\label{eje:comp-HL-IL}
+Consideremos nuevamente el comando
+$$C \equiv x := x + 2$$
+y la precondición $p \equiv x > 0$ del Ejemplo~\ref{eje:sobreaprox}.
+
+En la IL, podemos demostrar, por ejemplo, la tripleta
+$$\itriple{x > 0}{C}{ok : x = 3},$$
+ya que el estado final $x = 3$ puede obtenerse ejecutando el comando desde un estado inicial donde $x = 1$.
+Sin embargo, la tripleta de Hoare correspondiente:
+$$\triple{x > 0}{C}{x = 3}$$
+no es válida.
+En la HL, la postcondición debe cumplirse para toda ejecución normal que comience en un estado que satisfaga la precondición.
+Sin embargo, el estado inicial $x = 2$ satisface $x > 0$ y produce el resultado $x = 4$,
+que no satisface la postcondición $x = 3$.
+\end{ejemplo}
+
+\changed{El ejemplo anterior muestra que una postcondición precisa puede ser válida en la IL,
+ya que describe un resultado alcanzable, pero demasiado restrictiva para la HL,
+que debe incluir todos los resultados normales posibles.
+Para completar la comparación, consideremos ahora una postcondición más amplia.
+Esta puede ser suficiente para la HL, pero incluir estados no alcanzables y,
+por lo tanto, no ser válida para la IL.}
+
+\begin{ejemplo}
+\label{eje:comp-HL-IL2}
+En el Ejemplo~\ref{eje:sobreaprox}, vimos que la tripleta
+$$\triple{x > 0}{C}{x > 1}$$
+es válida en la HL.
+En cambio, la tripleta
+$$\itriple{x > 0}{C}{ok : x > 1}$$
+no es válida como tripleta de IL.
+Esto se debe a que la condición $x > 1$ incluye el estado final $x = 2$.
+Para alcanzar dicho estado mediante el comando $C$, la ejecución debería comenzar en un estado donde $x = 0$.
+Sin embargo, ese estado no satisface la precondición $x > 0$.
+Por lo tanto, no existe una ejecución que comience en un estado permitido y termine en otro donde $x = 2$.
+\end{ejemplo}
+
+\changed{Los ejemplos \ref{eje:comp-HL-IL} y \ref{eje:comp-HL-IL2} pueden resumirse de la siguiente manera.
+Para un mismo comando $C$ y una misma precondición $p$,
+si $q_{\mathrm{IL}}$ es una postcondición elegida como subaproximación de los resultados alcanzables y
+$q_{\mathrm{HL}}$ es una postcondición elegida como sobreaproximación,
+entonces,
+$$q_{\mathrm{IL}} \subseteq \operatorname{post}_{ok}(C)(p) \subseteq q_{\mathrm{HL}}.$$
+Por transitividad, también se cumple
+$$q_{\mathrm{IL}} \subseteq q_{\mathrm{HL}}.$$
+Esta inclusión compara las postcondiciones elegidas,
+pero no implica que una tripleta de IL sea automáticamente válida como tripleta de HL utilizando la misma postcondición.
+La IL requiere que la postcondición esté contenida en la postimagen,
+mientras que la HL requiere que la postimagen esté contenida en la postcondición.}
+
+\changed{El mismo contraste aparece al considerar las precondiciones.
+En la HL, la postcondición debe cumplirse para toda ejecución normal que comience en un estado que satisface la precondición.
+En la IL, en cambio,
+para cada estado final descrito por la postcondición basta encontrar algún estado inicial que satisfaga la precondición y que permita alcanzarlo.
+Por esta razón, una precondición más amplia puede conservar la validez de una tripleta de IL,
+mientras que en la HL ampliar la precondición puede introducir ejecuciones cuyos resultados no satisfacen la postcondición.}
+
+\changed{Hasta ahora, los ejemplos se refirieron únicamente a ejecuciones que terminan normalmente,
+es decir, con el modo $ok$.
+La IL permite además describir ejecuciones que terminan con un error utilizando el modo $er$.
+En ese caso, una tripleta de la forma
+$$\itriple{p}{C}{er : q}$$
+afirma que cada estado descrito por la aserción $q$ puede alcanzarse mediante una ejecución de $C$
+que empieza en un estado que satisface $p$ y termina por un error.
+De este modo, la IL puede utilizarse tanto para certificar resultados normales
+como para demostrar la alcanzabilidad de estados finales producidos por errores.}
+
+\changed{Habiendo considerado ambos modos de terminación,
+la definición de validez semántica puede expresarse de manera equivalente en términos de ejecuciones concretas.
+La siguiente caracterización hace explícito que cada estado descrito por la postcondición debe estar respaldado por una ejecución real.}
 
 \begin{lema}(Caracterización)
 \label{lem:caracterizacion}
 Los siguientes son equivalentes:
 \begin{enumerate}
-    \item $\models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$.
-    \item Todo estado que satisface $q$ puede alcanzarse desde algún estado que satisface $p$: $\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$.
+  \item $\models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$.
+  \item Todo estado que satisface $q$ puede alcanzarse desde algún estado que satisface $p$:
+  $\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon$.
 \end{enumerate}
 \end{lema}
-\emph{Demostración.} Por la Definición~\ref{def:trip-inc},
-$$\models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q} \iff q \subseteq post_\epsilon(C)(p)$$
-Luego, con la Definición~\ref{def:post-img}, podemos afirmar que esta inclusión equivale a exigir que, para todo $\sigma_q \in q$, exista un estado $\sigma_p \in p$ tal que
-$$(\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$$
+\emph{Demostración.} Por la definición de validez semántica,
+$$\models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \iff q \subseteq \operatorname{post}_\varepsilon(C)(p).$$
+La inclusión anterior equivale a afirmar que,
+para todo $\sigma_q \in q$, se cumple
+$$\sigma_q \in \operatorname{post}_\varepsilon(C)(p).$$
+Por la Definición~\ref{def:post-img},
+esto ocurre si y solo si existe un estado $\sigma_p \in p$ tal que
+$$(\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
+Por lo tanto,
+$$\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 $\ensuremath{\blacksquare}$
 
-La caracterización anterior explica la utilidad de la IL para el análisis automático de programas.
-Si una herramienta demuestra una postcondición de error satisfacible, cada estado descrito por ella está respaldado por una ejecución real.
-De esta forma, la lógica evita reportar como errores estados finales que no sean alcanzables.
-
-Esta garantía se vuelve especialmente relevante en analizadores automáticos aplicados a bases de código extensas.
-En ese contexto, una herramienta puede emitir miles de advertencias, y cada falso positivo requiere que un desarrollador inspeccione manualmente una ejecución que en realidad no puede producirse.
-Muchas falsas alarmas no solo incrementan el costo de revisión, sino que también reducen la confianza en el analizador y pueden provocar que se ignoren reportes válidos.
-
-La IL no constituye por sí misma un algoritmo para descubrir errores, sino un marco lógico para justificar la solidez de analizadores orientados a encontrarlos.
-Una herramienta puede utilizar heurísticas para seleccionar caminos, sintetizar presunciones o explorar el código, mientras que la lógica establece qué debe demostrarse para garantizar que cada error reportado corresponde a una ejecución real.
+\changed{Esta caracterización muestra que una postcondición de error no describe solamente un estado posible,
+sino que cada estado perteneciente a $q$ está respaldado por una ejecución del comando
+que empieza en un estado $p$ y termina con el error indicado en $\varepsilon$.
+Por lo tanto, dentro del modelo semántico considerado,
+las tripletas de IL permiten certificar errores sin introducir estados finales inalcanzables.}
 
 \subsection*{Derivabilidad y reglas de inferencia}
 Las definiciones anteriores caracterizan la validez de una tripleta respecto de la semántica del programa.

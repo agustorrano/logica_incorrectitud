@@ -380,23 +380,23 @@ La aserción $p$ se denomina \emph{precondición}, mientras que $q$ se denomina 
 Para definir el significado de una tripleta,
 es necesario establecer qué requisito se impone sobre la terminación de las ejecuciones.
 Existen versiones de correctitud parcial y de correctitud total de la HL.
-\changed{En este trabajo se considera la versión de correctitud parcial,
+En este trabajo se considera la versión de correctitud parcial,
 donde la tripleta denota que toda ejecución de $C$ iniciada en un estado que satisface $p$,
-si termina normalmente, alcanza un estado que satisface $q$.}
-\changed{No se exige que todas las ejecuciones terminen, a diferencia de las versiones totales.}
+si termina normalmente, alcanza un estado que satisface $q$.
+No se exige que todas las ejecuciones terminen, a diferencia de las versiones totales.
 
 Con esta convención, la semántica de la tripleta se expresa mediante la postimagen de la Definición~\ref{def:post-comado}.
 Aunque la semántica operacional distingue entre distintos modos de terminación,
 las tripletas de la HL consideradas en este trabajo se refieren implícitamente a las terminaciones normales.
-\changed{No establece ninguna propiedad sobre las ejecuciones que terminan con error;
+No establece ninguna propiedad sobre las ejecuciones que terminan con error;
 el razonamiento sobre estos comportamientos se desarrollará mediante la IL.
-Por esta razón, su validez semántica se define usando la postimagen asociada al modo $ok$}:
+Por esta razón, su validez semántica se define usando la postimagen asociada al modo $ok$:
 $$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q$$
 
-\changed{La inclusión anterior expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
+La inclusión anterior expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
 Por lo tanto, $q$ debe contener todos esos estados,
 aunque también puede incluir estados que el programa no alcanza.
-Para observar esta propiedad, se presenta un ejemplo.}
+Para observar esta propiedad, se presenta un ejemplo.
 
 \begin{ejemplo}
 \label{eje:sobreaprox}
@@ -414,15 +414,35 @@ $$\operatorname{post}_{ok}(C)(p) \subseteq \{\sigma \in \Sigma \mid \sigma(x) > 
 \end{ejemplo}
 
 \changed{El ejemplo anterior muestra la validez de una tripleta desde el punto de vista semántico.
-Para obtener tripletas mediante un procedimiento formal de razonamiento,
-la HL cuenta con un conjunto de axiomas y reglas de inferencia.}
+Sin embargo, comprobar directamente la incusión $\operatorname{post}_{ok}(C)(p) \subseteq q$
+puede ser difícil,
+ya que requiere considerar todos los estados finales normales que el comando puede alcanzar desde la
+precondición y verificar que cada uno satisfaga la postcondición.
+Para evitar este análisis complejo,
+la HL proporciona un sistema deductivo compuesto por axiomas y reglas de inferencia,
+que permite construir tripletas a partir de la estructura de los comandos y
+de las relaciones lógicas entre sus aserciones.}
 
-\changed{El axioma de asignación constituye uno de los elementos básicos de este sistema.
-Establece que:
+\changed{Para definir que significa que una tripleta haya sido construida de esta manera,
+introducimos la noción de derivabilidad.}
+
+\begin{definicion}
+\label{def:deriv-hl}
+Escribimos
+$$\vdash_{\mathrm{HL}} \triple{p}{C}{q}$$
+cuando la tripleta puede obtenerse mediante una derivación finita construida utilizando los axiomas y las reglas de inferencia de la HL.
+\end{definicion}
+
+\changed{Esta noción permite distinguir entre la validez semántica de una tripleta y
+la forma en que esta tripleta se construye dentro del sistema lógico.
+A continuación, presentamos un axioma y una regla que permiten obtener tripletas derivables en la HL.}
+
+\changed{El primer axioma que consideramos es el de asignación.
+Este establece que:
 \begin{mathpar}
 \inferrule []
   {}
-  {\triple{p[e/x]}{x := e}{p},}
+  {\vdash_{\mathrm{HL}} \triple{p[e/x]}{x := e}{p},}
 \end{mathpar}
 donde la expresión $p[e/x]$ representa la sustitución de las apariciones libres de $x$ en $p$ por la expresión $e$.}
 
@@ -432,8 +452,8 @@ Sin embargo, esa precondición no siempre coincide con la que se desea utilizar 
 La Regla de Consecuencia permite adaptar la tripleta a una precondición más restrictiva o una postcondición más general:}
 \begin{mathpar}
 \inferrule []
-  {p' \implies p \\ \triple{p}{C}{q} \\ q \implies q'}
-  {\triple{p'}{C}{q'}}
+  {p' \implies p \\ \vdash_{\mathrm{HL}} \triple{p}{C}{q} \\ q \implies q'}
+  {\vdash_{\mathrm{HL}} \triple{p'}{C}{q'}}
 \end{mathpar}
 Esta regla permite
 fortalecer la precondición y debilitar la postcondición de una tripleta ya demostrada.
@@ -441,22 +461,17 @@ fortalecer la precondición y debilitar la postcondición de una tripleta ya dem
 \begin{ejemplo}
 Retomamos el comando $C$ del Ejemplo~\ref{eje:sobreaprox}.
 Aplicando el axioma de asignación con $q \equiv x > 1$, se obtiene:
-$$\triple{x + 2 > 1}{x := x + 2}{x > 1}.$$
+$$\vdash_{\mathrm{HL}} \triple{x + 2 > 1}{C}{x > 1}.$$
 Como $x > 0 \implies x + 2 > 1$, la Regla de Consecuencia permite derivar:
-$$\triple{x > 0}{x := x + 2}{x > 1}.$$
+\begin{mathpar}
+\inferrule []
+  {x > 0 \implies x + 2 > 1 \\ \vdash_{\mathrm{HL}} \triple{x + 2 > 1}{C}{x > 1}}
+  {\vdash_{\mathrm{HL}} \triple{x > 0}{C}{x > 1}}
+\end{mathpar}
 \end{ejemplo}
 
-Esta diferencia entre la interpretación semántica y las reglas del sistema también se refleja en la notación utilizada para las derivaciones.
-Se escribe
-$$\vdash_\mathrm{HL} \triple{p}{C}{q}$$
-cuando la tripleta puede obtenerse mediante los axiomas y las reglas de inferencia de la HL.
-Esta noción se distingue de la validez semántica, ya que
-el símbolo $\models_\mathrm{HL}$ indica que la tripleta es válida respecto de la semántica del programa,
-mientras que $\vdash_\mathrm{HL}$ expresa la existencia de una derivación formal dentro del sistema lógico.
-%\guido{mejor si agregamos algunas reglas antes y damos un ejemplo super pequeño, tipo
-%$\triple{x > 0}{x := x + 2}{x > 1}$}
-
-La IL, presentada en la siguiente sección, parte del mismo marco teórico para razonar sobre la alcanzabilidad de resultados.
+\changed{La HL proporcina así un mecanismo deductivo para construir y adaptar tripletas que describen la correctitud de las terminaciones normales.
+Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distinto.}
 
 \section{Lógica de Incorrectitud (IL)}
 \label{sec:loginc}
@@ -609,113 +624,135 @@ las tripletas de IL permiten certificar errores sin introducir estados finales i
 
 \subsection*{Derivabilidad y reglas de inferencia}
 Las definiciones anteriores caracterizan la validez de una tripleta respecto de la semántica del programa.
-Sin embargo, demostrar directamente la inclusión $q \subseteq post_\epsilon(C)(p)$ puede ser difícil.
-Por esta razón, la IL proporciona un sistema deductivo compuesto por reglas de inferencia que permiten construir tripletas a partir de la estructura de los comandos.
+Sin embargo, demostrar directamente la inclusión $q \subseteq post_\varepsilon(C)(p)$ puede ser difícil,
+ya que requiere razonar sobre todos los estados finales descritos por $q$ y encontrar una ejecución que los respalde.
+Para construir estas pruebas de manera sistemática,
+la IL proporciona un sistema deductivo compuesto por reglas de inferencia.
+Antes de presentar estas reglas, definimos formalmente qué significa que una tripleta pueda obtenerse dentro de dicho sistema.
 
 \begin{definicion}(Derivabilidad en la IL)
 \label{def:derivabilidad}
 Escribimos
-$$\vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$$
+$$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$$
 cuando la tripleta puede obtenerse mediante una derivación finita construida utilizando las reglas de inferencia de la IL.
 \end{definicion}
 
-La derivabilidad es una noción sintáctica, determinada por las reglas del sistema.
-En cambio, la validez es una noción semántica, definida mediante la postimagen.
-La relación entre ambas nociones será establecida por el Teorema de Soundness.
-Las reglas de inferencia se presentan en la \autoref{fig:reglas-il}.
+La derivabilidad es una noción sintáctica,
+ya que depende de las reglas del sistema y de la existencia de una derivación finita.
+La validez, en cambio, es una noción semántica definida mediante la postimagen.
+A continuación, se presentan las reglas de inferencia que determinan qué derivaciones puede construirse en la IL,
+represntadas en la \autoref{fig:reglas-il}.
 
 \begin{figure}[htbp]
 \centering
 \begin{mathpar}
 \inferrule [Consecuencia]
-    {p \implies p' \\ \vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q} \\ q' \implies q}
-    {\vdash_{\mathrm{IL}} \itriple{p'}{C}{\epsilon : q'}}
+  {p \implies p' \\ \vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \\ q' \implies q}
+  {\vdash_{\mathrm{IL}} \itriple{p'}{C}{\varepsilon : q'}}
 
 \inferrule [Disyunción]
-    {\vdash_{\mathrm{IL}} \itriple{p_1}{C}{\epsilon : q_1} \\ \vdash_{\mathrm{IL}} \itriple{p_2}{C}{\epsilon : q_2}}
-    {\vdash_{\mathrm{IL}} \itriple{p_1 \lor p_2}{C}{\epsilon : q_1 \lor q_2}}
+  {\vdash_{\mathrm{IL}} \itriple{p_1}{C}{\varepsilon : q_1} \\ \vdash_{\mathrm{IL}} \itriple{p_2}{C}{\varepsilon : q_2}}
+  {\vdash_{\mathrm{IL}} \itriple{p_1 \lor p_2}{C}{\varepsilon : q_1 \lor q_2}}
 
 \inferrule [Skip]
-    {}
-    {\vdash_{\mathrm{IL}} \itriple{p}{\mathsf{skip}}{ok : p}}
+  {}
+  {\vdash_{\mathrm{IL}} \itriple{p}{\mathsf{skip}}{ok : p}}
 
 \inferrule [Secuencia (error)]
-    {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{er : r}}
-    {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{er : r}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{er : r}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{er : r}}
 
 \inferrule [Secuencia (normal)]
-    {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{ok : q} \\ \vdash_{\mathrm{IL}} \itriple{q}{C_2}{\epsilon : r}}
-    {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{\epsilon : r}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{ok : q} \\ \vdash_{\mathrm{IL}} \itriple{q}{C_2}{\varepsilon : r}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{\varepsilon : r}}
 
 \inferrule [Kleene (base)]
-    {}
-    {\vdash_{\mathrm{IL}} \itriple{p}{C^\star}{ok : p}}
+  {}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C^\star}{ok : p}}
 
 \inferrule [Kleene (paso)]
-    {\vdash_{\mathrm{IL}} \itriple{p}{C^\star; C}{\epsilon : q}}
-    {\vdash_{\mathrm{IL}} \itriple{p}{C^\star}{\epsilon : q}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C^\star; C}{\varepsilon : q}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C^\star}{\varepsilon : q}}
 
 \inferrule [Kleene (variante)]
-    {\vdash_{\mathrm{IL}} \itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}}
-    {\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \operatorname{nat}(n)}}
+  {\vdash_{\mathrm{IL}} \itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}}
+  {\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \operatorname{nat}(n)}}
 
 \inferrule [Choice ($i$ = 1 o 2)]
-    {\vdash_{\mathrm{IL}} \itriple{p}{C_i}{\epsilon : q}}
-    {\vdash_{\mathrm{IL}} \itriple{p}{C_1 + C_2}{\epsilon : q}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_i}{\varepsilon : q}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1 + C_2}{\varepsilon : q}}
 
 \inferrule [Error]
-    {}
-    {\vdash_{\mathrm{IL}} \itriple{p}{\mathsf{error}}{er : p}}
+  {}
+  {\vdash_{\mathrm{IL}} \itriple{p}{\mathsf{error}}{er : p}}
 
 \inferrule [Assume]
-    {}
-    {\vdash_{\mathrm{IL}} \itriple{p}{\mathsf{assume}(B)}{ok : p \land B}}
+  {}
+  {\vdash_{\mathrm{IL}} \itriple{p}{\mathsf{assume}(B)}{ok : p \land B}}
 
 \inferrule [Asignación]
-    {}
-    {\vdash_{\mathrm{IL}} \itriple{p}{x = e}{ok : \exists x'. p[x' / x] \land x = e[x' / x]}}
+  {}
+  {\vdash_{\mathrm{IL}} \itriple{p}{x = e}{ok : \exists x'. p[x' / x] \land x = e[x' / x]}}
 
 \inferrule [Nondet]
-    {}
-    {\vdash_{\mathrm{IL}} \itriple{p}{x = \mathsf{nondet}}{ok : \exists x'. p}}
+  {}
+  {\vdash_{\mathrm{IL}} \itriple{p}{x = \mathsf{nondet}}{ok : \exists x'. p}}
 
 \end{mathpar}
 \caption{Reglas de inferencia de la IL. Adaptadas de~\cite{inclog}.}
 \label{fig:reglas-il}
 \end{figure}
 
+Las reglas presentadas permiten construir tripletas a partir de los comandos del lenguaje y de las propiedades de las aserciones.
+Algunas reglas describen comandos básicos, como \texttt{skip}, \texttt{error} y las asignaciones.
+Otras permite combinar derivaciones,
+como \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuencia}.
+Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre repeticiones finitas de un comando.
+
 Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la postimagen.
-La regla de \textsc{Consecuencia} permite debilitar la precondición y fortalecer la postcondición para achicar el espacio de estados.
-La regla de la \textsc{Disyunción} permite combinar derivaciones obtenidas independientemente desde diferentes conjuntos de estados iniciales.
+La primera permite ampliar la precondición y reducir la postcondición de una tripleta ya derivada,
+mientras que la segunda permite combinar derivaciones obtenidas a partir de distintos conjuntos de estados iniciales.
 Esto se corresponde con el hecho de que la postimagen preserva uniones, establecido en el Lema~\ref{lem:prop-pi}.
 
-\textsc{Skip} proporciona las aserciones esperadas para la terminación normal, es decir, no existe una ejecución de \texttt{skip} que finalice en el canal de error.
+\textsc{Skip} proporciona las aserciones esperadas para la terminación normal,
+es decir, no existe una ejecución de \texttt{skip} que finalice en el canal de error.
 Por el contrario, en la regla \textsc{Error} todo el estado va al canal anormal (\emph{er}).
 
-Para el caso de secuenciación hay dos reglas. La primera regla (\textsc{Secuencia (error)}) se refiere al cortocircuito, que se da cuando se produce un error dentro del primer comando.
+Para el caso de secuenciación hay dos reglas.
+La primera regla (\textsc{Secuencia (error)}) se refiere al cortocircuito,
+que se da cuando se produce un error dentro del primer comando.
 En este caso, el segundo comando no se ejecuta.
-La segunda (\textsc{Secuencia (normal)}), se da cuando el primer comando finaliza normalmente y se puede continuar con el segundo.
+La segunda (\textsc{Secuencia (normal)}),
+se da cuando el primer comando finaliza normalmente y se puede continuar con el segundo.
 
-La regla \textsc{Choice} determina que para alcanzar un estado basta con que una de las ramas del operador no determinista $+$ sea capaz de lograrlo.
+La regla \textsc{Choice} determina que para alcanzar un estado basta con que una de las ramas
+del operador no determinista $+$ sea capaz de lograrlo.
 La lógica no exige analizar ambas cuando el objetivo es justificar una ejecución concreta.
-Por su parte, \textsc{Assume} filtra el estado mediante una proposición $B$ en el canal de éxito, sin generar errores.
+Por su parte, \textsc{Assume} filtra el estado mediante una proposición $B$ en el canal de éxito,
+sin generar errores.
 
 Las mutaciones de las variables operan hacia adelante.
-\textsc{Asignación} introduce una variable lógica existencial $x'$ para retener el valor histórico previo de $x$ evitando pérdidas de precisión.
-De forma análoga, la regla \textsc{Nondet} sobrescribe la variable con un valor indeterminado eliminando sus restricciones previas en la postcondición.
+\textsc{Asignación} introduce una variable lógica existencial $x'$
+para retener el valor histórico previo de $x$ evitando pérdidas de precisión.
+De forma análoga, la regla \textsc{Nondet} sobrescribe la variable con un valor indeterminado
+eliminando sus restricciones previas en la postcondición.
 
 El lenguaje utilizado incluye además el operador de estrella de Kleene $C^\star$.
-Este representa la repetición no determinista y finita del comando $C$, el cuerpo puede ejecutarse cero, una o cualquier cantidad finita de veces.
-No expresa por sí mismo la condición de un bucle \texttt{while}; un bucle condicionado puede codificarse mediante:
+Este representa la repetición no determinista y finita del comando $C$,
+el cuerpo puede ejecutarse cero, una o cualquier cantidad finita de veces.
+No expresa por sí mismo la condición de un bucle \texttt{while};
+un bucle condicionado puede codificarse mediante:
 $$
 (\texttt{assume}\ (B); C)^\star; \texttt{assume}\ (\neg B).
 $$
 
 Luego, el análisis de los bucles se descompone en tres reglas.
 La regla \textsc{Kleene (base)} corresponde a la salida inmediata del bucle.
-La regla \textsc{Kleene (paso)} utiliza estructuralmente la forma $C^\star; C$ en lugar de $C; C^\star$ para facilitar el razonamiento en casos donde se lanza un error dentro de una iteración.
+La regla \textsc{Kleene (paso)} utiliza estructuralmente la forma $C^\star; C$
+en lugar de $C; C^\star$ para facilitar el razonamiento en casos donde se lanza un error dentro de una iteración.
 En este escenario, pasarán iteraciones exitosas y el error se disparará en la última de ellas.
-Finalmente, la regla \textsc{Kleene (variante)} introduce el principio de inducción matemática sobre variables naturales para generalizar y propagar hacia adelante estos estados alcanzables que incrementan de forma predecible en cada vuelta.
+Finalmente, la regla \textsc{Kleene (variante)} introduce el principio de inducción matemática sobre variables naturales
+para generalizar y propagar hacia adelante estos estados alcanzables que incrementan de forma predecible en cada vuelta.
 
 \subsection*{La Regla de Consecuencia y la subaproximación}
 Una de las diferencias lógicas más contraintuitivas de la IL respecto a la verificación clásica es el comportamiento de su Regla de Consecuencia.
@@ -728,61 +765,63 @@ En la IL, debilitar la postcondición de esta forma no es válido.
 El sistema exige retener el contexto exacto del camino evaluado para garantizar que los estados sigan siendo alcanzables.
 En su lugar, la subaproximación permite descartar caminos enteros de ejecución basándose en su propia Regla de Consecuencia.
 Esta se define de la siguiente manera:
-
-\[
-    \frac{p \implies p' \quad \vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q} \quad q' \implies q}
-         {\vdash_{\mathrm{IL}} \itriple{p'}{C}{\epsilon : q'}}
-\]
+\begin{mathpar}
+\inferrule []
+  {p \implies p' \\ \vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \\ q' \implies q}
+  {\vdash_{\mathrm{IL}} \itriple{p'}{C}{\varepsilon : q'}}
+\end{mathpar}
 
 Interpretando las aserciones como conjuntos, las condiciones laterales equivalen a $p \subseteq p'$ y $q' \subseteq q$.
 Por lo tanto, la regla permite ampliar el conjunto de estados iniciales y reducir el conjunto de estados finales.
 
 La dirección de estas inclusiones puede justificarse utilizando las definiciones anteriores y el Lema~\ref{lem:prop-pi}.
 Si la tripleta original es semánticamente válida, entonces:
-$$q \subseteq post_\epsilon(C)(p)$$
+$$q \subseteq post_\varepsilon(C)(p)$$
 Como $p \subseteq p'$, por monotonía de la postimagen:
-$$post_\epsilon(C)(p) \subseteq post_\epsilon(C)(p')$$
+$$post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p')$$
 Además, $q' \subseteq q$.
 Por transitividad:
-$$q' \subseteq q \subseteq post_\epsilon(C)(p) \subseteq post_\epsilon(C)(p')$$
+$$q' \subseteq q \subseteq post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p')$$
 Por lo tanto:
-$$q' \subseteq post_\epsilon(C)(p')$$
+$$q' \subseteq post_\varepsilon(C)(p')$$
 que es la validez semántica de la nueva tripleta.
 
-En particular, si se sabe que la ejecución de un condicional alcanza los estados de múltiples ramas, por ejemplo $q_1 \lor q_2$, sabiendo que $q_1 \implies q_1 \lor q_2$, la Regla de Consecuencia avala descartar el segundo término de la postcondición:
-
-\[
-    \frac{\vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q_1 \lor q_2} \quad q_1 \implies q_1 \lor q_2}
-         {\vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q_1}}
-\]
+En particular, si se sabe que la ejecución de un condicional alcanza los estados de múltiples ramas,
+por ejemplo $q_1 \lor q_2$, sabiendo que $q_1 \implies q_1 \lor q_2$,
+la Regla de Consecuencia avala descartar el segundo término de la postcondición:
+\begin{mathpar}
+\inferrule []
+  {\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q_1 \lor q_2} \\ q_1 \implies q_1 \lor q_2}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q_1}}
+\end{mathpar}
 
 Esta capacidad que tiene la IL es fundamental.
 Permite que las herramientas de análisis automático enfoquen su exploración en trazas específicas y omitan el resto.
 
 \begin{ejemplo}
-    Considere el siguiente fragmento de código y la presunción inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$:
+Considere el siguiente fragmento de código y la presunción inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$:
 
-    \begin{verbatim}
-    if (x is even) {
-        if (y is odd) {
-            z = 42;
-        }
-    }
-    \end{verbatim}
+  \begin{verbatim}
+  if (x is even) {
+      if (y is odd) {
+          z = 42;
+      }
+  }
+  \end{verbatim}
 
-    ¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$ es una subaproximación de los estados alcanzables por este código partiendo de la presunción?
+¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$ es una subaproximación de los estados alcanzables por este código partiendo de la presunción?
 
-    Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida, la Definición~\ref{def:trip-inc} exige:
-    $$q \subseteq post_{ok}(C)(p)$$
-    Sin embargo, el estado $\sigma = [z \mapsto 42, x \mapsto 1, y \mapsto 2] \in q$, pero no pertenece a $post_{ok}(C)(p)$.
-    En este estado, $x$ es impar e $y$ es par, por lo que ninguna ejecución del programa que preserve esos valores puede realizar la asignación $z := 42$.
-    Por lo tanto,
-    $$q \nsubseteq post_{ok}(C)(p),$$
-    y la tripleta no es válida.
+Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida se exige:
+$$q \subseteq post_{ok}(C)(p)$$
+Sin embargo, el estado $\sigma = [z \mapsto 42, x \mapsto 1, y \mapsto 2] \in q$, pero no pertenece a $post_{ok}(C)(p)$.
+En este estado, $x$ es impar e $y$ es par, por lo que ninguna ejecución del programa que preserve esos valores puede realizar la asignación $z := 42$.
+Por lo tanto,
+$$q \nsubseteq post_{ok}(C)(p),$$
+y la tripleta no es válida.
 
-    Un resultado subaproximado válido debe conservar las condiciones que justifican la ejecución de la asignación.
-    Por ejemplo:
-    $$\itriple{z = 11}{C}{ok: z = 42 \land (x \mod 2 = 0) \land (y \mod 2 \ne 0)}$$
+Un resultado subaproximado válido debe conservar las condiciones que justifican la ejecución de la asignación.
+Por ejemplo:
+$$\itriple{z = 11}{C}{ok: z = 42 \land (x \mod 2 = 0) \land (y \mod 2 \ne 0)}$$
 \end{ejemplo}
 
 \subsection*{Razonamiento sobre bucles}
@@ -813,8 +852,8 @@ La validez de las reglas deductivas respecto de la semántica se expresa mediant
 
 \begin{teorema}(Soundness de la IL)
 \label{teo:sound-il}
-Para todo comando $C$, aserciones $p,q \subseteq \Sigma$ y condición de salida $\epsilon$:
-$$\vdash_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q} \implies \models_{\mathrm{IL}} \itriple{p}{C}{\epsilon : q}$$
+Para todo comando $C$, aserciones $p,q \subseteq \Sigma$ y condición de salida $\varepsilon$:
+$$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$$
 \end{teorema}
 
 El teorema establece que tripleta obtenida a partir de las reglas del sistema es semánticamente válida.
@@ -948,32 +987,32 @@ Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$, la c
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
 \begin{figure}[h]
+  \centering
+  \begin{minipage}{0.45\textwidth}
     \centering
-    \begin{minipage}{0.45\textwidth}
-        \centering
-        \begin{tikzpicture}[
-            cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
-            ptr/.style={->, thick, >=stealth}
-        ]
-            \node (x) at (-1.2, 0) {$x$};
-            \node[cell] (c1) at (0, 0) {3};
-            \node[cell, below=-\pgflinewidth of c1] (c2) {$y$};
-            \draw[ptr] (x) -- (c1.west);
-        \end{tikzpicture}
-    \end{minipage}
-    \hfill
-    \begin{minipage}{0.45\textwidth}
-        \centering
-        \begin{tikzpicture}[
-            cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
-            ptr/.style={->, thick, >=stealth}
-        ]
-            \node (y) at (-1.2, 0) {$y$};
-            \node[cell] (c1) at (0, 0) {3};
-            \node[cell, below=-\pgflinewidth of c1] (c2) {$x$};
-            \draw[ptr] (y) -- (c1.west);
-        \end{tikzpicture}
-    \end{minipage}
+    \begin{tikzpicture}[
+      cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
+      ptr/.style={->, thick, >=stealth}
+    ]
+      \node (x) at (-1.2, 0) {$x$};
+      \node[cell] (c1) at (0, 0) {3};
+      \node[cell, below=-\pgflinewidth of c1] (c2) {$y$};
+      \draw[ptr] (x) -- (c1.west);
+    \end{tikzpicture}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.45\textwidth}
+    \centering
+    \begin{tikzpicture}[
+      cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
+      ptr/.style={->, thick, >=stealth}
+    ]
+      \node (y) at (-1.2, 0) {$y$};
+      \node[cell] (c1) at (0, 0) {3};
+      \node[cell, below=-\pgflinewidth of c1] (c2) {$x$};
+      \draw[ptr] (y) -- (c1.west);
+    \end{tikzpicture}
+  \end{minipage}
 \caption{Representación individual de las aserciones espaciales $x \mapsto 3, y$ e $y \mapsto 3, x$.}
 \label{fig:aserciones}
 \end{figure}
@@ -984,19 +1023,19 @@ nada dicta que tenga que ser así}
 Físicamente, esto es posible si $x$ e $y$ son exactamente el mismo puntero, como se muestra en la \autoref{fig:conjuncion-clasica}.
 
 \begin{figure}[h]
-    \centering
-    \begin{tikzpicture}[
-        cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
-        ptr/.style={->, thick, >=stealth}
-    ]
-        \node (x) at (-1.2, 0.3) {$x$};
-        \node (y) at (-1.2, -0.3) {$y$};
-        \node[cell] (c1) at (0, 0) {3};
-        \node[cell, below=-\pgflinewidth of c1] (c2) {$\circ$};
-        \draw[ptr] (x) -- ([yshift=0.03cm]c1.west);
-        \draw[ptr] (y) -- ([yshift=-0.03cm]c1.west);
-        \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=0, looseness=2] (c1.east);
-    \end{tikzpicture}
+  \centering
+  \begin{tikzpicture}[
+    cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
+    ptr/.style={->, thick, >=stealth}
+  ]
+    \node (x) at (-1.2, 0.3) {$x$};
+    \node (y) at (-1.2, -0.3) {$y$};
+    \node[cell] (c1) at (0, 0) {3};
+    \node[cell, below=-\pgflinewidth of c1] (c2) {$\circ$};
+    \draw[ptr] (x) -- ([yshift=0.03cm]c1.west);
+    \draw[ptr] (y) -- ([yshift=-0.03cm]c1.west);
+    \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=0, looseness=2] (c1.east);
+  \end{tikzpicture}
 \caption{Conjunción clásica.}
 \label{fig:conjuncion-clasica}
 \end{figure}
@@ -1005,22 +1044,22 @@ Por el contrario, si utilizamos la conjunción separadora $(x \mapsto 3, y) * (y
 Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estructura en la que existen dos bloques de memoria separados, donde cada uno guarda un puntero hacia el otro.
 
 \begin{figure}[h]
-    \centering
-    \begin{tikzpicture}[
-        cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
-        ptr/.style={->, thick, >=stealth}
-    ]
-        \node (x) at (-2.0, 0) {$x$};
-        \node (y) at (2.0, 0) {$y$};
-        \node[cell] (c1) at (-1.0, 0) {3};
-        \node[cell, below=-\pgflinewidth of c1] (c2) {$\circ$};
-        \node[cell] (c3) at (1.0, 0) {3};
-        \node[cell, below=-\pgflinewidth of c3] (c4) {$\circ$};
-        \draw[ptr] (x) -- (c1.west);
-        \draw[ptr] (y) -- (c3.east);
-        \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=180, looseness=1.2] (c3.west);
-        \draw[ptr] ([xshift=-0.1cm]c4.center) to[out=180, in=0, looseness=1.2] (c1.east);
-    \end{tikzpicture}
+  \centering
+  \begin{tikzpicture}[
+    cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
+    ptr/.style={->, thick, >=stealth}
+  ]
+    \node (x) at (-2.0, 0) {$x$};
+    \node (y) at (2.0, 0) {$y$};
+    \node[cell] (c1) at (-1.0, 0) {3};
+    \node[cell, below=-\pgflinewidth of c1] (c2) {$\circ$};
+    \node[cell] (c3) at (1.0, 0) {3};
+    \node[cell, below=-\pgflinewidth of c3] (c4) {$\circ$};
+    \draw[ptr] (x) -- (c1.west);
+    \draw[ptr] (y) -- (c3.east);
+    \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=180, looseness=1.2] (c3.west);
+    \draw[ptr] ([xshift=-0.1cm]c4.center) to[out=180, in=0, looseness=1.2] (c1.east);
+  \end{tikzpicture}
 \caption{Conjunción separadora.}
 \label{fig:conjuncion-separadora}
 \end{figure}

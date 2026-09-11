@@ -300,7 +300,7 @@ A partir de una relación, podemos determinar qué estados se encuentran relacio
 \begin{definicion}[Postimagen]
 \label{def:post-img}
 Sea $R \subseteq \Sigma \times \Sigma$ una relación entre estados y sea $p \subseteq \Sigma$ una aserción.
-El operador de postimagen $\operatorname{post}(R) : P(\Sigma) \rightarrow P(\Sigma)$
+El operador de postimagen $\operatorname{post}(R) : \mathcal{P}(\Sigma) \rightarrow \mathcal{P}(\Sigma)$
 asocia a cada aserción $p$ el conjunto:
 
 $$\operatorname{post}(R)(p) = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}$$
@@ -351,17 +351,18 @@ resultado de una ejecución terminante de $C$ que inicia en algún estado que sa
 y que termina con el modo $\varepsilon$.
 \end{definicion}
 
-\changed{En expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
-se utilizará el comando $C$ como una abreviación notacional de la relación semántica $[\![C]\!]_\varepsilon$.
-El modo de terminación $\varepsilon$ se indica explícitamente para distinguir qué tipos de terminaciones se consideran.}
+\changed{A partir de ahora, en expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
+se omitirá la escritura explícita de la relación $[\![C]\!]_\varepsilon$,
+ya que el comando determina la relación semántica considerada.
+El modo de terminación $\varepsilon$ se indica explícitamente para distinguir el tipo de terminación.}
 %\guido{esperaba que digas que a veces usamos C equivalentemente tanto como para un programa
 %como para su relacion semantica}
 
 \changed{Esta representación mediante relaciones permite que un comando
 alcance distintos estados finales desde un mismo estado inicial.
 También puede ocurrir que no exista un resultado para un modo de terminación determinado.
-Por ejemplo, si una ejecución produce, por ejemplo, una división por cero o desreferencia un puntero nulo,
-puede no existir un resultado asociado al modo normal, aunque sí uno asociado al modo de error.
+Por ejemplo, si una ejecución produce, una división por cero o desreferencia un puntero nulo,
+puede no existir un resultado asociado al modo $ok$, aunque sí uno asociado al modo $er$.
 Además, puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
 por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.}
 
@@ -391,7 +392,9 @@ las tripletas de la HL consideradas en este trabajo se refieren implícitamente 
 No establece ninguna propiedad sobre las ejecuciones que terminan con error;
 el razonamiento sobre estos comportamientos se desarrollará mediante la IL.
 Por esta razón, su validez semántica se define usando la postimagen asociada al modo $ok$:
-$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q$$
+$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q.$$
+Por lo tanto, una ejecución que termina con error no viola esta tripleta,
+ya que la propiedad solo se formula respecto de las terminaciones normales.
 
 La inclusión anterior expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
 Por lo tanto, $q$ debe contener todos esos estados,
@@ -414,7 +417,7 @@ $$\operatorname{post}_{ok}(C)(p) \subseteq \{\sigma \in \Sigma \mid \sigma(x) > 
 \end{ejemplo}
 
 \changed{El ejemplo anterior muestra la validez de una tripleta desde el punto de vista semántico.
-Sin embargo, comprobar directamente la incusión $\operatorname{post}_{ok}(C)(p) \subseteq q$
+Sin embargo, comprobar directamente la inclusión $\operatorname{post}_{ok}(C)(p) \subseteq q$
 puede ser difícil,
 ya que requiere considerar todos los estados finales normales que el comando puede alcanzar desde la
 precondición y verificar que cada uno satisfaga la postcondición.
@@ -423,7 +426,7 @@ la HL proporciona un sistema deductivo compuesto por axiomas y reglas de inferen
 que permite construir tripletas a partir de la estructura de los comandos y
 de las relaciones lógicas entre sus aserciones.}
 
-\changed{Para definir que significa que una tripleta haya sido construida de esta manera,
+\changed{Para definir qué significa que una tripleta haya sido construida de esta manera,
 introducimos la noción de derivabilidad.}
 
 \begin{definicion}
@@ -442,9 +445,9 @@ Este establece que:
 \begin{mathpar}
 \inferrule []
   {}
-  {\vdash_{\mathrm{HL}} \triple{p[e/x]}{x := e}{p},}
+  {\vdash_{\mathrm{HL}} \triple{p[e / x]}{x := e}{p},}
 \end{mathpar}
-donde la expresión $p[e/x]$ representa la sustitución de las apariciones libres de $x$ en $p$ por la expresión $e$.}
+donde la expresión $p[e / x]$ representa la sustitución de las apariciones libres de $x$ en $p$ por la expresión $e$.}
 
 \changed{Este axioma de asignación permite obtener una tripleta cuya postcondición se elige de antemano y
 cuya precondición queda determinada por la sustitución de la expresión asignada en dicha postcondición.
@@ -470,7 +473,7 @@ Como $x > 0 \implies x + 2 > 1$, la Regla de Consecuencia permite derivar:
 \end{mathpar}
 \end{ejemplo}
 
-\changed{La HL proporcina así un mecanismo deductivo para construir y adaptar tripletas que describen la correctitud de las terminaciones normales.
+\changed{La HL proporciona así un mecanismo deductivo para construir y adaptar tripletas que describen la correctitud de las terminaciones normales.
 Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distinto.}
 
 \section{Lógica de Incorrectitud (IL)}
@@ -491,45 +494,63 @@ Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distin
 
 La Lógica de Incorrectitud (IL), introducida por \citet{inclog},
 parte del mismo marco relacional, pero cambia el objetivo del razonamiento:
-\changed{en lugar de demostrar que ciertos comportamientos no pueden ocurrir,
-busca demostrar que resultados determinados son alcanzables mediante ejecuciones reales.}
+en lugar de demostrar que ciertos comportamientos no pueden ocurrir,
+busca demostrar que resultados determinados son alcanzables mediante ejecuciones reales.
 
-\changed{Las tripletas de la IL tienen la forma:
+Las tripletas de la IL tienen la forma:
 $$\itriple{p}{C}{\varepsilon : q},$$
 donde $p$ es la precondición, $C$ es un comando, $\varepsilon$ es el modo de terminación considerado y
 $q$ es la postcondición.
-En esta notación, $\varepsilon$ se denomina \emph{condición de salida} (\emph{exit condition}).
 A diferencia de la HL, el modo de terminación aparece explícitamente porque la IL también permite demostrar
-la alcanzabilidad de estados producidos por errores.}
+la alcanzabilidad de estados producidos por errores.
 
 %\guido{aca yo me preguntaria por qué la IL necesita el modo de terminacion y la HL no.
 %Creo que la respuesta es que en la HL los errores siempre estan ``mal'' pero acá sí nos
 %interesa poder demostrar tripletas que lleguen a ellos.}
 
-\changed{Una vez introducida la notación de las tripletas,
+Una vez introducida la notación de las tripletas,
 definimos formalmente su validez semántica:
 $$\models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \iff q \subseteq \operatorname{post}_\varepsilon(C)(p).$$
 Esta inclusión expresa una \emph{subaproximación}:
 cada estado descrito por $q$ debe estar respaldado por al menos una ejecución de $C$
 que comienza en un estado que satisface $p$ y termina con el modo $\varepsilon$.
-La postcondición no tiene que describir todos los estados alcanzables,
-sino que puede incluir solo una parte de ellos.}
+La postcondición puede describir solo una parte de los estados alcanzables;
+sin embargo, todos los estados que describe deben ser alcanzables.
 
-\changed{Esta interpretación contrasta con la de la HL.
-En la HL se exige que todos los estados finales normales alcanzables desde $p$ estén incluidos en la postcondición.
-En la IL, en cambio, se exige que todos los estados descritos por $q$ sean resultados alcanzables.
-Por eso, la IL puede omitir comportamientos sin perder la validez de la tripleta,
-siempre que no incluya estados que no pueden producirse.
-La diferencia puede observarse en el siguiente ejemplo,
-que utiliza el mismo comando para ambas lógicas.}
+Esta interpretación contrasta con la de la HL,
+donde todos los estados finales normales alcanzables desde $p$ estén incluidos en la postcondición.
+Aunque los criterios de ambas lógicas son diferentes,
+pueden coincidir cuando la postcondición es igual al conjunto de estados alcanzables.
+
+\begin{ejemplo}
+\label{eje:comp-HL-IL0}
+Tomamos el mismo comando
+$$C \equiv x := x + 2$$
+y la misma precondición $p \equiv x > 0$ que en el Ejemplo~\ref{eje:sobreaprox}.
+
+En este caso,
+$$\operatorname{post}_{ok}(C)(p) = \{x > 2\}.$$
+Por lo tanto, si $q \equiv x > 2$,
+la postcondición coincide con la postimagen.
+Se cumplen entonces ambas inclusiones:
+$$\operatorname{post}_{ok}(C)(p) \subseteq q \quad \text{y} \quad q \subseteq \operatorname{post}_{ok}(C)(p).$$
+En consecuencia, son válidas tanto la tripleta de Hoare
+$$\triple{x > 0}{C}{x > 2},$$
+como la de incorrectitud
+$$\itriple{x > 0}{C}{ok : x > 2}.$$
+\end{ejemplo}
+
+El caso anterior muestra que ambas lógicas pueden validar las respectivas tripletas
+cuando la postcondición coincide con la postimagen.
+En el siguiente ejemplo se modifica la postcondición de modo que describa solo uno de los estados finales alcanzables.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL}
 Consideremos nuevamente el comando
 $$C \equiv x := x + 2$$
-y la precondición $p \equiv x > 0$ del Ejemplo~\ref{eje:sobreaprox}.
+y la precondición $p \equiv x > 0$.
 
-En la IL, podemos demostrar, por ejemplo, la tripleta
+En la IL, es válida, por ejemplo, la tripleta
 $$\itriple{x > 0}{C}{ok : x = 3},$$
 ya que el estado final $x = 3$ puede obtenerse ejecutando el comando desde un estado inicial donde $x = 1$.
 Sin embargo, la tripleta de Hoare correspondiente:
@@ -540,12 +561,15 @@ Sin embargo, el estado inicial $x = 2$ satisface $x > 0$ y produce el resultado 
 que no satisface la postcondición $x = 3$.
 \end{ejemplo}
 
-\changed{El ejemplo anterior muestra que una postcondición precisa puede ser válida en la IL,
-ya que describe un resultado alcanzable, pero demasiado restrictiva para la HL,
+El ejemplo anterior muestra que una postcondición que describe un resultado particular puede ser válida en la IL,
+aunque resulte demasiado restrictiva para la HL,
 que debe incluir todos los resultados normales posibles.
-Para completar la comparación, consideremos ahora una postcondición más amplia.
-Esta puede ser suficiente para la HL, pero incluir estados no alcanzables y,
-por lo tanto, no ser válida para la IL.}
+
+Para completar la comparación, se considera ahora el caso inverso.
+Una postcondición más amplia puede ser válida para la HL,
+porque contiene todos los estados finales normales alcanzables.
+Sin embargo, también puede incluir estados que el programa no puede producir y,
+por lo tanto, no ser válida para la IL.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL2}
@@ -555,14 +579,14 @@ es válida en la HL.
 En cambio, la tripleta
 $$\itriple{x > 0}{C}{ok : x > 1}$$
 no es válida como tripleta de IL.
-Esto se debe a que la condición $x > 1$ incluye el estado final $x = 2$.
+Esto se debe a que la postcondición $q \equiv x > 1$ incluye el estado final $x = 2$.
 Para alcanzar dicho estado mediante el comando $C$, la ejecución debería comenzar en un estado donde $x = 0$.
 Sin embargo, ese estado no satisface la precondición $x > 0$.
 Por lo tanto, no existe una ejecución que comience en un estado permitido y termine en otro donde $x = 2$.
 \end{ejemplo}
 
-\changed{Los ejemplos \ref{eje:comp-HL-IL} y \ref{eje:comp-HL-IL2} pueden resumirse de la siguiente manera.
-Para un mismo comando $C$ y una misma precondición $p$,
+Si se observa en términos de conjuntos,
+para un mismo comando $C$ y una misma precondición $p$,
 si $q_{\mathrm{IL}}$ es una postcondición elegida como subaproximación de los resultados alcanzables y
 $q_{\mathrm{HL}}$ es una postcondición elegida como sobreaproximación,
 entonces,
@@ -572,28 +596,65 @@ $$q_{\mathrm{IL}} \subseteq q_{\mathrm{HL}}.$$
 Esta inclusión compara las postcondiciones elegidas,
 pero no implica que una tripleta de IL sea automáticamente válida como tripleta de HL utilizando la misma postcondición.
 La IL requiere que la postcondición esté contenida en la postimagen,
-mientras que la HL requiere que la postimagen esté contenida en la postcondición.}
+mientras que la HL requiere que la postimagen esté contenida en la postcondición.
 
-\changed{El mismo contraste aparece al considerar las precondiciones.
-En la HL, la postcondición debe cumplirse para toda ejecución normal que comience en un estado que satisface la precondición.
-En la IL, en cambio,
-para cada estado final descrito por la postcondición basta encontrar algún estado inicial que satisfaga la precondición y que permita alcanzarlo.
-Por esta razón, una precondición más amplia puede conservar la validez de una tripleta de IL,
-mientras que en la HL ampliar la precondición puede introducir ejecuciones cuyos resultados no satisfacen la postcondición.}
+Los tres casos analizados se resumen en la \autoref{tab:comparacion-hl-il}.
+En todos ellos se considera el comando $C \equiv x := x + 2$ y la precondición $p \equiv x > 0$.
 
-\changed{Hasta ahora, los ejemplos se refirieron únicamente a ejecuciones que terminan normalmente,
+\begin{table}[ht]
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}lccccc@{}}
+    \toprule
+    Caso
+    & Precondición
+    & $post_{ok}(C)(p)$
+    & Postcondición
+    & HL
+    & IL \\
+    \midrule
+
+    Postcondición exacta
+    & $x>0$
+    & $x>2$
+    & $x>2$
+    & \cmark
+    & \cmark \\
+
+    Postcondición restringida
+    & $x>0$
+    & $x>2$
+    & $x=3$
+    & \xmark
+    & \cmark \\
+
+    Postcondición amplia
+    & $x>0$
+    & $x>2$
+    & $x>1$
+    & \cmark
+    & \xmark \\
+
+    \bottomrule
+  \end{tabular}
+  \caption{Comparación entre las condiciones de validez de la HL y la IL.}
+  \label{tab:comparacion-hl-il}
+\end{table}
+
+Hasta ahora, los ejemplos se refirieron únicamente a ejecuciones que terminan normalmente,
 es decir, con el modo $ok$.
 La IL permite además describir ejecuciones que terminan con un error utilizando el modo $er$.
 En ese caso, una tripleta de la forma
 $$\itriple{p}{C}{er : q}$$
 afirma que cada estado descrito por la aserción $q$ puede alcanzarse mediante una ejecución de $C$
-que empieza en un estado que satisface $p$ y termina por un error.
+que empieza en un estado que satisface $p$ y termina con el modo $er$.
 De este modo, la IL puede utilizarse tanto para certificar resultados normales
-como para demostrar la alcanzabilidad de estados finales producidos por errores.}
+como para demostrar la alcanzabilidad de estados finales producidos por errores.
 
-\changed{Habiendo considerado ambos modos de terminación,
+Habiendo considerado ambos modos de terminación,
 la definición de validez semántica puede expresarse de manera equivalente en términos de ejecuciones concretas.
-La siguiente caracterización hace explícito que cada estado descrito por la postcondición debe estar respaldado por una ejecución real.}
+La siguiente caracterización hace explícito que cada estado descrito por la postcondición debe estar respaldado por una ejecución real.
 
 \begin{lema}(Caracterización)
 \label{lem:caracterizacion}
@@ -616,32 +677,35 @@ Por lo tanto,
 $$\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 $\ensuremath{\blacksquare}$
 
-\changed{Esta caracterización muestra que una postcondición de error no describe solamente un estado posible,
+\changed{Esta caracterización muestra que una tripleta de la IL con modo de terminación $er$
+no certifica solamente la posibilidad abstracta de un error,
 sino que cada estado perteneciente a $q$ está respaldado por una ejecución del comando
-que empieza en un estado $p$ y termina con el error indicado en $\varepsilon$.
+que empieza en un estado $p$ y termina con el modo $er$.
 Por lo tanto, dentro del modelo semántico considerado,
 las tripletas de IL permiten certificar errores sin introducir estados finales inalcanzables.}
 
 \subsection*{Derivabilidad y reglas de inferencia}
-Las definiciones anteriores caracterizan la validez de una tripleta respecto de la semántica del programa.
+Las definiciones anteriores caracterizan la validez de una tripleta en términos de la semántica operacional del programa.
 Sin embargo, demostrar directamente la inclusión $q \subseteq post_\varepsilon(C)(p)$ puede ser difícil,
-ya que requiere razonar sobre todos los estados finales descritos por $q$ y encontrar una ejecución que los respalde.
-Para construir estas pruebas de manera sistemática,
+ya que exige justificar la alcanzabilidad de cada estado descrito por $q$.
+Para organizar este razonamiento,
 la IL proporciona un sistema deductivo compuesto por reglas de inferencia.
-Antes de presentar estas reglas, definimos formalmente qué significa que una tripleta pueda obtenerse dentro de dicho sistema.
+Estas reglas permiten construir derivaciones a partir de la estructura de los comandos y de las relaciones entre aserciones.
+Antes de presentarlas, definimos formalmente la noción de derivabilidad.
 
 \begin{definicion}(Derivabilidad en la IL)
 \label{def:derivabilidad}
 Escribimos
 $$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$$
-cuando la tripleta puede obtenerse mediante una derivación finita construida utilizando las reglas de inferencia de la IL.
+cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de las reglas de inferencia de la IL.
 \end{definicion}
 
 La derivabilidad es una noción sintáctica,
 ya que depende de las reglas del sistema y de la existencia de una derivación finita.
 La validez, en cambio, es una noción semántica definida mediante la postimagen.
-A continuación, se presentan las reglas de inferencia que determinan qué derivaciones puede construirse en la IL,
-represntadas en la \autoref{fig:reglas-il}.
+
+A continuación, se presentan las reglas de inferencia que determinan cómo pueden construirse las derivaciones de la IL.
+Estas reglas se resumen en la \autoref{fig:reglas-il}.
 
 \begin{figure}[htbp]
 \centering
@@ -692,67 +756,109 @@ represntadas en la \autoref{fig:reglas-il}.
 
 \inferrule [Asignación]
   {}
-  {\vdash_{\mathrm{IL}} \itriple{p}{x = e}{ok : \exists x'. p[x' / x] \land x = e[x' / x]}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{x := e}{ok : \exists x'. p[x' / x] \land x = e[x' / x]}}
 
 \inferrule [Nondet]
   {}
-  {\vdash_{\mathrm{IL}} \itriple{p}{x = \mathsf{nondet}}{ok : \exists x'. p}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{x := \mathsf{nondet}}{ok : \exists x'. p}}
 
 \end{mathpar}
 \caption{Reglas de inferencia de la IL. Adaptadas de~\cite{inclog}.}
 \label{fig:reglas-il}
 \end{figure}
 
-Las reglas presentadas permiten construir tripletas a partir de los comandos del lenguaje y de las propiedades de las aserciones.
-Algunas reglas describen comandos básicos, como \texttt{skip}, \texttt{error} y las asignaciones.
-Otras permite combinar derivaciones,
-como \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuencia}.
+Las reglas permiten construir tripletas a partir de los comandos del lenguaje y de las propiedades de las aserciones.
+Algunas describen comandos básicos, como $\mathsf{skip}$, $\mathsf{error}$,
+las asignaciones y la asignación no determinista ($\mathsf{nondet}$).
+Otras permiten combinar derivaciones,
+como las reglas de \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuencia}.
 Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre repeticiones finitas de un comando.
 
 Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la postimagen.
-La primera permite ampliar la precondición y reducir la postcondición de una tripleta ya derivada,
-mientras que la segunda permite combinar derivaciones obtenidas a partir de distintos conjuntos de estados iniciales.
-Esto se corresponde con el hecho de que la postimagen preserva uniones, establecido en el Lema~\ref{lem:prop-pi}.
+La primera permite ampliar la precondición y reducir la postcondición de una tripleta ya derivada.
+La segunda combina derivaciones obtenidas a partir de distintos conjuntos de estados iniciales.
+Esta última regla se apoya en la preservación de uniones de la postimagen,
+establecida en el Lema~\ref{lem:prop-pi}.
+La interpretación particular de la Regla de Consecuencia en el contexto subaproximado se analizará en la siguiente subsección.
 
-\textsc{Skip} proporciona las aserciones esperadas para la terminación normal,
-es decir, no existe una ejecución de \texttt{skip} que finalice en el canal de error.
-Por el contrario, en la regla \textsc{Error} todo el estado va al canal anormal (\emph{er}).
+La regla \textsc{Skip} expresa que el comando $\mathsf{skip}$ termina normalmente y preserva la aserción inicial.
+Por el contrario, la regla \textsc{Error} expresa que el comando $\mathsf{error}$ termina en el modo $er$
+y conserva el estado descrito por la precondición.
 
 Para el caso de secuenciación hay dos reglas.
-La primera regla (\textsc{Secuencia (error)}) se refiere al cortocircuito,
-que se da cuando se produce un error dentro del primer comando.
-En este caso, el segundo comando no se ejecuta.
-La segunda (\textsc{Secuencia (normal)}),
-se da cuando el primer comando finaliza normalmente y se puede continuar con el segundo.
+La primera regla (\textsc{Secuencia (error)}) contempla el caso en que el primer comando termina con un error;
+por lo tanto, el segundo comando no llega a ejecutarse.
+La segunda (\textsc{Secuencia (normal)}) contempla el caso en que el primer comando termina normalmente
+y su postcondición se usa como precondición del segundo comando.
+En este caso, el modo de terminación final puede ser $ok$ o $er$.
 
-La regla \textsc{Choice} determina que para alcanzar un estado basta con que una de las ramas
-del operador no determinista $+$ sea capaz de lograrlo.
-La lógica no exige analizar ambas cuando el objetivo es justificar una ejecución concreta.
-Por su parte, \textsc{Assume} filtra el estado mediante una proposición $B$ en el canal de éxito,
-sin generar errores.
+La regla \textsc{Choice} permite justificar una ejecución del comando no determinista $C_1 + C_2$
+seleccionando una de las dos ramas.
+Esto es suficiente porque la IL busca certificar la alcanzabilidad de resultados determinados
+y no describir simultáneamente todos los comportamientos posibles.
+Por su parte, \textsc{Assume} restringe los estados a aquellos que satisfacen la condición $B$.
+Por eso, la terminación normal conserva solo los estados que satisfacen $p \land B$,
+sin generar una terminación con error.
 
-Las mutaciones de las variables operan hacia adelante.
-\textsc{Asignación} introduce una variable lógica existencial $x'$
-para retener el valor histórico previo de $x$ evitando pérdidas de precisión.
-De forma análoga, la regla \textsc{Nondet} sobrescribe la variable con un valor indeterminado
-eliminando sus restricciones previas en la postcondición.
+En la regla de \textsc{Asignación} la variable lógica existencial $x'$
+representa el valor que tenía $x$ antes de ejecutar el comando.
+De este modo, la postcondición puede relacionar el valor final de $x$ con su valor inicial,
+evitando perder información al sobreescribir la variable.
+Por ejemplo, para la asignación $x := x + 2$ y la precondición $x > 0$,
+la regla permite obtener la postcondición
+$$\exists x'. \; x' > 0 \land x = x' + 2,$$
+que es equivalente a $x > 2$.
 
-El lenguaje utilizado incluye además el operador de estrella de Kleene $C^\star$.
-Este representa la repetición no determinista y finita del comando $C$,
-el cuerpo puede ejecutarse cero, una o cualquier cantidad finita de veces.
-No expresa por sí mismo la condición de un bucle \texttt{while};
-un bucle condicionado puede codificarse mediante:
+Por su parte, la regla \textsc{Nondet} modela una asignación de un valor arbitrario.
+En este caso, la vriable lógica $x'$ representa el valor que tenía $x$ antes de la asignación.
+Al cuantificar existencialmente ese valor,
+la regla elimina de la postcondición las restricciones que dependían del valor anterior de $x$.
+
+El lenguaje utilizado incluye el operador de iteración de Kleene,
+denotado por $C^\star$.
+Este operador representa la ejecución de un comando $C$ una cantidad finita y no determinista de veces.
+Por lo tanto, $C^\star$ puede ejecutar $C$ cero, una o cualquier cantidad finita de veces,
+pero no representa ejecuciones infinitas.
+
+El operador de Kleene no establece por sí mismo cuándo debe detenerse la iteración.
+Por lo tanto, un bucle condicionado puede expresarse combinándolo con el comando $\mathsf{assume}$.
+Si $B$ es la condición que debe cumplirse para ejecutar una iteración y $C$ es el cuerpo del bucle,
+la expresión
 $$
-(\texttt{assume}\ (B); C)^\star; \texttt{assume}\ (\neg B).
+(\mathsf{assume}\ (B); C)^\star; \mathsf{assume}\ (\neg B)
 $$
+representa una ejecución que repite $C$ mientras se satisface $B$
+y termina normalmente cuando $B$ deja de cumplirse.
 
-Luego, el análisis de los bucles se descompone en tres reglas.
-La regla \textsc{Kleene (base)} corresponde a la salida inmediata del bucle.
-La regla \textsc{Kleene (paso)} utiliza estructuralmente la forma $C^\star; C$
-en lugar de $C; C^\star$ para facilitar el razonamiento en casos donde se lanza un error dentro de una iteración.
-En este escenario, pasarán iteraciones exitosas y el error se disparará en la última de ellas.
-Finalmente, la regla \textsc{Kleene (variante)} introduce el principio de inducción matemática sobre variables naturales
-para generalizar y propagar hacia adelante estos estados alcanzables que incrementan de forma predecible en cada vuelta.
+El análisis de $C^\star$ se realiza mediante tres reglas.
+La regla \textsc{Kleene (base)} representa la ejecución de cero iteraciones.
+Si $p$ describe el estado inicial,
+entonces ese mismo estado también describe el estado final de una ejecución de $C^\star$ que no ejecuta $C$.
+
+La regla \textsc{Kleene (paso)} permite agregar una iteración a una ejecución ya establecida.
+La regla parte de una derivación para la secuencia $C^\star; C$,
+que representa una cantidad finita de iteraciones seguida de una iteración adicional.
+Si esta secuencia alcanza una postcondición $q$ con modo de terminación $\varepsilon$,
+entonces también puede derivarse que $C^\star$ alcanza $q$ con ese mismo modo.
+
+La forma $C^\star; C$ resulta particularmente útil para razonar sobre errores.
+Las iteraciones representadas por $C^\star$ pueden terminar normalmente,
+mientras que la iteración adicional puede ser la que termine con error.
+En ese caso, el modo de terminación de toda la secuencia es $er$.
+
+Finalmente, la regla \textsc{Kleene (variante)} permite razonar sobre la cantidad de iteraciones ejecutadas.
+Para ello, se utiliza una familia de aserciones $p(n)$,
+donde $p(n)$ describe los estados obtenidos después de $n$ iteraciones.
+La regla establece que, si una ejecución normal de $C$ transforma un estado que satisface $p(n)$ en un estado que satisface $p(n + 1)$,
+entonces, partiendo de $p(0)$,
+después de cualquier cantidad finita de iteraciones se obtiene un estado que satisface $p(n)$ para algún número natural $n$.
+
+A diferencia de un invariante único e independiente del número de iteraciones,
+esta regla usa una propiedad parametrizada por $n$ y permite justificar su evolución mediante inducción sobre la cantidad de iteraciones.
+En conjunto, las reglas de Kleene permiten analizar ejecuciones finitas:
+la regla base contempla cero iteraciones,
+la de paso permite agregar una iteración
+y la regla variante permite generalizar el razonamiento a cualquier cantidad finita de repeticiones.
 
 \subsection*{La Regla de Consecuencia y la subaproximación}
 Una de las diferencias lógicas más contraintuitivas de la IL respecto a la verificación clásica es el comportamiento de su Regla de Consecuencia.
@@ -799,7 +905,7 @@ Esta capacidad que tiene la IL es fundamental.
 Permite que las herramientas de análisis automático enfoquen su exploración en trazas específicas y omitan el resto.
 
 \begin{ejemplo}
-Considere el siguiente fragmento de código y la presunción inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$:
+Considere el siguiente fragmento de código y la precondición inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$:
 
   \begin{verbatim}
   if (x is even) {
@@ -3089,7 +3195,7 @@ El objetivo de este capítulo es evaluar la expresividad de la formalización me
 En particular, se estudian un error de uso de memoria después de su liberación, un puntero colgante generado por una reasignación, un bucle con elecciones no deterministas y el recorrido de una lista enlazada.
 Estos casos muestran que la formalización puede expresar y verificar derivaciones no triviales.
 
-\section{Detección de errores espaciales básicos (\emph{Use After Free})}
+\section{Detección de errores temporales básicos (\emph{Use After Free})}
 \label{sec:uaf}
 Para el primer caso de evaluación, analizaremos la capacidad del sistema para detectar el error espacial por excelencia en lenguajes de bajo nivel, el \emph{use after free}.
 Este error ocurre cuando un programa intenta leer o escribir en una dirección de memoria después de que esta fue liberada y dejó de estar activa para el programa.

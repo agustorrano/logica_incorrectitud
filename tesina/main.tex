@@ -332,7 +332,7 @@ Para ello, consideramos los \emph{modos de terminación} $\varepsilon \in \{ok, 
 donde $ok$ representa una terminación normal y $er$, una terminación provocada por un error.
 Para cada comando $C$ y modo de terminación $\varepsilon$, se define una relación semántica:
 $$[\![C]\!]_\varepsilon \subseteq \Sigma \times \Sigma$$
-La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\varepsilon$ indica que existe una ejecución completa y terminante de $C$ que empieza en el estado
+La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\varepsilon$ indica que existe una ejecución completa que termina de $C$ que empieza en el estado
 $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\varepsilon$.
 En este sentido, $[\![C]\!]_\varepsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step},
 \changed{que relaciona directamente los estados iniciales y finales sin describir los pasos intermedios}.
@@ -347,7 +347,7 @@ $$\operatorname{post}_\varepsilon(C)(p) = \operatorname{post}([\![C]\!]_\varepsi
 Desarrollando esta definición, obtenemos
 $$\operatorname{post}_\varepsilon(C)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in [\![C]\!]_\varepsilon\}.$$
 Por lo tanto, $\operatorname{post}_\varepsilon(C)(p)$ contiene los estados que pueden obtenerse como
-resultado de una ejecución terminante de $C$ que inicia en algún estado que satisface $p$
+resultado de una ejecución de $C$ que termina que inicia en algún estado que satisface $p$
 y que termina con el modo $\varepsilon$.
 \end{definicion}
 
@@ -386,7 +386,7 @@ donde la tripleta denota que toda ejecución de $C$ iniciada en un estado que sa
 si termina normalmente, alcanza un estado que satisface $q$.
 No se exige que todas las ejecuciones terminen, a diferencia de las versiones totales.
 
-Con esta convención, la semántica de la tripleta se expresa mediante la postimagen de la Definición~\ref{def:post-comado}.
+Con esta convención, la semántica de la tripleta se expresa mediante la postimagen definida en la Definición~\ref{def:post-comado}.
 Aunque la semántica operacional distingue entre distintos modos de terminación,
 las tripletas de la HL consideradas en este trabajo se refieren implícitamente a las terminaciones normales.
 No establece ninguna propiedad sobre las ejecuciones que terminan con error;
@@ -421,7 +421,7 @@ Sin embargo, comprobar directamente la inclusión $\operatorname{post}_{ok}(C)(p
 puede ser difícil,
 ya que requiere considerar todos los estados finales normales que el comando puede alcanzar desde la
 precondición y verificar que cada uno satisfaga la postcondición.
-Para evitar este análisis complejo,
+Para razonar sobre esta inclusión de manera estructurada,
 la HL proporciona un sistema deductivo compuesto por axiomas y reglas de inferencia,
 que permite construir tripletas a partir de la estructura de los comandos y
 de las relaciones lógicas entre sus aserciones.}
@@ -518,7 +518,7 @@ La postcondición puede describir solo una parte de los estados alcanzables;
 sin embargo, todos los estados que describe deben ser alcanzables.
 
 Esta interpretación contrasta con la de la HL,
-donde todos los estados finales normales alcanzables desde $p$ estén incluidos en la postcondición.
+en la que se exige que todos los estados finales normales alcanzables desde $p$ estén incluidos en la postcondición.
 Aunque los criterios de ambas lógicas son diferentes,
 pueden coincidir cuando la postcondición es igual al conjunto de estados alcanzables.
 
@@ -579,9 +579,9 @@ es válida en la HL.
 En cambio, la tripleta
 $$\itriple{x > 0}{C}{ok : x > 1}$$
 no es válida como tripleta de IL.
+Ese estado no es alcanzable desde ningún estado que satisfaga la precondición $x > 0$.
 Esto se debe a que la postcondición $q \equiv x > 1$ incluye el estado final $x = 2$.
 Para alcanzar dicho estado mediante el comando $C$, la ejecución debería comenzar en un estado donde $x = 0$.
-Sin embargo, ese estado no satisface la precondición $x > 0$.
 Por lo tanto, no existe una ejecución que comience en un estado permitido y termine en otro donde $x = 2$.
 \end{ejemplo}
 
@@ -775,7 +775,7 @@ como las reglas de \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuenc
 Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre repeticiones finitas de un comando.
 
 Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la postimagen.
-La primera permite ampliar la precondición y reducir la postcondición de una tripleta ya derivada.
+La primera permite ampliar la precondición y restringir la postcondición de una tripleta ya derivada.
 La segunda combina derivaciones obtenidas a partir de distintos conjuntos de estados iniciales.
 Esta última regla se apoya en la preservación de uniones de la postimagen,
 establecida en el Lema~\ref{lem:prop-pi}.
@@ -810,9 +810,10 @@ $$\exists x'. \; x' > 0 \land x = x' + 2,$$
 que es equivalente a $x > 2$.
 
 Por su parte, la regla \textsc{Nondet} modela una asignación de un valor arbitrario.
-En este caso, la vriable lógica $x'$ representa el valor que tenía $x$ antes de la asignación.
+En este caso, la variable lógica $x'$ representa el valor que tenía $x$ antes de la asignación.
 Al cuantificar existencialmente ese valor,
 la regla elimina de la postcondición las restricciones que dependían del valor anterior de $x$.
+Esto significa que el nuevo valor de $x$ puede ser cualquiera y no depende del valor que tenía antes de la asignación.
 
 El lenguaje utilizado incluye el operador de iteración de Kleene,
 denotado por $C^\star$.
@@ -861,97 +862,138 @@ la de paso permite agregar una iteración
 y la regla variante permite generalizar el razonamiento a cualquier cantidad finita de repeticiones.
 
 \subsection*{La Regla de Consecuencia y la subaproximación}
-Una de las diferencias lógicas más contraintuitivas de la IL respecto a la verificación clásica es el comportamiento de su Regla de Consecuencia.
-En correctitud, la Regla de Consecuencia permite olvidar información debilitando la postcondición para cubrir todos los caminos posibles, por ejemplo, eliminando conjunciones lógicas:
-
-$$\triple{p}{C}{q_1 \land q_2} \implies \triple{p}{C}{q_1}$$
+Una de las diferencias más contraintuitivas entre la IL y la HL aparece en la Regla de Consecuencia.
+En la HL, la Regla de Consecuencia permite debilitar la postcondición.
+De esta manera, una propiedad que describe todos los estados finales alcanzables
+puede reemplazarse por otra más general que también los contenga.
+Por ejemplo, a partir de
+$\triple{p}{C}{q_1 \land q_2}$ puede obtenerse $\triple{p}{C}{q_1}$.
 Esto es válido porque, si todos los estados alcanzables satisfacen $q_1 \land q_2$, también satisfacen $q_1$.
 
-En la IL, debilitar la postcondición de esta forma no es válido.
-El sistema exige retener el contexto exacto del camino evaluado para garantizar que los estados sigan siendo alcanzables.
-En su lugar, la subaproximación permite descartar caminos enteros de ejecución basándose en su propia Regla de Consecuencia.
-Esta se define de la siguiente manera:
+En la IL, este debilitamiento de la postcondición, en general, no es válido.
+Al reemplazar $q_1 \land q_2$ por $q_1$,
+la nueva postcondición puede incluir estados que satisfacen $q_1$,
+pero que no satisfacen las demás condiciones necesarias para que el programa los produzca.
+Por lo tanto, algunos de los estados incorporados podrían ser inalcanzables.
+
+La Regla de Consecuencia de la IL produce el efecto contrario:
+permite fortalecer la postcondición y conservar solo una parte de los estados alcanzables.
+Esto hace posible ignorar otras ramas de ejecución y concentrarse en una ejecución que se desea certificar.
 \begin{mathpar}
 \inferrule []
   {p \implies p' \\ \vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \\ q' \implies q}
   {\vdash_{\mathrm{IL}} \itriple{p'}{C}{\varepsilon : q'}}
 \end{mathpar}
 
-Interpretando las aserciones como conjuntos, las condiciones laterales equivalen a $p \subseteq p'$ y $q' \subseteq q$.
-Por lo tanto, la regla permite ampliar el conjunto de estados iniciales y reducir el conjunto de estados finales.
+Interpretando las aserciones como conjuntos,
+las dos implicaciones que acompañan la regla equivalen a $p \subseteq p'$ y $q' \subseteq q$.
+Por lo tanto, la regla permite ampliar el conjunto de estados iniciales y restringir el conjunto de estados finales.
 
 La dirección de estas inclusiones puede justificarse utilizando las definiciones anteriores y el Lema~\ref{lem:prop-pi}.
-Si la tripleta original es semánticamente válida, entonces:
-$$q \subseteq post_\varepsilon(C)(p)$$
-Como $p \subseteq p'$, por monotonía de la postimagen:
-$$post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p')$$
-Además, $q' \subseteq q$.
-Por transitividad:
-$$q' \subseteq q \subseteq post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p')$$
-Por lo tanto:
-$$q' \subseteq post_\varepsilon(C)(p')$$
-que es la validez semántica de la nueva tripleta.
+Este lema establece que, si se amplía la precondición,
+también puede ampliarse el conjunto de estados finales alcanzables:
+$$p \subseteq p' \implies post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p').$$
+En otras palabras,
+toda ejecución que comienza en un estado perteneciente a $p$ también comienza en un estado perteneciente a $p'$,
+ya que $p'$ contiene todos los estados de $p$.
+Por lo tanto, los resultados alcanzables desde $p$ también están incluidos entre los estados alcanzables desde $p'$.
 
-En particular, si se sabe que la ejecución de un condicional alcanza los estados de múltiples ramas,
-por ejemplo $q_1 \lor q_2$, sabiendo que $q_1 \implies q_1 \lor q_2$,
-la Regla de Consecuencia avala descartar el segundo término de la postcondición:
+Si la tripleta original es semánticamente válida, entonces:
+$$q \subseteq post_\varepsilon(C)(p).$$
+Luego,
+$$q' \subseteq q \subseteq post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p').$$
+Por transitividad,
+$$q' \subseteq post_\varepsilon(C)(p').$$
+Esta inclusión es la condición de validez semántica de la tripleta $\itriple{p'}{C}{\varepsilon : q'}$.
+
+\begin{ejemplo}
+Supongamos que una derivación obtiene la postcondición $q_1 \lor q_2$,
+donde $q_1$ y $q_2$ describen los resultados de dos ramas posibles.
+Como $q_1 \implies q_1 \lor q_2$,
+la Regla de Consecuencia permite derivar una tripleta cuya postcondición es solamente $q_1$:
 \begin{mathpar}
 \inferrule []
   {\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q_1 \lor q_2} \\ q_1 \implies q_1 \lor q_2}
   {\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q_1}}
 \end{mathpar}
+De este modo, la derivación conserva solo los resultados descritos por $q_1$.
+Cuando $q_1$ corresponde a una rama particular del programa,
+esto equivale a ignorar las demás ramas.
 
-Esta capacidad que tiene la IL es fundamental.
-Permite que las herramientas de análisis automático enfoquen su exploración en trazas específicas y omitan el resto.
+Esta selección no es realizada automáticamente por la lógica.
+La rama que se conserva tiene que quedar especificada explícitamente en la derivación.
+\end{ejemplo}
+
+El ejemplo anterior muestra la regla de manera abstracta.
+Se observa ahora por qué, en un programa con ramas condicionales,
+esas condiciones deben conservarse en la postcondición.
 
 \begin{ejemplo}
-Considere el siguiente fragmento de código y la precondición inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$:
-
+Denotamos por $C$ al comando representado por el siguiente fragmento:
   \begin{verbatim}
   if (x is even) {
       if (y is odd) {
-          z = 42;
+          z := 42;
       }
   }
   \end{verbatim}
+y la precondición inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$.
 
-¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$ es una subaproximación de los estados alcanzables por este código partiendo de la presunción?
+¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$
+es una subaproximación de los estados alcanzables por este código partiendo de la precondición?
 
 Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida se exige:
 $$q \subseteq post_{ok}(C)(p)$$
-Sin embargo, el estado $\sigma = [z \mapsto 42, x \mapsto 1, y \mapsto 2] \in q$, pero no pertenece a $post_{ok}(C)(p)$.
-En este estado, $x$ es impar e $y$ es par, por lo que ninguna ejecución del programa que preserve esos valores puede realizar la asignación $z := 42$.
+Sin embargo, el estado $\sigma = [z \mapsto 42, x \mapsto 1, y \mapsto 2] \in q$,
+pero no pertenece a $post_{ok}(C)(p)$.
+En efecto, como el programa no modifica $x$ ni $y$,
+sus valores se mantienen durante la ejecución.
+Para que se ejecute la asignación $z := 42$,
+$x$ debe ser par e $y$ debe ser impar.
+En el estado considerado, $x = 1$ es impar e $y = 2$ es par,
+por lo que la asignación no puede ejecutarse.
 Por lo tanto,
 $$q \nsubseteq post_{ok}(C)(p),$$
 y la tripleta no es válida.
 
-Un resultado subaproximado válido debe conservar las condiciones que justifican la ejecución de la asignación.
+Una postcondición subaproximada válida debe conservar las condiciones que justifican la ejecución de la asignación.
 Por ejemplo:
 $$\itriple{z = 11}{C}{ok: z = 42 \land (x \mod 2 = 0) \land (y \mod 2 \ne 0)}$$
 \end{ejemplo}
 
 \subsection*{Razonamiento sobre bucles}
-El análisis de los bucles iterativos es el mayor cuello de botella en la verificación formal de software.
-En la HL, para razonar sobre un bucle, es obligatorio encontrar un invariante, es decir, una propiedad matemática que englobe todos los estados posibles y se mantenga verdadera sin importar cuántas veces se ejecute el ciclo.
-Esta tarea no es trivial y a menudo requiere invención humana o dominios abstractos complejos, lo que dificulta la escalabilidad y automatización de las herramientas.
+El análisis de los bucles iterativos constituye uno de los principales desafíos de la verificación formal de software.
+En la HL, razonar sobre un bucle requiere encontrar un invariante, es decir,
+una propiedad que se mantenga cada vez que el control vuelve al comienzo del ciclo
+y que permita razonar sobre todas sus iteraciones posibles.
+Esta tarea no es trivial y a menudo requiere invención humana o dominios abstractos complejos,
+lo que dificulta la escalabilidad y automatización de las herramientas.
 
-La IL simplifica este problema, ya que los invariantes de bucle no juegan un rol central en el razonamiento subaproximado.
-Como el objetivo de la IL no es garantizar un comportamiento seguro para todos los caminos de ejecución posibles, sino demostrar que ciertos estados son efectivamente alcanzables desde un estado inicial, puede concentrarse en una cantidad finita de iteraciones.
+La IL no necesita encontrar un invariante que describa todas las ejecuciones del bucle
+cuando el objetivo es certificar una ejecución particular.
+En ese caso, puede concentrarse en una cantidad finita de iteraciones.
 
-La herramienta consiste en desenrollar el bucle.
-Esto le permite a la IL analizar un bucle simplemente simulando la ejecución de su cuerpo un número finito y acotado de veces.
-Como la IL es subaproximada y permite descartar caminos, encontrar un error luego de desenrollar el bucle un par de veces produce una precondición lógicamente válida, eliminando la necesidad de deducir matemáticamente qué ocurriría en iteraciones infinitas.
+Una forma de aplicar este enfoque consiste en \emph{desenrollar el bucle}, es decir,
+reemplazarlo por una cantidad finita de repeticiones de su cuerpo.
+Si la derivación obtenida de este modo produce una tripleta con modo de terminación $er$,
+entonces certifica la existencia de una ejecución real que alcanza ese error,
+sin necesidad de describir los demás comportamientos posibles del bucle.
 
-Para casos donde se requiere un razonamiento paramétrico, la IL introduce la Regla de la Variante Hacia Atrás (\textsc{Kleene (variante)}).
-Su premisa tiene la forma:
-$$\vdash_{\mathrm{IL}} \itriple{p(n)}{C}{ok : p(n + 1)}$$
-Por el Lema~\ref{lem:caracterizacion}, esta tripleta establece que cada estado que satisface $p(n + 1)$ posee algún estado predecesor que satisface $p(n)$.
-Repitiendo este argumento, es posible reconstruir una traza finita hasta un estado inicial descrito por $p(0)$.
+Para los casos en que se requiere un razonamiento paramétrico,
+la regla \textsc{Kleene (variante)} puede interpretarse hacia atrás.
+La regla parte de una derivación de la forma:
+$$\vdash_{\mathrm{IL}} \itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}$$
+Semánticamente, si la tripleta $\itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}$ es válida,
+entonces cada estado que satisface $p(n + 1)$ posee algún estado predecesor que satisface $p(n)$.
+Repitiendo este razonamiento,
+puede reconstruirse una traza finita hasta un estado inicial descrito por $p(0)$.
 De esta forma, la regla permite obtener:
-$$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n)}$$
+$$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \operatorname{nat}(n)}$$
 
-La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores exigida por la interpretación subaproximada de las tripletas.
-En la búsqueda automática de errores, esta técnica permite calcular un resumen general de los estados alcanzables tras múltiples iteraciones exitosas, para luego acoplarlo con un paso final donde se dispara la condición de error.
+La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores
+exigida por la interpretación subaproximada de las tripletas.
+Este razonamiento permite resumir los estados alcanzables tras múltiples iteraciones exitosas
+y conectarlos en una ejecución final que termina con error.
 
 \subsection*{Soundness de la IL}
 La validez de las reglas deductivas respecto de la semántica se expresa mediante el Teorema de Soundness.

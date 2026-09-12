@@ -137,7 +137,7 @@ sin contar necesariamente con una justificación lógica de por qué cada advert
 %\guido{no entiendo lo anterior, no me parece que eso sea muy interesante?
 %pero sí que necesitaban 1) algo muy rápido y 2) que no diera falsos positivos}
 
-Este interés por demostrar la presencia de errores reales,
+Este interés por demostrar la presencia de errores reales
 motivó a \citet{inclog} a proponer una lógica de \emph{incorrectitud}.
 \changed{En lugar de intentar describir todos los comportamientos posibles de un programa
 para demostrar que ninguno produce un error,
@@ -269,8 +269,8 @@ Asimismo, se presenta una introducción a \fstar, el lenguaje y asistente de pru
 
 En primer lugar, se introduce un marco teórico común,
 basado en estados, aserciones y relaciones, que permite representar el comportamiento de los programas.
-A partir de esto, se presenta brevemente la Lógica de Hoare, la Lógica de Incorrectitud  y la Lógica de Separación,
-detallando las definiciones formales y las particularidades de cada sistema.
+A partir de esto, se presenta la Lógica de Hoare, la Lógica de Incorrectitud  y la Lógica de Separación,
+junto con las definiciones formales y las particularidades de cada sistema.
 Luego, se introduce la Lógica de Incorrectitud de Separación.
 
 \section{Estados, aserciones y relaciones}
@@ -332,7 +332,7 @@ Para ello, consideramos los \emph{modos de terminación} $\varepsilon \in \{ok, 
 donde $ok$ representa una terminación normal y $er$, una terminación provocada por un error.
 Para cada comando $C$ y modo de terminación $\varepsilon$, se define una relación semántica:
 $$[\![C]\!]_\varepsilon \subseteq \Sigma \times \Sigma$$
-La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\varepsilon$ indica que existe una ejecución completa que termina de $C$ que empieza en el estado
+La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\varepsilon$ indica que existe una ejecución completa de $C$ que empieza en el estado
 $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\varepsilon$.
 En este sentido, $[\![C]\!]_\varepsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step},
 \changed{que relaciona directamente los estados iniciales y finales sin describir los pasos intermedios}.
@@ -346,9 +346,9 @@ Definimos la postimagen de $p$ mediante $C$ con modo de terminación $\varepsilo
 $$\operatorname{post}_\varepsilon(C)(p) = \operatorname{post}([\![C]\!]_\varepsilon)(p).$$
 Desarrollando esta definición, obtenemos
 $$\operatorname{post}_\varepsilon(C)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in [\![C]\!]_\varepsilon\}.$$
-Por lo tanto, $\operatorname{post}_\varepsilon(C)(p)$ contiene los estados que pueden obtenerse como
-resultado de una ejecución de $C$ que termina que inicia en algún estado que satisface $p$
-y que termina con el modo $\varepsilon$.
+Por lo tanto, $\operatorname{post}_\varepsilon(C)(p)$ contiene los estados que pueden obtenerse mediante
+una ejecución de $C$ que comienza en un estado que satisface $p$
+y termina con el modo $\varepsilon$.
 \end{definicion}
 
 \changed{A partir de ahora, en expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
@@ -361,7 +361,7 @@ El modo de terminación $\varepsilon$ se indica explícitamente para distinguir 
 \changed{Esta representación mediante relaciones permite que un comando
 alcance distintos estados finales desde un mismo estado inicial.
 También puede ocurrir que no exista un resultado para un modo de terminación determinado.
-Por ejemplo, si una ejecución produce, una división por cero o desreferencia un puntero nulo,
+Por ejemplo, si una ejecución produce una división por cero o desreferencia un puntero nulo,
 puede no existir un resultado asociado al modo $ok$, aunque sí uno asociado al modo $er$.
 Además, puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
 por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.}
@@ -579,9 +579,10 @@ es válida en la HL.
 En cambio, la tripleta
 $$\itriple{x > 0}{C}{ok : x > 1}$$
 no es válida como tripleta de IL.
-Ese estado no es alcanzable desde ningún estado que satisfaga la precondición $x > 0$.
+
 Esto se debe a que la postcondición $q \equiv x > 1$ incluye el estado final $x = 2$.
 Para alcanzar dicho estado mediante el comando $C$, la ejecución debería comenzar en un estado donde $x = 0$.
+Ese estado no es alcanzable desde ningún estado que satisfaga la precondición $x > 0$.
 Por lo tanto, no existe una ejecución que comience en un estado permitido y termine en otro donde $x = 2$.
 \end{ejemplo}
 
@@ -677,12 +678,9 @@ Por lo tanto,
 $$\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 $\ensuremath{\blacksquare}$
 
-\changed{Esta caracterización muestra que una tripleta de la IL con modo de terminación $er$
-no certifica solamente la posibilidad abstracta de un error,
-sino que cada estado perteneciente a $q$ está respaldado por una ejecución del comando
-que empieza en un estado $p$ y termina con el modo $er$.
-Por lo tanto, dentro del modelo semántico considerado,
-las tripletas de IL permiten certificar errores sin introducir estados finales inalcanzables.}
+\changed{En particular, cuando $\varepsilon = er$,
+esta caracterización garantiza que cada estado de $q$ está respaldado por una ejecución real que termina con error.
+Por lo tanto, la IL permite certificar errores sin introducir estados finales inalcanzables.}
 
 \subsection*{Derivabilidad y reglas de inferencia}
 Las definiciones anteriores caracterizan la validez de una tripleta en términos de la semántica operacional del programa.
@@ -706,6 +704,13 @@ La validez, en cambio, es una noción semántica definida mediante la postimagen
 
 A continuación, se presentan las reglas de inferencia que determinan cómo pueden construirse las derivaciones de la IL.
 Estas reglas se resumen en la \autoref{fig:reglas-il}.
+
+Las reglas permiten construir tripletas a partir de los comandos del lenguaje y de las propiedades de las aserciones.
+Algunas describen comandos básicos, como $\mathsf{skip}$, $\mathsf{error}$,
+las asignaciones y la asignación no determinista ($\mathsf{nondet}$).
+Otras permiten combinar derivaciones,
+como las reglas de \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuencia}.
+Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre repeticiones finitas de un comando.
 
 \begin{figure}[htbp]
 \centering
@@ -767,13 +772,6 @@ Estas reglas se resumen en la \autoref{fig:reglas-il}.
 \label{fig:reglas-il}
 \end{figure}
 
-Las reglas permiten construir tripletas a partir de los comandos del lenguaje y de las propiedades de las aserciones.
-Algunas describen comandos básicos, como $\mathsf{skip}$, $\mathsf{error}$,
-las asignaciones y la asignación no determinista ($\mathsf{nondet}$).
-Otras permiten combinar derivaciones,
-como las reglas de \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuencia}.
-Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre repeticiones finitas de un comando.
-
 Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la postimagen.
 La primera permite ampliar la precondición y restringir la postcondición de una tripleta ya derivada.
 La segunda combina derivaciones obtenidas a partir de distintos conjuntos de estados iniciales.
@@ -792,16 +790,15 @@ La segunda (\textsc{Secuencia (normal)}) contempla el caso en que el primer coma
 y su postcondición se usa como precondición del segundo comando.
 En este caso, el modo de terminación final puede ser $ok$ o $er$.
 
-La regla \textsc{Choice} permite justificar una ejecución del comando no determinista $C_1 + C_2$
-seleccionando una de las dos ramas.
+La regla \textsc{Choice} permite construir una derivación seleccionando una de las dos ramas del comando no determinista $C_1 + C_2$.
 Esto es suficiente porque la IL busca certificar la alcanzabilidad de resultados determinados
 y no describir simultáneamente todos los comportamientos posibles.
-Por su parte, \textsc{Assume} restringe los estados a aquellos que satisfacen la condición $B$.
-Por eso, la terminación normal conserva solo los estados que satisfacen $p \land B$,
-sin generar una terminación con error.
+Por su parte, \textsc{Assume} restringe los estados iniciales considerados a aquellos que,
+además de satisfacer $p$, satisfacen $B$.
+Por eso, la postcondición es $p \land B$.
 
-En la regla de \textsc{Asignación} la variable lógica existencial $x'$
-representa el valor que tenía $x$ antes de ejecutar el comando.
+En la regla de \textsc{Asignación},
+$x'$ es una variable auxiliar que representa el valor que tenía $x$ antes de ejecutar el comando.
 De este modo, la postcondición puede relacionar el valor final de $x$ con su valor inicial,
 evitando perder información al sobreescribir la variable.
 Por ejemplo, para la asignación $x := x + 2$ y la precondición $x > 0$,
@@ -810,7 +807,7 @@ $$\exists x'. \; x' > 0 \land x = x' + 2,$$
 que es equivalente a $x > 2$.
 
 Por su parte, la regla \textsc{Nondet} modela una asignación de un valor arbitrario.
-En este caso, la variable lógica $x'$ representa el valor que tenía $x$ antes de la asignación.
+En este caso, la variable auxiliar $x'$ representa el valor que tenía $x$ antes de la asignación.
 Al cuantificar existencialmente ese valor,
 la regla elimina de la postcondición las restricciones que dependían del valor anterior de $x$.
 Esto significa que el nuevo valor de $x$ puede ser cualquiera y no depende del valor que tenía antes de la asignación.
@@ -853,13 +850,6 @@ donde $p(n)$ describe los estados obtenidos después de $n$ iteraciones.
 La regla establece que, si una ejecución normal de $C$ transforma un estado que satisface $p(n)$ en un estado que satisface $p(n + 1)$,
 entonces, partiendo de $p(0)$,
 después de cualquier cantidad finita de iteraciones se obtiene un estado que satisface $p(n)$ para algún número natural $n$.
-
-A diferencia de un invariante único e independiente del número de iteraciones,
-esta regla usa una propiedad parametrizada por $n$ y permite justificar su evolución mediante inducción sobre la cantidad de iteraciones.
-En conjunto, las reglas de Kleene permiten analizar ejecuciones finitas:
-la regla base contempla cero iteraciones,
-la de paso permite agregar una iteración
-y la regla variante permite generalizar el razonamiento a cualquier cantidad finita de repeticiones.
 
 \subsection*{La Regla de Consecuencia y la subaproximación}
 Una de las diferencias más contraintuitivas entre la IL y la HL aparece en la Regla de Consecuencia.
@@ -993,43 +983,69 @@ $$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \opera
 La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores
 exigida por la interpretación subaproximada de las tripletas.
 Este razonamiento permite resumir los estados alcanzables tras múltiples iteraciones exitosas
-y conectarlos en una ejecución final que termina con error.
+y combinarlos con un paso final que termina con error.
 
-\subsection*{Soundness de la IL}
-La validez de las reglas deductivas respecto de la semántica se expresa mediante el Teorema de Soundness.
+\subsection*{Solidez de la IL}
+La relación entre las reglas deductivas y la semántica operacional se establece mediante el Teorema de Soundness.
+Este resultado garantiza que toda tripleta derivable en la IL es semánticamente válida.
 
-\begin{teorema}(Soundness de la IL)
+\begin{teorema}(Teorema de Soundness de la IL)
 \label{teo:sound-il}
-Para todo comando $C$, aserciones $p,q \subseteq \Sigma$ y condición de salida $\varepsilon$:
+Para todo comando $C$, aserciones $p, q \subseteq \Sigma$ y modo de terminación $\varepsilon$:
 $$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$$
 \end{teorema}
 
-El teorema establece que tripleta obtenida a partir de las reglas del sistema es semánticamente válida.
-Por lo tanto, para cada estado final descrito por $q$, existe un estado inicial que satisface $p$ y una ejecución real del comando que conecta ambos estados.
-La demostración mecanizada de este resultado para el lenguaje imperativo utilizado en esta tesina se presenta en el \autoref{cap:formalizacion-il}.
+El teorema garantiza que toda tripleta construida mediante las reglas del sistema
+describe resultados respaldados por ejecuciones reales.
+La demostración mecanizada de este resultado para el lenguaje imperativo
+utilizado en esta tesina se presenta en el \autoref{cap:formalizacion-il}.
 
 \begin{corolario}
 \label{cor:errores}
 Si
 $$\vdash_{\mathrm{IL}} \itriple{p}{C}{er : q}$$
-y $q \neq \emptyset$, entonces existen estados $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
+y $q \neq \varnothing$,
+entonces existen estados $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
 $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
 \end{corolario}
+\emph{Demostración.} Por el Teorema de Soundness~\ref{teo:sound-il},
+la tripleta $\itriple{p}{C}{er : q}$ es semánticamente válida.
+Como $q \neq \varnothing$,
+existe un estado $\sigma_q \in q$.
+Aplicando el Lema~\ref{lem:caracterizacion},
+existe un estado $\sigma_p \in p$ tal que
+$$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
+Por lo tanto,
+existe una ejecución de $C$ que comienza en un estado que satisface $p$ y termina con el modo $er$.
+$\ensuremath{\blacksquare}$
 
-El corolario expresa la garantía de ausencia de falsos positivos, donde todo estado contenido en un resultado de error derivado está respaldado por una ejecución real.
-Si el resultado es satisfacible, entonces existe una ejecución que finaliza en el canal de error.
+El corolario expresa la ausencia de falsos positivos:
+todo estado descrito por la postcondición de una tripleta de error derivable
+está respaldado por una ejecución real.
+Además, si $q \neq \varnothing$,
+existe al menos una ejecución que comienza en un estado que satisface $p$ y termina con el modo $er$.
 
 \subsection*{Relevancia práctica}
-La relevancia práctica del razonamiento sobre incorrectitud puede observarse en distintos trabajos vinculados con Facebook y Meta.
-Como antecedente industrial, herramientas como Infer y Zoncolan mostraron que los análisis estáticos composicionales podían integrarse en procesos de desarrollo industriales y aplicarse sobre bases de código de gran tamaño~\cite{fast, facebook}.
-Aunque estas herramientas son anteriores a la introducción de la IL y no constituyen implementaciones directas de esta lógica, sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
+La relevancia práctica del razonamiento sobre incorrectitud puede observarse
+en distintos trabajos desarrollados en el entorno de Facebook/Meta.
+Entre los antecedentes industriales,
+herramientas como Infer y Zoncolan mostraron que los análisis estáticos composicionales
+podían integrarse en procesos de desarrollo industriales y aplicarse sobre bases de código de gran tamaño~\cite{fast, facebook}.
+Aunque estas herramientas son anteriores a la introducción de la IL
+y no constituyen implementaciones directas de esta lógica,
+sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
 
 Una evidencia más directa sobre la aplicabilidad de la IL y la ISL es el desarrollo de Pulse-X~\cite{bugs}.
-En su evaluación sobre OpenSSL, un proyecto de código abierto que proporciona bibliotecas y herramientas criptográficas para comunicaciones seguras, encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
-Este resultado muestra que la IL no solo puede utilizarse como explicación teórica de analizadores existentes, sino también como fundamento para diseñar nuevas herramientas capaces de detectar errores reales en programas de tamaño considerable.
+En su evaluación sobre OpenSSL,
+un proyecto de código abierto que proporciona bibliotecas y herramientas criptográficas para comunicaciones seguras,
+encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
+Este resultado muestra que la IL no solo proporciona un marco teórico para razonar sobre errores alcanzables,
+sino que también puede servir como fundamento para diseñar herramientas capaces de detectar errores reales en programas de tamaño considerable.
 
-Sin embargo, para aplicar este tipo de razonamiento a programas con memoria mutable y estructuras enlazadas es necesario incorporar mecanismos de razonamiento local.
-Estos mecanismos son provistos por la Lógica de Separación, que se presenta a continuación.
+Sin embargo, para aplicar este tipo de razonamiento a programas con memoria dinámica y estructuras enlazadas
+es necesario incorporar mecanismos de razonamiento local.
+Estos mecanismos son provistos por la Lógica de Separación,
+que se presenta a continuación.
 
 \section{Lógica de Separación (SL)}
 \label{sec:logsep}
@@ -1077,7 +1093,7 @@ Antes de definir las aserciones espaciales, es necesario especificar cuándo dos
 \begin{definicion}[Disjunción de \emph{heaps}]
 \label{def:disj_heaps}
 Dos \emph{heaps} $h_1$ y $h_2$ son disjuntos, lo que denotamos mediante $h_1 \perp h_2$, si sus dominios no comparten ninguna dirección:
-$$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \emptyset$$
+$$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing$$
 \end{definicion}
 
 Cuando $h_1 \perp h_2$, puede construirse su unión disjunta:
@@ -1095,7 +1111,7 @@ Entre las más importantes se encuentran $\mathsf{emp}$, points-to y la conjunci
 \begin{definicion}[\emph{Heap} vacío]
 \label{def:heap_vacio}
 La aserción $\mathsf{emp}$ se satisface cuando el \emph{heap} no contiene ninguna celda:
-$$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \emptyset$$
+$$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \varnothing$$
 \end{definicion}
 
 La aserción $\mathsf{emp}$ no afirma que toda la memoria física del programa se encuentra vacía, sino que el fragmento del \emph{heap} descrito por la aserción es vacío.
@@ -1265,7 +1281,7 @@ Este principio se materializa mediante la Regla del Marco (\textit{Frame Rule}),
 Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando, definimos la Regla del Marco como:
 
 \[
-    \frac{\vdash_{\mathrm{SL}} \triple{P}{C}{Q} \quad \operatorname{mod}(C) \cap \operatorname{fv}(R) = \emptyset}
+    \frac{\vdash_{\mathrm{SL}} \triple{P}{C}{Q} \quad \operatorname{mod}(C) \cap \operatorname{fv}(R) = \varnothing}
          {\vdash_{\mathrm{SL}} \triple{P * R}{C}{Q * R}}
 \]
 
@@ -1370,7 +1386,7 @@ Al aplicar otra vez el marco $x \mapsto -$ obtenemos:
 $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\mathsf{free}(x)}{ok : x \nmapsto * x \mapsto -}$$
 La presunción sigue siendo inconsistente, pero ahora el resultado también, ya que la misma dirección pertenece a dos \emph{heaps} disjuntos, estando liberada en uno y asignada en el otro.
 Por lo tanto, la conclusión es semánticamente válida:
-$$\emptyset \subseteq post_{ok}(\mathsf{free}(x))(\emptyset)$$
+$$\varnothing \subseteq post_{ok}(\mathsf{free}(x))(\varnothing)$$
 Los \emph{heaps} negativos impiden que la Regla del Marco transforme una presunción inconsistente en un resultado satisfacible.
 
 Representamos el efecto del \emph{heap} negativo en la \autoref{tab:frame-table2}:
@@ -1487,7 +1503,7 @@ Análogamente a los casos anteriores, \textsc{StoreEr} interrumpe el flujo si la
 Con respecto a la Regla del Marco, en la ISL se formaliza de la siguiente manera:
 \begin{equation}
     \inferrule [Frame]
-    {\vdash_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \ \text{mod}(C) \cap \text{fv}(r) = \emptyset}
+    {\vdash_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \ \text{mod}(C) \cap \text{fv}(r) = \varnothing}
     {\vdash_{\mathrm{ISL}} \itriple{p * r}{C}{\epsilon : q * r}}
 \label{eq:frame-isl}
 \end{equation}
@@ -1508,13 +1524,13 @@ Al igual que en la IL, el teorema establece que las reglas de inferencia de la I
 En particular, si se deriva $\vdash_{\mathrm{ISL}} \itriple{p}{C}{er : q}$, entonces cada estado de error contenido en $q$ es alcanzable desde algún estado que satisface $p$.
 
 Para afirmar además que el programa tiene una ejecución errónea, el resultado $q$ debe ser satisfacible.
-Si $q = \emptyset$, la tripleta es válida de manera trivial, pero no demuestra la existencia de ningún error.
+Si $q = \varnothing$, la tripleta es válida de manera trivial, pero no demuestra la existencia de ningún error.
 
 \begin{corolario}
 \label{cor:errores-isl}
 Si
 $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{er : q}$$
-y $q \neq \emptyset$, entonces existen estados $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
+y $q \neq \varnothing$, entonces existen estados $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
 $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
 \end{corolario}
 
@@ -3602,7 +3618,7 @@ Esto se puede observar en la \autoref{fig:particion-lista}.
 \node[cell, fill=blue!20, below=-\pgflinewidth of n4v] (n4p) {$\bullet$};
 % Nodo 5
 \node[cell, fill=blue!20, right=0.8cm of n4v] (n5v) {$1$};
-\node[cell, fill=blue!20, below=-\pgflinewidth of n5v] (n5p) {$\emptyset$};
+\node[cell, fill=blue!20, below=-\pgflinewidth of n5v] (n5p) {$\varnothing$};
 
 % Flechas de los punteros (Diagonales desde el centro del puntero al oeste del valor)
 \draw[ptr] (n1p.center) to[out=0, in=180, looseness=1.2] (n2v.west);

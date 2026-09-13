@@ -600,3 +600,39 @@
     numpages   = {64},
     keywords   = {Program proof, Cryptographic software, Systems software, Communications software, Proof-oriented programming}
 }
+
+@inproceedings{
+    local,
+    author    = {O'Hearn, Peter W. and Reynolds, John C. and Yang, Hongseok},
+    title     = {Local Reasoning about Programs that Alter Data Structures},
+    year      = {2001},
+    isbn      = {3540425543},
+    publisher = {Springer-Verlag},
+    address   = {Berlin, Heidelberg},
+    abstract  = {We describe an extension of Hoare's logic for reasoning about programs that alter data structures. We consider a low-level storage model based on a heap with associated lookup, update, allocation and deallocation operations, and unrestricted address arithmetic. The assertion language is based on a possible worlds model of the logic of bunched implications, and includes spatial conjunction and implication connectives alongside those of classical logic. Heap operations are axiomatized using what we call the "small axioms", each of which mentions only those cells accessed by a particular command. Through these and a number of examples we show that the formalism supports local reasoning: A specification and proof can concentrate on only those cells in memory that a program accesses.This paper builds on earlier work by Burstall, Reynolds, Ishtiaq and O'Hearn on reasoning about data structures.},
+    booktitle = {Proceedings of the 15th International Workshop on Computer Science Logic},
+    pages     = {1–19},
+    numpages  = {19},
+    series    = {CSL '01}
+}
+
+@article{
+    bttf,
+    author     = {Lahiri, Shuvendu and Qadeer, Shaz},
+    title      = {Back to the future: revisiting precise program verification using SMT solvers},
+    year       = {2008},
+    issue_date = {January 2008},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {43},
+    number     = {1},
+    issn       = {0362-1340},
+    url        = {https://doi.org/10.1145/1328897.1328461},
+    doi        = {10.1145/1328897.1328461},
+    abstract   = {This paper takes a fresh look at the problem of precise verification of heap-manipulating programs using first-order Satisfiability-Modulo-Theories (SMT) solvers. We augment the specification logic of such solvers by introducing the Logic of Interpreted Sets and Bounded Quantification for specifying properties of heap-manipulating programs. Our logic is expressive, closed under weakest preconditions, and efficiently implementable on top of existing SMT solvers. We have created a prototype implementation of our logic over the solvers Simplify and Z3 and used our prototype to verify many programs. Our preliminary experience is encouraging; the completeness and the efficiency of the decisionprocedure is clearly evident in practice and has greatly improved the user experience of the verifier.},
+    journal    = {SIGPLAN Not.},
+    month      = jan,
+    pages      = {171–182},
+    numpages   = {12},
+    keywords   = {software verification, reachability, linked lists, heap-manipulating programs, decision procedures, SMT solvers}
+}

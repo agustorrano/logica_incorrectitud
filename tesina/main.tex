@@ -1049,43 +1049,65 @@ que se presenta a continuación.
 
 \section{Lógica de Separación (SL)}
 \label{sec:logsep}
-La HL es efectiva para razonar sobre variables simples, pero su escalabilidad disminuye ante estructuras de datos mutables.
-El obstáculo principal es el \emph{aliasing}.
-\guido{pequeña explicación y/o citas del problema? se vuelve no escalable.
-también hay que introducir el termino aliasing}
+La HL es efectiva para razonar sobre variables simples,
+\changed{pero su aplicación resulta más compleja cuando los programas manipulan memoria dinámica mediante punteros.
+En estos casos,
+no basta con describir los valores de las variables,
+también es necesario representar las celdas de memoria asignadas y la información almacenada en ellas.}
+%Una de las dificultades centrales es el \emph{aliasing},
+%que ocurre cuando dos expresiones de puntero pueden referirse a la misma dirección de memoria.
+%\guido{pequeña explicación y/o citas del problema? se vuelve no escalable.
+%también hay que introducir el termino aliasing}
 
-\guido{citar a CACM es medio raro, es una revista popular, digamos, y no un paper tecnico}
-La SL introducida por \citet{sl} y desarrollada por \citet{sl2}, extiende la HL con aserciones que describen la estructura de la memoria \guido{a diferencia de ...?}.
-Su objetivo es permitir el razonamiento local, es decir, demostrar el comportamiento de un comando considerando solo el fragmento del \emph{heap} que este utiliza, sin tener que describir el resto de la memoria.
+%\guido{citar a CACM es medio raro, es una revista popular, digamos, y no un paper tecnico}
+La SL, introducida por \citet{sl},
+extiende la HL para permitir el razonamiento sobre este tipo de programas.
+Su objetivo es \changed{describir tanto el estado de las variables
+como el fragmento de memoria relevante para el comando que se está analizando.
+Esto permite realizar un razonamiento local,
+sin tener que describir explícitamente toda la memoria del programa~\cite{local}.}
 
-\guido{menor: tambien usar mathsf para Store/Heap?}
-Sean $\mathsf{Var}$ el conjunto de variables del programa, $\mathsf{Val}$ el conjunto de valores y $\mathsf{Loc}$ el conjunto de direcciones de memoria.
-Un \emph{store} es una función total:
-$$Store = \mathsf{Var} \rightarrow \mathsf{Val},$$
-mientras que un \emph{heap} se representa mediante una función parcial finita:
-$$Heap = \mathsf{Loc} \rightharpoonup \mathsf{Val}$$
-El hecho de que el \emph{heap} sea parcial expresa que no todas las direcciones posibles forman parte de la memoria actual descrita.
-Denotamos por $\operatorname{dom}(h)$ el conjunto de direcciones para las cuales el \emph{heap} $h$ se encuentra definido.
+Para formalizar este modelo, sean $\mathsf{Var}$ el conjunto de variables del programa,
+$\mathsf{Val}$ el conjunto de valores y $\mathsf{Loc}$ el conjunto de direcciones de memoria.
+Un \emph{store} es una función total que asigna un valor a cada variable:
+$$\mathsf{Store} = \mathsf{Var} \rightarrow \mathsf{Val}.$$
+Por su parte, un \emph{heap} se representa mediante una función parcial finita:
+$$\mathsf{Heap} = \mathsf{Loc} \rightharpoonup \mathsf{Val}.$$
+La parcialidad expresa que el \emph{heap} solo  asigna valores a las direcciones
+que forman parte de la memoria actualmente asignada.
+Denotamos por $\operatorname{dom}(h)$ el conjunto de direcciones para las cuales el \emph{heap} $h$ está definido.
 
 Un estado espacial es un par:
-$$\sigma = (s, h) \in Store \times Heap$$
-Las aserciones de la SL se interpretan sobre estados espaciales $P : Store \times Heap \rightarrow \mathsf{Prop}$.
-Escribimos:
+$$\sigma = (s, h) \in \mathsf{Store} \times \mathsf{Heap},$$
+donde $s$ representa el \emph{store} y $h$ el \emph{heap}.
+Las aserciones de la SL se interpretan sobre estados espaciales.
+\changed{Formalmente, una aserción espacial es un predicado}
+$$P : \mathsf{Store} \times \mathsf{Heap} \rightarrow \mathsf{Prop}.$$
+Escribimos
 $$(s, h) \models P$$
-cuando el estado compuesto por el \emph{store} $s$ y el \emph{heap} $h$ satisface la aserción $P$.
+cuando el estado formado por el \emph{store} $s$ y el \emph{heap} $h$ satisface la aserción $P$.
 
-Como mencionamos antes, el principal problema que busca controlar la SL es el \emph{aliasing}.
+\changed{En este modelo, una dificultas central es determinar cuándo dos expresiones del programa
+se refieren a la misma dirección de memoria.
+A esta situación se la denomina \emph{aliasing}.
+Si $e$ es una expresión cuya evaluación produce una dirección de memoria y $s$ un \emph{store},
+denotamos por $[\![e]\!]_s$ la dirección obtenida al evaluar $e$ en $s$.}
 
 \begin{definicion}[Aliasing]
-Dos expresiones de puntero $e_1$ y $e_2$ presentan \emph{aliasing} en un \emph{store} $s$ cuando ambas evalúan a la misma dirección de memoria:
+Dos expresiones $e_1$ y $e_2$ presentan \emph{aliasing} en un \emph{store} $s$
+cuando ambas se evalúan a la misma dirección de memoria:
 $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 \end{definicion}
 
-En este tipo de programas, una modificación realizada a través de un puntero puede alterar el valor al que hace referencia otro puntero diferente.
-Entonces, para poder probar la correctitud de un programa con \textit{aliasing} mediante la lógica tradicional, el verificador debe añadir restricciones globales complejas que garanticen que ninguna operación de mutación afectará a otras referencias.
-Este es un proceso que, para programas de tamaño moderado, se le suma mucha dificultad y no escala.
-\guido{alguna cita estaria buena. Este paper de verus \url{https://dl.acm.org/doi/epdf/10.1145/3694715.3695952} menciona algunos problemas de escalabilidad con Lowstar, que no era logica de separacion
-sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
+\changed{Cuando existe \emph{aliasing},
+una modificación realizada a través de una de las expresiónes puede afectar el valor observado a través de la otra.
+Por lo tanto, el verificador debe comprobar que esa modificación no contradiga las propiedades
+que deben mantenerse para otras referencias y para el resto de la memoria.
+Estas condiciones de verificación pueden ser difíciles de construir y de demostrar automáticamente,
+lo que también puede limitar la escalabilidad del análisis,
+especialmente en estructuras de datos enlazadas~\cite{bttf}.}
+%\guido{alguna cita estaria buena. Este paper de verus \url{https://dl.acm.org/doi/epdf/10.1145/3694715.3695952} menciona algunos problemas de escalabilidad con Lowstar, que no era logica de separacion
+%sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
 
 \subsection*{La conjunción separadora y aserciones espaciales}
 Antes de definir las aserciones espaciales, es necesario especificar cuándo dos fragmentos de memoria son independientes.
@@ -1235,28 +1257,27 @@ expresar aliasing cuando uno sí lo quiere es un garrón}
 \begin{lema}[Propiedades de la conjunción separadora]
 Para todas las aserciones espaciales $P$, $Q$ y $R$:
 \begin{enumerate}
-    \item $P * Q \iff Q * P$
-    \item $(P * Q) * R \iff P * (Q * R)$
-    \item $P * \mathsf{emp} \iff P$
+  \item $P * Q \iff Q * P$
+  \item $(P * Q) * R \iff P * (Q * R)$
+  \item $P * \mathsf{emp} \iff P$
 \end{enumerate}
 \end{lema}
 
 \subsection*{El lenguaje imperativo extendido}
 Para poder operar sobre este nuevo modelo de memoria, la SL extiende el lenguaje de programación imperativo clásico con cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
 \begin{enumerate}
-    \item \textbf{Asignación (allocation):}
-    \guido{asignacion y alocacion son dos cosas distintas}
-    $$v := \texttt{cons}(e_1, \ldots, e_n)$$
-    reserva $n$ celdas consecutivas del heap y guarda la dirección base en la variable $v$.
-    \item \textbf{Lectura (lookup):}
-    $$v := [e]$$
-    lee el valor guardado en la dirección de memoria $e$ del heap y lo guarda en el store en la variable $v$.
-    \item \textbf{Mutación (mutation):}
-    $$[e] := e'$$
-    sobrescribe el contenido del heap en la dirección $e$ con el nuevo valor $e'$.
-    \item \textbf{Liberación (deallocation):}
-    $$\texttt{dispose} \ e$$
-    invalida y libera la dirección de memoria $e$, eliminándola del dominio del heap activo.
+  \item \textbf{Alocación (allocation):}
+  $$v := \texttt{cons}(e_1, \ldots, e_n)$$
+  reserva $n$ celdas consecutivas del heap y guarda la dirección base en la variable $v$.
+  \item \textbf{Lectura (lookup):}
+  $$v := [e]$$
+  lee el valor guardado en la dirección de memoria $e$ del heap y lo guarda en el store en la variable $v$.
+  \item \textbf{Mutación (mutation):}
+  $$[e] := e'$$
+  sobrescribe el contenido del heap en la dirección $e$ con el nuevo valor $e'$.
+  \item \textbf{Liberación (deallocation):}
+  $$\texttt{dispose} \ e$$
+  invalida y libera la dirección de memoria $e$, eliminándola del dominio del heap activo.
 \end{enumerate}
 
 \subsection*{Razonamiento local y la Regla del Marco}

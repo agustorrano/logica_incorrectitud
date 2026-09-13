@@ -1087,7 +1087,7 @@ Escribimos
 $$(s, h) \models P$$
 cuando el estado formado por el \emph{store} $s$ y el \emph{heap} $h$ satisface la aserción $P$.
 
-\changed{En este modelo, una dificultas central es determinar cuándo dos expresiones del programa
+\changed{En este modelo, una dificultad central es determinar cuándo dos expresiones del programa
 se refieren a la misma dirección de memoria.
 A esta situación se la denomina \emph{aliasing}.
 Si $e$ es una expresión cuya evaluación produce una dirección de memoria y $s$ un \emph{store},
@@ -1100,7 +1100,7 @@ $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 \end{definicion}
 
 \changed{Cuando existe \emph{aliasing},
-una modificación realizada a través de una de las expresiónes puede afectar el valor observado a través de la otra.
+una modificación realizada a través de una de las expresiones puede afectar el valor observado a través de la otra.
 Por lo tanto, el verificador debe comprobar que esa modificación no contradiga las propiedades
 que deben mantenerse para otras referencias y para el resto de la memoria.
 Estas condiciones de verificación pueden ser difíciles de construir y de demostrar automáticamente,
@@ -1110,25 +1110,44 @@ especialmente en estructuras de datos enlazadas~\cite{bttf}.}
 %sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
 
 \subsection*{La conjunción separadora y aserciones espaciales}
-Antes de definir las aserciones espaciales, es necesario especificar cuándo dos fragmentos de memoria son independientes.
+Para definir la conjunción separadora,
+es necesario especificar cuándo dos \emph{heaps} pueden combinarse sin compartir direcciones de memoria.
 
 \begin{definicion}[Disjunción de \emph{heaps}]
 \label{def:disj_heaps}
-Dos \emph{heaps} $h_1$ y $h_2$ son disjuntos, lo que denotamos mediante $h_1 \perp h_2$, si sus dominios no comparten ninguna dirección:
+Dos \emph{heaps} $h_1$ y $h_2$ son disjuntos,
+lo que denotamos mediante $h_1 \perp h_2$,
+si sus dominios no comparten ninguna dirección:
 $$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing$$
 \end{definicion}
 
-Cuando $h_1 \perp h_2$, puede construirse su unión disjunta:
-$$h_1 \uplus h_2$$
-Esta operación contiene todas las celdas de ambos \emph{heaps}:
+\changed{La condición de disjunción garantiza
+que cada dirección de memoria pertenece, a lo sumo,
+a uno de los dos \emph{heaps}.
+Por lo tanto,
+sus contenidos pueden combinarse en un único \emph{heap} sin generar conflictos.
+Esta operación se denomina \emph{unión disjunta}.}
+
+\begin{definicion}[Unión disjunta]
+Sean $h_1$ y $h_2$ dos \emph{heaps} disjuntos.
+Su unión disjunta, denotada por $h_1 \uplus h_2$,
+es el \emph{heap} cuyo dominio es
 $$\operatorname{dom}(h_1 \uplus h_2) = \operatorname{dom}(h_1) \cup \operatorname{dom}(h_2)$$
-Cuando sus dominios son disjuntos, ninguna dirección recibe dos valores diferentes y la unión se encuentra bien definida.
-\guido{explicitá que la union esta definida por casos. La ultima oracion me
-hace ruido porque no diste la definicion y porque $\uplus$ solo esta definida cuando
-son disjuntos (entonces decir ``cuando son disjuntos...'' no tiene sentido).}
+y cuyo valor en cada dirección de memoria
+$\ell \in \operatorname{dom}(h_1 \uplus h_2)$ se define por casos:
+$$(h_1 \uplus h_2)(\ell) =
+\begin{cases}
+h_1(\ell), & \text{si } \ell \in \operatorname{dom}(h_1), \\
+h_2(\ell), & \text{si } \ell \in \operatorname{dom}(h_2).
+\end{cases}$$
+\end{definicion}
+
+%\guido{explicitá que la union esta definida por casos. La ultima oracion me
+%hace ruido porque no diste la definicion y porque $\uplus$ solo esta definida cuando
+%son disjuntos (entonces decir ``cuando son disjuntos...'' no tiene sentido).}
 
 La SL incorpora aserciones específicas para describir fragmentos de memoria.
-Entre las más importantes se encuentran $\mathsf{emp}$, points-to y la conjunción separadora.
+Entre las más importantes se encuentran $\mathsf{emp}$, \emph{points-to} y la conjunción separadora.
 
 \begin{definicion}[\emph{Heap} vacío]
 \label{def:heap_vacio}
@@ -1136,26 +1155,35 @@ La aserción $\mathsf{emp}$ se satisface cuando el \emph{heap} no contiene ningu
 $$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \varnothing$$
 \end{definicion}
 
-La aserción $\mathsf{emp}$ no afirma que toda la memoria física del programa se encuentra vacía, sino que el fragmento del \emph{heap} descrito por la aserción es vacío.
+La aserción $\mathsf{emp}$ no afirma que toda la memoria física del programa se encuentra vacía,
+sino que el fragmento del \emph{heap} descrito por la aserción es vacío.
 Esta distinción resulta útil porque las aserciones de SL describen recursos locales y pueden combinarse mediante la conjunción separadora.
 
 \begin{definicion}[Points-to]
 \label{def:points_to}
+Sean $e_1$ y $e_2$ expresiones del programa que se evalúan en un \emph{store} $s$.
 La aserción
 $$e_1 \mapsto e_2$$
-se satisface cuando el \emph{heap} contiene exactamente una celda, cuya dirección es el valor de $e_1$ y cuyo contenido es el valor de $e_2$.
+se satisface cuando el \emph{heap} contiene exactamente una celda,
+cuya dirección es el resultado de evaluar $e_1$ en $s$ y cuyo contenido es el resultado de evaluar $e_2$ en $s$.
 Formalmente:
-$$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \; \ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s$$
+$$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \;
+\ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s$$
 \end{definicion}
-\guido{aclarar que $e_1, e_2$ son expresiones que se evaluan segun el store?
-por cierto como está bien esto? Si tengo $x |-> 1$ donde x es una variable
-y hago $x := blah$ poniendo $x |-> 1$ en el frame, no rompo nada? o esta prohibido
-por la regla de frame?}
-\guido{leyendo más adelante me contesto que sí, aunque chequealo por favor}
+%\guido{aclarar que $e_1, e_2$ son expresiones que se evaluan segun el store?
+%por cierto como está bien esto? Si tengo $x |-> 1$ donde x es una variable
+%y hago $x := blah$ poniendo $x |-> 1$ en el frame, no rompo nada? o esta prohibido
+%por la regla de frame?}
+%\guido{leyendo más adelante me contesto que sí, aunque chequealo por favor}
 
-Por ejemplo, $x \mapsto 3$ describe un \emph{heap} formado exactamente por una celda ubicada en la dirección almacenada en $x$, cuyo contenido es 3.
-Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda, sino un fragmento compuesto únicamente por ella.\guido{a veces llamado ``heaplet''}
-Para describir otras celdas independientes \sout{deben}pueden agregarse nuevas aserciones mediante la conjunción separadora.
+Por ejemplo, $x \mapsto 3$ describe un \emph{heap} formado
+exactamente por una celda ubicada en la dirección almacenada en $x$,
+cuyo contenido es 3.
+Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda,
+sino un fragmento compuesto únicamente por ella,
+a veces llamado \emph{heaplet}.
+%\guido{a veces llamado ``heaplet''}
+Para describir otras celdas independientes pueden agregarse nuevas aserciones mediante la conjunción separadora.
 
 \begin{definicion}[Conjunción separadora]
 \label{def:sep-conj}
@@ -1164,12 +1192,31 @@ El estado $(s, h)$ satisface la conjunción separadora
 $$P * Q$$
 si el \emph{heap} $h$ puede dividirse en dos fragmentos disjuntos $h_1$ y $h_2$, de modo que $P$ se satisface sobre $h_1$ y $Q$ se satisface sobre $h_2$.
 Formalmente:
-$$(s, h) \models P * Q \iff \exists h_1, h_2 \in Heaps. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land (s, h_1) \models P \land (s, h_2) \models Q$$
+$$(s, h) \models P * Q \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land (s, h_1) \models P \land (s, h_2) \models Q$$
 \end{definicion}
-\guido{dar alguna intuicion de por qué el store no se parte?}
+%\guido{dar alguna intuicion de por qué el store no se parte?}
 
-El contraste entre la conjunción clásica ($\land$) y la separadora ($*$) es lo que le otorga a la SL el poder de describir patrones de \emph{aliasing} o separación de forma concisa.
-Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$, la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente, y la aserción $y \mapsto 3, x$.
+\changed{En la fórmula anterior,
+tanto $P$ como $Q$ se comprueban usando el mismo \emph{store}.
+En cambio, cada aserción se comprueba sobre un fragmento diferente del \emph{heap}:
+$P$ sobre $h_1$ y $Q$ sobre $h_2$.
+Esto se debe a que el \emph{store} contiene la asociación entre las variables del programa y sus valores,
+por lo que funciona como un entorno común para evaluar las expresiones de ambas aserciones.
+Por lo tanto, la separación se aplica solo al \emph{heap},
+cuyas celdas se distribuyen entre fragmentos disjuntos.}
+
+La diferencia entre la conjunción clásica ($\land$) y la separadora ($*$)
+\changed{determina cómo se combinan los fragmentos de \emph{heap} descritos por las aserciones.}
+\changed{Para simplificar la ilustración,
+en este ejemplo utilizamos la notación abreviada $x \mapsto 3, y$
+para representar un bloque de dos celdas consecutivas:
+la primera contiene el valor 3 y la segunda contiene el valor almacenado en $y$.
+Esta notación se usa solo con fines ilustrativos;
+la definición formal de \emph{points-to} describe una única celda.
+De manera análoga, consideramos la aserción $y \mapsto 3, x$.}
+%Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$,
+%la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente,
+%y la aserción $y \mapsto 3, x$.
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
 \begin{figure}[h]
@@ -1203,10 +1250,17 @@ Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 \label{fig:aserciones}
 \end{figure}
 
-Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$, la conjunción clásica dicta que ambos predicados se cumplen sobre la misma memoria exacta.
-\guido{acá querés decir \emph{\textbf{podría}} cumplirse sobre la misma memoria exacta, no?
-nada dicta que tenga que ser así}
-Físicamente, esto es posible si $x$ e $y$ son exactamente el mismo puntero, como se muestra en la \autoref{fig:conjuncion-clasica}.
+Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$,
+\changed{la conjunción clásica exige que ambas se evalúen sobre el mismo \emph{heap}.
+Por lo tanto, la aserción completa solo se satisface si existe un único \emph{heap}
+sobre el cual se cumplen simultáneamente ambos predicados.
+La conjunción clásica no impone, sin embargo,
+que los fragmentos descritos sean disjuntos.}
+%\guido{acá querés decir \emph{\textbf{podría}} cumplirse sobre la misma memoria exacta, no?
+%nada dicta que tenga que ser así}
+\changed{En este ejemplo, ambas aserciones podrían satisfacerse si $x$ e $y$ almacenaran la misma dirección de memoria,
+de modo que describen el mismo bloque,}
+como se muestra en la \autoref{fig:conjuncion-clasica}.
 
 \begin{figure}[h]
   \centering
@@ -1250,9 +1304,12 @@ Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estruct
 \label{fig:conjuncion-separadora}
 \end{figure}
 
-Luego, la prohibición de \emph{aliasing} indeseado queda construida a nivel lógico.
-\guido{al principio dijimos ``la SL tiene el poder de describir patrones de aliasing [...] de forma concisa'', pero creo que lo importante es la prohibicion del aliasing por defecto. De hecho
-expresar aliasing cuando uno sí lo quiere es un garrón}
+\changed{El ejemplo muestra que la conjunción separadora impone, por defecto,
+la ausencia de \emph{aliasing} entre los fragmentos de memoria que combina.
+De este modo, una prueba no necesita expresar por separado que
+una modificación realizada sobre uno de esos fragmentos no afectará al otro.}
+%\guido{al principio dijimos ``la SL tiene el poder de describir patrones de aliasing [...] de forma concisa'', pero creo que lo importante es la prohibicion del aliasing por defecto. De hecho
+%expresar aliasing cuando uno sí lo quiere es un garrón}
 
 \begin{lema}[Propiedades de la conjunción separadora]
 Para todas las aserciones espaciales $P$, $Q$ y $R$:
@@ -1264,72 +1321,108 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
 \end{lema}
 
 \subsection*{El lenguaje imperativo extendido}
-Para poder operar sobre este nuevo modelo de memoria, la SL extiende el lenguaje de programación imperativo clásico con cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
+\changed{Las aserciones anteriores permiten describir fragmentos del \emph{heap},
+pero todavía es necesario extender el lenguaje de comandos para poder operar sobre esa memoria.}
+Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
 \begin{enumerate}
   \item \textbf{Alocación (allocation):}
   $$v := \texttt{cons}(e_1, \ldots, e_n)$$
-  reserva $n$ celdas consecutivas del heap y guarda la dirección base en la variable $v$.
+  reserva $n$ celdas consecutivas en el \emph{heap},
+  almacena en ellas los valores obtenidos al evaluar $e_1, \ldots, e_n$
+  y guarda la dirección de la primera celda en la variable $v$.
   \item \textbf{Lectura (lookup):}
   $$v := [e]$$
-  lee el valor guardado en la dirección de memoria $e$ del heap y lo guarda en el store en la variable $v$.
+  evalúa $e$ para obtener una dirección de memoria,
+  lee el valor guardado en esa dirección y lo guarda en la variable $v$.
   \item \textbf{Mutación (mutation):}
   $$[e] := e'$$
-  sobrescribe el contenido del heap en la dirección $e$ con el nuevo valor $e'$.
+  evalúa $e$ para obtener una dirección de memoria
+  y sobrescribe el contenido de esa celda con el valor obtenido al evaluar $e'$.
   \item \textbf{Liberación (deallocation):}
   $$\texttt{dispose} \ e$$
-  invalida y libera la dirección de memoria $e$, eliminándola del dominio del heap activo.
+  evalúa $e$ para obtener una dirección de memoria
+  y elimina del \emph{heap} la celda ubicada en esa dirección.
 \end{enumerate}
 
 \subsection*{Razonamiento local y la Regla del Marco}
-La capacidad de describir porciones disjuntas de memoria da lugar al principio más importante de esta teoría en lo que respecta a la especificación de programas, el razonamiento local.
-Según \citet{sl}, para entender cómo funciona un programa, debe ser posible que el razonamiento y la especificación se limiten a las celdas de memoria que el programa realmente accede.
-El valor de cualquier otra celda permanecerá automáticamente sin cambios.
+La posibilidad de describir fragmentos disjuntos del \emph{heap}
+permite formular el principio de razonamiento local.
+Este principio establece que,
+para razonar sobre un comando,
+basta considerar las celdas de memoria que el comando puede utilizar.
+Las celdas adicionales, siempre que sean disjuntas del fragmento considerado,
+no necesitan describirse.
+Si el comando no las utiliza, permanecen inalteradas durante la ejecución.
 
 \begin{ejemplo}
 La tripleta
 $$\triple{x \mapsto v}{[x] := w}{x \mapsto w}$$
 describe localmente una escritura en memoria.
-La precondición contiene solo la celda a la que se accede, y la postcondición describe su nuevo valor.
+La precondición contiene solo la celda a la que se accede,
+y la postcondición describe su nuevo valor.
 
-Supongamos ahora que el programa se ejecuta en un heap más grande que contiene además una celda independiente $y \mapsto u$.
+Supongamos ahora que el programa se ejecuta en un \emph{heap} más grande
+que contiene además el fragmento independiente descrito por $y \mapsto u$.
 La escritura mediante $x$ no debería modificar esta segunda celda.
 Por lo tanto, debería ser posible obtener:
 $$\triple{x \mapsto v * y \mapsto u}{[x] := w}{x \mapsto w * y \mapsto u}$$
 \end{ejemplo}
 
-Este principio se materializa mediante la Regla del Marco (\textit{Frame Rule}), que permite razonar exclusivamente sobre la parte de la memoria que un comando realmente modifica, ignorando el resto del heap.
+Este principio se materializa mediante la Regla del Marco (\textit{Frame Rule}),
+que permite razonar sobre la parte de la memoria que interviene en la ejecución,
+sin necesidad de describir el resto del \emph{heap}.
 
-Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando, definimos la Regla del Marco como:
+Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando,
+definimos la Regla del Marco como:
 
-\[
-    \frac{\vdash_{\mathrm{SL}} \triple{P}{C}{Q} \quad \operatorname{mod}(C) \cap \operatorname{fv}(R) = \varnothing}
-         {\vdash_{\mathrm{SL}} \triple{P * R}{C}{Q * R}}
-\]
+\begin{mathpar}
+\inferrule []
+  {\vdash_{\mathrm{SL}} \triple{P}{C}{Q} \\ \operatorname{mod}(C) \cap \operatorname{fv}(R) = \varnothing}
+  {\vdash_{\mathrm{SL}} \triple{P * R}{C}{Q * R}}
+\end{mathpar}
 
-En la condición lateral tenemos $\operatorname{mod}(C)$, el conjunto de variables del \emph{store} que pueden ser modificadas por $C$, y $\operatorname{fv}(R)$, el conjunto de variables libres de la aserción $R$.
-Esta condición garantiza que $C$ no modifique ninguna variable de las que depende $R$, de modo que este recurso siga describiendo el mismo fragmento de memoria después de ejecutar $C$.
+En la condición lateral tenemos $\operatorname{mod}(C)$,
+el conjunto de variables del \emph{store} que pueden ser modificadas por $C$,
+y $\operatorname{fv}(R)$, el conjunto de variables libres de la aserción $R$.
+Esta condición garantiza que $C$ no modifique ninguna variable de las que depende $R$,
+de modo que $R$ siga describiendo el mismo fragmento de memoria después de ejecutar $C$.
 
-Esta regla formaliza la intuición de la localidad.
-Si un programa funciona correctamente sobre un fragmento del \emph{heap}, entonces seguirá funcionando de la misma manera si agregamos un recurso ajeno $R$ que no interfiere en la ejecución.
-La SL garantiza que el recurso $R$ quedará inalterado, permitiendo razonar sobre sistemas complejos a través de componentes más simples.
-Su fundamento semántico es la propiedad de localidad, que establece que una ejecución sobre un fragmento de \emph{heap} puede extenderse con memoria disjunta que permanece inalterada.
+Por ejemplo, si $R$ es la aserción $x \mapsto 1$ y el comando es $C \equiv x := 3$,
+entonces $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
+Por lo tanto, la condición lateral no se cumple y la Regla del Marco no puede aplicarse.
+Esto es necesario porque modificar $x$ puede cambiar la dirección de memoria descrita por $R$,
+aunque el comando no modifique directamente el \emph{heap}.
+
+El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica operacional.
 
 \begin{lema}[Localidad operacional]
 \label{lem:localidad}
-Sean $C$ un comando, $\epsilon$ una condición de salida, $h$ y $h'$ los \emph{heaps} inicial y final de una ejecución y, $h_f$ un fragmento adicional.
+Sean $C$ un comando, $\varepsilon$ un modo de terminación,
+$s$ y $s'$ los \emph{stores} inicial y final,
+$h$ y $h'$ los \emph{heaps} inicial y final de una ejecución,
+y $h_f$ un fragmento adicional.
 Si
-$$((s, h), (s', h')) \in [\![C]\!]_\epsilon \land h \perp h_f \land h' \perp h_f$$
+$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f$$
 entonces
-$$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\epsilon$$
+$$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
 \end{lema}
 
-El Lema~\ref{lem:localidad} establece que el mismo fragmento $h_f$ puede agregarse a los estados inicial y final sin alterar la ejecución local.
-El comando transforma el \emph{heap} $h$ en $h'$, mientras que $h_f$ no se modifica.
+El lema establece que,
+si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
+y el fragmento adicional $h_f$ es disjunto de ambos,
+la ejecución puede extenderse al \emph{heap} inicial $h \uplus h_f$.
+En ese caso,
+el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
+mientras que $h_f$ permanece sin modificaciones.
 
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
-Sin embargo, combinar su modelo clásico de \emph{heap} con la subaproximación de la IL presenta una dificultad.
-En la semántica tradicional, la liberación de una celda elimina el recurso correspondiente del \emph{heap}.
-Al aplicar la Regla del Marco en un sistema subaproximado, esta desaparición puede transformar una presunción inconsistente en un resultado satisfacible, violando la garantía de alcanzabilidad establecida por el Teorema de Soundness~\ref{teo:sound-il}.
+Sin embargo, la combinación directa de este razonamiento con la subaproximación de la IL plantea una dificultad.
+En la semántica de la SL, la liberación de una celda elimina esa celda del \emph{heap}.
+En un sistema subaproximado,
+esta pérdida de información puede hacer que una postcondición resulte satisfacible
+aunque la precondición no describa ningún resultado,
+lo que contradice la exigencia de que los estados descritos por la postcondición sean alcanzables.
+Esta dificultad motiva la extensión de la SL con los mecanismos que se presentan en la siguiente sección.
 
 \section{Lógica de Incorrectitud de Separación (ISL)}
 \label{sec:logincsep}

@@ -433,7 +433,7 @@ introducimos la noción de derivabilidad.}
 \label{def:deriv-hl}
 Escribimos
 $$\vdash_{\mathrm{HL}} \triple{p}{C}{q}$$
-cuando la tripleta puede obtenerse mediante una derivación finita construida utilizando los axiomas y las reglas de inferencia de la HL.
+cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de los axiomas y las reglas de inferencia de la HL.
 \end{definicion}
 
 \changed{Esta noción permite distinguir entre la validez semántica de una tripleta y
@@ -445,9 +445,9 @@ Este establece que:
 \begin{mathpar}
 \inferrule []
   {}
-  {\vdash_{\mathrm{HL}} \triple{p[e / x]}{x := e}{p},}
+  {\vdash_{\mathrm{HL}} \triple{q[e / x]}{x := e}{q},}
 \end{mathpar}
-donde la expresión $p[e / x]$ representa la sustitución de las apariciones libres de $x$ en $p$ por la expresión $e$.}
+donde la expresión $q[e / x]$ representa la sustitución de las apariciones libres de $x$ en $q$ por la expresión $e$.}
 
 \changed{Este axioma de asignación permite obtener una tripleta cuya postcondición se elige de antemano y
 cuya precondición queda determinada por la sustitución de la expresión asignada en dicha postcondición.
@@ -492,7 +492,7 @@ Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distin
 %analizadores estaticos. Y putean porque marcan demasiados falsos positivos y los terminan
 %ignorando. Aca nos interesa eliminar este ultimo problema.}
 
-La Lógica de Incorrectitud (IL), introducida por \citet{inclog},
+La IL, introducida por \citet{inclog},
 parte del mismo marco relacional, pero cambia el objetivo del razonamiento:
 en lugar de demostrar que ciertos comportamientos no pueden ocurrir,
 busca demostrar que resultados determinados son alcanzables mediante ejecuciones reales.
@@ -807,10 +807,10 @@ $$\exists x'. \; x' > 0 \land x = x' + 2,$$
 que es equivalente a $x > 2$.
 
 Por su parte, la regla \textsc{Nondet} modela una asignación de un valor arbitrario.
-En este caso, la variable auxiliar $x'$ representa el valor que tenía $x$ antes de la asignación.
+Al igual que en la regla anterior, la variable auxiliar $x'$ representa el valor que tenía $x$ antes de la asignación.
 Al cuantificar existencialmente ese valor,
 la regla elimina de la postcondición las restricciones que dependían del valor anterior de $x$.
-Esto significa que el nuevo valor de $x$ puede ser cualquiera y no depende del valor que tenía antes de la asignación.
+Esto significa que el nuevo valor de $x$ puede ser cualquiera y no depende del valor que tenía antes.
 
 El lenguaje utilizado incluye el operador de iteración de Kleene,
 denotado por $C^\star$.
@@ -948,7 +948,7 @@ y la tripleta no es válida.
 
 Una postcondición subaproximada válida debe conservar las condiciones que justifican la ejecución de la asignación.
 Por ejemplo:
-$$\itriple{z = 11}{C}{ok: z = 42 \land (x \mod 2 = 0) \land (y \mod 2 \ne 0)}$$
+$$\itriple{z = 11}{C}{ok: z = 42 \land (x \bmod 2 = 0) \land (y \bmod 2 \ne 0)}$$
 \end{ejemplo}
 
 \subsection*{Razonamiento sobre bucles}
@@ -985,7 +985,7 @@ exigida por la interpretación subaproximada de las tripletas.
 Este razonamiento permite resumir los estados alcanzables tras múltiples iteraciones exitosas
 y combinarlos con un paso final que termina con error.
 
-\subsection*{Solidez de la IL}
+\subsection*{Teorema de Soundness de la IL}
 La relación entre las reglas deductivas y la semántica operacional se establece mediante el Teorema de Soundness.
 Este resultado garantiza que toda tripleta derivable en la IL es semánticamente válida.
 
@@ -1035,7 +1035,7 @@ Aunque estas herramientas son anteriores a la introducción de la IL
 y no constituyen implementaciones directas de esta lógica,
 sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
 
-Una evidencia más directa sobre la aplicabilidad de la IL y la ISL es el desarrollo de Pulse-X~\cite{bugs}.
+Una evidencia más directa sobre la aplicabilidad de la IL es el desarrollo de Pulse-X~\cite{bugs}.
 En su evaluación sobre OpenSSL,
 un proyecto de código abierto que proporciona bibliotecas y herramientas criptográficas para comunicaciones seguras,
 encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
@@ -1079,7 +1079,7 @@ Denotamos por $\operatorname{dom}(h)$ el conjunto de direcciones para las cuales
 
 Un estado espacial es un par:
 $$\sigma = (s, h) \in \mathsf{Store} \times \mathsf{Heap},$$
-donde $s$ representa el \emph{store} y $h$ el \emph{heap}.
+donde $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
 Las aserciones de la SL se interpretan sobre estados espaciales.
 \changed{Formalmente, una aserción espacial es un predicado}
 $$P : \mathsf{Store} \times \mathsf{Heap} \rightarrow \mathsf{Prop}.$$
@@ -1110,12 +1110,17 @@ especialmente en estructuras de datos enlazadas~\cite{bttf}.}
 %sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
 
 \subsection*{La conjunción separadora y aserciones espaciales}
-Para definir la conjunción separadora,
-es necesario especificar cuándo dos \emph{heaps} pueden combinarse sin compartir direcciones de memoria.
+El problema del \emph{aliasing} también afecta la forma de combinar aserciones.
+Si dos aserciones describen distintas celdas de memoria,
+se debe poder expresar que cada una se refiere a su propio fragmento del \emph{heap} y que dichos fragmentos no comparten direcciones.
+Para formalizar esta idea,
+primero definimos cuándo dos \emph{heaps} son disjuntos
+y cómo pueden combinarse cuando cumplen esta propiedad.
 
-\begin{definicion}[Disjunción de \emph{heaps}]
+\begin{definicion}[\emph{Heaps} disjuntos]
 \label{def:disj_heaps}
-Dos \emph{heaps} $h_1$ y $h_2$ son disjuntos,
+Sean $h_1, h_2 \in \mathsf{Heap}$.
+Decimos que $h_1$ y $h_2$ son disjuntos,
 lo que denotamos mediante $h_1 \perp h_2$,
 si sus dominios no comparten ninguna dirección:
 $$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing$$
@@ -1129,7 +1134,7 @@ sus contenidos pueden combinarse en un único \emph{heap} sin generar conflictos
 Esta operación se denomina \emph{unión disjunta}.}
 
 \begin{definicion}[Unión disjunta]
-Sean $h_1$ y $h_2$ dos \emph{heaps} disjuntos.
+Sean $h_1, h_2 \in \mathsf{Heap}$ y disjuntos.
 Su unión disjunta, denotada por $h_1 \uplus h_2$,
 es el \emph{heap} cuyo dominio es
 $$\operatorname{dom}(h_1 \uplus h_2) = \operatorname{dom}(h_1) \cup \operatorname{dom}(h_2)$$
@@ -1151,7 +1156,8 @@ Entre las más importantes se encuentran $\mathsf{emp}$, \emph{points-to} y la c
 
 \begin{definicion}[\emph{Heap} vacío]
 \label{def:heap_vacio}
-La aserción $\mathsf{emp}$ se satisface cuando el \emph{heap} no contiene ninguna celda:
+Sean $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
+La aserción $\mathsf{emp}$ se satisface cuando el $h$ no contiene ninguna celda:
 $$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \varnothing$$
 \end{definicion}
 
@@ -1161,10 +1167,10 @@ Esta distinción resulta útil porque las aserciones de SL describen recursos lo
 
 \begin{definicion}[Points-to]
 \label{def:points_to}
-Sean $e_1$ y $e_2$ expresiones del programa que se evalúan en un \emph{store} $s$.
+Sea $s \in \mathsf{Store}$ y sean $e_1$ y $e_2$ expresiones del programa que se evalúan en $s$.
 La aserción
 $$e_1 \mapsto e_2$$
-se satisface cuando el \emph{heap} contiene exactamente una celda,
+se satisface cuando $h \in \mathsf{Heap}$ contiene exactamente una celda,
 cuya dirección es el resultado de evaluar $e_1$ en $s$ y cuyo contenido es el resultado de evaluar $e_2$ en $s$.
 Formalmente:
 $$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \;
@@ -1187,10 +1193,10 @@ Para describir otras celdas independientes pueden agregarse nuevas aserciones me
 
 \begin{definicion}[Conjunción separadora]
 \label{def:sep-conj}
-Sean $P$ y $Q$ dos aserciones espaciales.
+Sean $P$ y $Q$ dos aserciones espaciales, $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
 El estado $(s, h)$ satisface la conjunción separadora
 $$P * Q$$
-si el \emph{heap} $h$ puede dividirse en dos fragmentos disjuntos $h_1$ y $h_2$, de modo que $P$ se satisface sobre $h_1$ y $Q$ se satisface sobre $h_2$.
+si $h$ puede dividirse en dos fragmentos disjuntos $h_1$ y $h_2$, de modo que $P$ se satisface sobre $h_1$ y $Q$ se satisface sobre $h_2$.
 Formalmente:
 $$(s, h) \models P * Q \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land (s, h_1) \models P \land (s, h_2) \models Q$$
 \end{definicion}
@@ -1326,22 +1332,17 @@ pero todavía es necesario extender el lenguaje de comandos para poder operar so
 Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
 \begin{enumerate}
   \item \textbf{Alocación (allocation):}
-  $$v := \texttt{cons}(e_1, \ldots, e_n)$$
-  reserva $n$ celdas consecutivas en el \emph{heap},
-  almacena en ellas los valores obtenidos al evaluar $e_1, \ldots, e_n$
-  y guarda la dirección de la primera celda en la variable $v$.
+  $$x := \mathsf{alloc}()$$
+  reserva una nueva celda y almacena su dirección en $x$.
   \item \textbf{Lectura (lookup):}
-  $$v := [e]$$
-  evalúa $e$ para obtener una dirección de memoria,
-  lee el valor guardado en esa dirección y lo guarda en la variable $v$.
+  $$x := [y]$$
+  lee el valor guardado en la dirección apuntada por $y$ y lo asigna a $x$.
   \item \textbf{Mutación (mutation):}
-  $$[e] := e'$$
-  evalúa $e$ para obtener una dirección de memoria
-  y sobrescribe el contenido de esa celda con el valor obtenido al evaluar $e'$.
+  $$[x] := y$$
+  sobrescribe el contenido de la celda apuntada por $x$ con el valor de $y$.
   \item \textbf{Liberación (deallocation):}
-  $$\texttt{dispose} \ e$$
-  evalúa $e$ para obtener una dirección de memoria
-  y elimina del \emph{heap} la celda ubicada en esa dirección.
+  $$\mathsf{free}(x)$$
+  libera la celda ubicada en la dirección apuntada por $x$.
 \end{enumerate}
 
 \subsection*{Razonamiento local y la Regla del Marco}
@@ -1374,7 +1375,6 @@ sin necesidad de describir el resto del \emph{heap}.
 
 Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando,
 definimos la Regla del Marco como:
-
 \begin{mathpar}
 \inferrule []
   {\vdash_{\mathrm{SL}} \triple{P}{C}{Q} \\ \operatorname{mod}(C) \cap \operatorname{fv}(R) = \varnothing}
@@ -1400,7 +1400,7 @@ El siguiente lema expresa formalmente la propiedad de localidad asociada a la Re
 Sean $C$ un comando, $\varepsilon$ un modo de terminación,
 $s$ y $s'$ los \emph{stores} inicial y final,
 $h$ y $h'$ los \emph{heaps} inicial y final de una ejecución,
-y $h_f$ un fragmento adicional.
+y $h_f \in \mathsf{Heap}$ un fragmento adicional.
 Si
 $$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f$$
 entonces
@@ -1416,129 +1416,164 @@ el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
 mientras que $h_f$ permanece sin modificaciones.
 
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
-Sin embargo, la combinación directa de este razonamiento con la subaproximación de la IL plantea una dificultad.
-En la semántica de la SL, la liberación de una celda elimina esa celda del \emph{heap}.
-En un sistema subaproximado,
-esta pérdida de información puede hacer que una postcondición resulte satisfacible
-aunque la precondición no describa ningún resultado,
-lo que contradice la exigencia de que los estados descritos por la postcondición sean alcanzables.
-Esta dificultad motiva la extensión de la SL con los mecanismos que se presentan en la siguiente sección.
+Sin embargo, cuando se libera memoria, en el modelo clásico,
+no se conserva una marca que indique este cambio.
+Esta limitación resulta relevante al combinar el razonamiento local de la SL con la subaproximación de la IL.
+La siguiente sección presenta la ISL y los mecanismos que permiten resolver esta incompatibilidad.
 
 \section{Lógica de Incorrectitud de Separación (ISL)}
 \label{sec:logincsep}
-La SL proporciona técnicas novedosas para el razonamiento local, permitiendo que la verificación formal escale a bases de código muy grandes.
-Por su lado, la IL permite demostrar la alcanzabilidad de estados concretos mediante subaproximación.
-La Lógica de Incorrectitud de Separación, introducida por \citet{isl} fusiona el razonamiento local proporcionado por la conjunción separadora y la Regla del Marco de la SL con las tripletas de sub-aproximación de la IL.
+La ISL,
+introducida por \citet{isl}, combina los dos enfoques presentados anteriormente.
+De la IL toma la interpretación subaproximada,
+que permite respaldar los estados finales mediante ejecuciones reales.
+De la SL toma la representación explícita del \emph{heap} y el razonamiento local mediante la conjunción separadora y la Regla del Marco.
 
-Una tripleta de la ISL conserva la forma presentada para la IL:
-$\itriple{p}{C}{\epsilon : q}$
-, pero ahora $p$ y $q$ son aserciones espaciales sobre estados compuestos por un \emph{store} y un \emph{heap}.
+Las tripletas de la ISL conservan la forma presentada para la IL:
+$$\itriple{p}{C}{\varepsilon : q},$$
+pero ahora $p$ y $q$ son aserciones espaciales que describen conjuntos de estados compuestos por un \emph{store} y un \emph{heap}.
 Su interpretación semántica sigue siendo subaproximada:
-$$\models_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \iff \forall \sigma_q \in q. \; \exists \sigma_p \in p. \; (\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$$
+$$\models_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \iff
+\forall \sigma_q \in q. \; \exists \sigma_p \in p. \; (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon$$
 Por lo tanto, todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
 
 \subsection*{Heaps negativos}
-Intentar construir la ISL combinando linealmente la semántica de la SL tradicional y la IL produce un sistema inválido.
-En el modelo clásico de la SL, la operación de liberación ($\mathsf{free}$) remueve la locación del \emph{heap}, haciendo que el estado vuelva a ser una porción vacía.
-Si intentamos aplicar la Regla de Marco bajo el pensamiento de subaproximación, el sistema colapsa porque nos permite deducir un estado final válido partiendo de una precondición imposible.
+Intentar construir la ISL combinando directamente la semántica de la SL tradicional
+con la subaproximación de la IL produce un sistema inválido.
+En la semántica de la SL,
+liberar una celda elimina del \emph{heap} la dirección que ocupaba.
+De este modo, el \emph{heap} deja de tener información sobre el hecho de que esa dirección fue liberada.
+Esta pérdida de información resulta problemática para la interpretación subaproximada,
+porque puede permitir derivar una postcondición satisfacible a partir de una precondición que ningún estado satisface.
 
-En el modelo clásico de la SL, la regla local para liberar una celda puede expresarse como:
-$$\itriple{x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp}}$$
-La celda desaparece del \emph{heap} después de ser liberada.
+En el modelo clásico de la SL,
+la regla local para liberar una celda puede expresarse como:
+$$\itriple{x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp}},$$
+donde la notación $x \mapsto -$ representa una celda ubicada en la dirección almacenada en $x$,
+cuyo contenido no es relevante para el razonamiento.
 
 Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda descrita por $x \mapsto -$:
+\begin{mathpar}
+\inferrule []
+  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp}}}
+  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp} * x \mapsto -}}
+\end{mathpar}
 
-\[
-    \frac{\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp}}}{\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\mathsf{free}(x)}{ok : \mathsf{emp} * x \mapsto -}}
-\]
-La presunción $x \mapsto - * x \mapsto -$ es inconsistente porque exige que dos fragmentos disjuntos posean la misma dirección.
+La precondición $x \mapsto - * x \mapsto -$ es inconsistente porque exige que dos fragmentos disjuntos posean la misma dirección.
 No existe ningún estado que la satisfaga.
-Sin embargo, el resultado $\mathsf{emp} * x \mapsto -$ es satisfacible.
-Esto produciría una tripleta que pretende alcanzar un estado real a partir de un conjunto vacío de estados iniciales, contradiciendo la interpretación subaproximada.
+Sin embargo, la postcondición $\mathsf{emp} * x \mapsto -$ es satisfacible.
+Esto produciría una tripleta con una precondición inconsistente y una postcondición satisfacible.
+Por lo tanto, parecería existir un estado final alcanzable aunque no hubiera ningún estado inicial desde el cual ejecutar el comando.
 
-El problema no pertenece a la IL en sí misma, sino a la combinación directa de la subaproximación, la semántica clásica de liberación y la Regla del Marco.
+El problema no pertenece a la IL en sí misma,
+sino a la combinación directa de la subaproximación,
+la semántica clásica de liberación y la Regla del Marco.
 El modelo clásico no permite distinguir entre una dirección sobre la cual no se posee información y una dirección que se sabe que fue liberada.
 Esta distinción es la que introducen los \emph{heaps} negativos.
 
 \begin{definicion}[\emph{Heap} extendido]
 \label{def:heap_ext}
-Sean $\mathsf{Loc}$ el conjunto de ubicaciones de memoria y $\mathsf{Val}$ el conjunto de valores.
-Un \emph{heap} de la ISL es una función parcial finita:
-$$h : \mathsf{Loc} \rightharpoonup (\mathsf{Val} \cup \{\perp\})$$,
-donde:
+Un \emph{heap} de la ISL,
+que denotamos $\mathsf{HeapExt}$,
+es una función parcial finita:
+$$\mathsf{HeapExt} = \mathsf{Loc} \rightharpoonup (\mathsf{Val} \cup \{\bot\}),$$
+donde si $h \in \mathsf{HeapExt}$:
 \begin{itemize}
-    \item $h(\ell) = v$ indica que $\ell$ se encuentra asignada y contiene $v$;
-    \item $h(\ell) = \perp$ indica que $\ell$ fue liberada y todavía no fue reasignada;
-    \item $\ell \notin \operatorname{dom}(h)$ indica que la aserción no posee información sobre esa ubicación.
+  \item $h(\ell) = v$ indica que $\ell$ se encuentra asignada y contiene $v$;
+  \item $h(\ell) = \bot$ indica que $\ell$ fue liberada y todavía no fue reasignada;
+  \item $\ell \notin \operatorname{dom}(h)$ indica que el \emph{heap} no posee información sobre esa dirección.
 \end{itemize}
 \end{definicion}
-
-El símbolo $\perp$ no representa una dirección inexistente.
-Representa una dirección conocida cuya celda se encuentra actualmente liberada.
 
 \begin{definicion}[\emph{Heap} negativo]
 \label{def:heap_negativo}
 La aserción:
 $$e \nmapsto$$
-se satisface cuando el \emph{heap} está formado por una celda liberada ubicada en la dirección indicada por $e$:
-$$(s,h) \models e \nmapsto \iff \exists \ell \in \mathsf{Loc}. \; [\![e]\!]_s = \ell \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = \perp$$
+se satisface cuando el \emph{heap} está formado por una celda liberada ubicada en la dirección indicada por $e$.
+Formalmente, sean $s \in \mathsf{Store}$ y $h \in \mathsf{HeapExt}$:
+$$(s,h) \models e \nmapsto \iff \exists \ell \in \mathsf{Loc}. \;
+[\![e]\!]_s = \ell \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = \bot$$
 \end{definicion}
 
-Por lo tanto, $e \nmapsto$ expresa que la dirección almacenada en $e$:
+Por lo tanto,
+$e \nmapsto$ expresa que la dirección almacenada en $e$:
 \begin{enumerate}
-    \item es una ubicación conocida;
-    \item fue liberada;
-    \item todavía no fue reasignada.
+  \item es una dirección conocida;
+  \item fue liberada;
+  \item todavía no fue reasignada.
 \end{enumerate}
-Esta aserción se puede leer como que la ubicación de memoria indicada por $e$ se encuentra invalidada.
 
-Si volvemos a aplicar la Regla del Marco, el \emph{heap} negativo se arrastra hasta el final y contamina el resultado.
-Luego, la regla local de liberación se convierte en:
+A diferencia del modelo clásico,
+la representación mediante \emph{heaps} negativos conserva en el \emph{heap} la información de que una celda fue liberada.
+Por lo tanto, al extender nuevamente la precondición con el mismo marco,
+esa información también se conserva en la postcondición.
+En este modelo, la regla local de liberación se expresa como:
 $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\mathsf{free}(x)}{ok : x \nmapsto}$$
 
 Al aplicar otra vez el marco $x \mapsto -$ obtenemos:
 $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\mathsf{free}(x)}{ok : x \nmapsto * x \mapsto -}$$
-La presunción sigue siendo inconsistente, pero ahora el resultado también, ya que la misma dirección pertenece a dos \emph{heaps} disjuntos, estando liberada en uno y asignada en el otro.
+La precondición sigue siendo inconsistente,
+pero ahora la postcondición también lo es,
+ya que la misma dirección pertenece a dos \emph{heaps} disjuntos,
+estando liberada en uno y activa en el otro.
 Por lo tanto, la conclusión es semánticamente válida:
-$$\varnothing \subseteq post_{ok}(\mathsf{free}(x))(\varnothing)$$
-Los \emph{heaps} negativos impiden que la Regla del Marco transforme una presunción inconsistente en un resultado satisfacible.
+$$\varnothing \subseteq post_{ok}(\mathsf{free}(x))(\varnothing).$$
+De este modo,
+los \emph{heaps} negativos impiden que la Regla del Marco transforme una precondición inconsistente en una postcondición satisfacible.
+El efecto puede resumirse en la \autoref{tab:frame-table2}:
+\begin{table}[ht]
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    Modelo
+    & Precondición
+    & Comando
+    & Postcondición \\
+    \midrule
 
-Representamos el efecto del \emph{heap} negativo en la \autoref{tab:frame-table2}:
-\begin{table}[htbp]
-\centering
-\[
-\begin{aligned}
-    &\text{\small Presunción inconsistente} && \text{\small Comando} && \text{\small Resultado satisfacible} \\
-    &[x \mapsto - \ * \ x \mapsto -] && \mathsf{free}(x) && [\mathsf{emp} \ * \ x \mapsto-] \\
-    & && && \\
-    &\text{\small Presunción inconsistente} && \text{\small Comando} && \text{\small Resultado inconsistente} \\
-    &[x \mapsto - \ * \ x \mapsto -] && \mathsf{free}(x) && [x \nmapsto \ * \ x \mapsto-]
-\end{aligned}
-\]
-\caption{Preservación de la inconsistencia mediante \emph{heaps} negativos.}
-\label{tab:frame-table2}
+    Semántica clásica
+    & $[x \mapsto - \ * \ x \mapsto -]$
+    & $\mathsf{free}(x)$
+    & $[\mathsf{emp} \ * \ x \mapsto -]$ \\
+
+    \emph{Heaps} negativos
+    & $[x \mapsto - \ * \ x \mapsto -]$
+    & $\mathsf{free}(x)$
+    & $[x \nmapsto \ * \ x \mapsto -]$ \\
+
+    \bottomrule
+  \end{tabular}
+  \caption{Preservación de la inconsistencia mediante \emph{heaps} negativos.}
+  \label{tab:frame-table2}
 \end{table}
 
-La conservación de las celdas liberadas produce una propiedad fundamental del modelo de la ISL.
+La conservación en el dominio de las direcciones liberadas conduce a la siguiente propiedad del modelo de la ISL.
 
 \begin{lema}[Monotonía del \emph{heap}]
 \label{lem:monotonia}
-Para todo comando $C$, canal de salida $\epsilon$ y transición $((s, h), (s', h')) \in [\![C]\!]_\epsilon$, se cumple:
+Para todo comando $C$,
+modo de terminación $\varepsilon$ y transición $((s, h), (s', h')) \in [\![C]\!]_\varepsilon$,
+se cumple:
 $$\operatorname{dom}(h) \subseteq \operatorname{dom}(h')$$
 \end{lema}
 
-Esto quiere decir que una ubicación conocida al comienzo de una ejecución sigue siendo conocida cuando esta finaliza.
+Esto quiere decir que una dirección conocida al comienzo de una ejecución sigue siendo conocida cuando esta finaliza.
 
 La monotonía puede observarse en las operaciones básicas:
 \begin{itemize}
-    \item una asignación sobre una dirección nueva amplía el dominio;
-    \item una lectura o escritura conserva el dominio;
-    \item una liberación transforma $v$ en $\perp$, pero no elimina la dirección;
-    \item una reasignación transforma $\perp$ a un valor, pero tampoco modifica el dominio
+  \item una alocación sobre una dirección nueva amplía el dominio;
+  \item una lectura o una escritura conserva el dominio;
+  \item una liberación transforma un valor $v$ en $\bot$,
+  pero no elimina la dirección;
+  \item una nueva alocación sobre una dirección previamente liberada transforma $\bot$ en un valor,
+  pero tampoco modifica el dominio.
 \end{itemize}
-Por lo tanto, el dominio puede crecer o permanecer igual, pero nunca disminuir.
+Por lo tanto, el dominio puede crecer o permanecer igual,
+pero nunca disminuir.
 
-\subsection*{Reglas de Inferencia}
+\subsection*{Reglas de inferencia}
 Las reglas estructurales de la IL se conservan en la ISL.
 La diferencia se encuentra en las que manipulan la memoria dinámica y en la incorporación de la Regla del Marco.
 Estas nuevas reglas se presentan en la \autoref{fig:reglas-isl}.
@@ -1546,48 +1581,48 @@ Estas nuevas reglas se presentan en la \autoref{fig:reglas-isl}.
 \centering
 \begin{mathpar}
 \inferrule [Alloc1]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x = x'}{x := \mathsf{alloc}()}{ok : x \mapsto -}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x = x'}{x := \mathsf{alloc}()}{ok : x \mapsto -}}
 
 \inferrule [Alloc2]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \nmapsto}{x := \mathsf{alloc}()}{ok : x = y * y \mapsto -}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \nmapsto}{x := \mathsf{alloc}()}{ok : x = y * y \mapsto -}}
 
 \inferrule [Free]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x \mapsto e}{\mathsf{free}(x)}{ok : x \nmapsto}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto e}{\mathsf{free}(x)}{ok : x \nmapsto}}
 
 \inferrule [FreeEr]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x \nmapsto}{\mathsf{free}(x)}{er : x \nmapsto}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x \nmapsto}{\mathsf{free}(x)}{er : x \nmapsto}}
 
 \inferrule [FreeNull]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x = \mathsf{null}}{\mathsf{free}(x)}{er : x = \mathsf{null}}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x = \mathsf{null}}{\mathsf{free}(x)}{er : x = \mathsf{null}}}
 
 \inferrule [Load]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \mapsto e}{x := [y]}{ok : x = e[x' / x] * y \mapsto e[x' / x]}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \mapsto e}{x := [y]}{ok : x = e[x' / x] * y \mapsto e[x' / x]}}
 
 \inferrule [LoadEr]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{y \nmapsto}{x := [y]}{er : y \nmapsto}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{y \nmapsto}{x := [y]}{er : y \nmapsto}}
 
 \inferrule [LoadNull]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{y = \mathsf{null}}{x := [y]}{er : y = \mathsf{null}}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{y = \mathsf{null}}{x := [y]}{er : y = \mathsf{null}}}
 
 \inferrule [Store]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x \mapsto e}{[x] := y}{ok : x \mapsto y}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto e}{[x] := y}{ok : x \mapsto y}}
 
 \inferrule [StoreEr]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x \nmapsto}{[x] := y}{er : x \nmapsto}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x \nmapsto}{[x] := y}{er : x \nmapsto}}
 
 \inferrule [StoreNull]
-    {}
-    {\vdash_{\mathrm{ISL}} \itriple{x = \mathsf{null}}{[x] := y}{er : x = \mathsf{null}}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x = \mathsf{null}}{[x] := y}{er : x = \mathsf{null}}}
 
 \end{mathpar}
 \caption{Reglas de inferencia de la ISL. Adaptadas de~\cite{isl}.}
@@ -1616,22 +1651,22 @@ Análogamente a los casos anteriores, \textsc{StoreEr} interrumpe el flujo si la
 
 Con respecto a la Regla del Marco, en la ISL se formaliza de la siguiente manera:
 \begin{equation}
-    \inferrule [Frame]
-    {\vdash_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \ \text{mod}(C) \cap \text{fv}(r) = \varnothing}
-    {\vdash_{\mathrm{ISL}} \itriple{p * r}{C}{\epsilon : q * r}}
+  \inferrule [Frame]
+  {\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \ \text{mod}(C) \cap \text{fv}(r) = \varnothing}
+  {\vdash_{\mathrm{ISL}} \itriple{p * r}{C}{\varepsilon : q * r}}
 \label{eq:frame-isl}
 \end{equation}
 
 A diferencia de la SL tradicional, donde la regla del marco puede aplicarse solo en ejecuciones seguras, en la ISL la regla se aplica de forma idéntica tanto en el canal de éxito como en el de error.
 Gracias a que los \emph{heaps} negativos retienen el espacio de las celdas liberadas, un error local detectado en una parte pequeña de la memoria se propaga al \emph{heap} global a través del marco $r$, garantizando que el \emph{bug} encontrado es real y escalable a sistemas mayores.
 
-\subsection*{Soundness de la ISL}
+\subsection*{Teorema de Soundness de la ISL}
 Al igual que para la IL, expresamos la validez de las reglas deductivas respecto a la semántica con el Teorema de Soundness.
 
-\begin{teorema}[Soundness de la ISL]
+\begin{teorema}[Teorema de Soundness de la ISL]
 \label{teo:sound-isl}
-Para todo comando $C$, aserciones espaciales $p$ y $q$, y canal de salida $\epsilon$:
-$$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q} \implies \models_{\mathrm{ISL}} \itriple{p}{C}{\epsilon : q}$$
+Para todo comando $C$, aserciones espaciales $p$ y $q$, y canal de salida $\varepsilon$:
+$$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}$$
 \end{teorema}
 
 Al igual que en la IL, el teorema establece que las reglas de inferencia de la ISL, incluida la Regla del Marco, no permiten introducir estados finales que no estén respaldados por una ejecución real.
@@ -1682,11 +1717,11 @@ Con esto podemos definir la huella de un comando o \emph{footprint}.
 \begin{definicion}[Huellas]
 \label{def:huella-minima}
 La relación
-$$\operatorname{foot}(C)_\epsilon$$
-está formada por las transiciones de $[\![C]\!]_\epsilon$ que son mínimas respecto del orden $\preceq$.
+$$\operatorname{foot}(C)_\varepsilon$$
+está formada por las transiciones de $[\![C]\!]_\varepsilon$ que son mínimas respecto del orden $\preceq$.
 \end{definicion}
 
-Una transición perteneciente a $\operatorname{foot}(C)_\epsilon$ describe los recursos de memoria necesarios para una ejecución particular del comando.
+Una transición perteneciente a $\operatorname{foot}(C)_\varepsilon$ describe los recursos de memoria necesarios para una ejecución particular del comando.
 No necesariamente existe una única huella para cada comando.
 Un comando con distintas ramas puede tener varias ejecuciones mínimas con requerimientos de memoria distintos.
 Por ejemplo, una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una celda activa en la dirección almacenada en $x$, pero no necesita describir las demás celdas de \emph{heap}.
@@ -1694,18 +1729,18 @@ El resto de la memoria puede incorporarse con un marco.
 
 \begin{teorema}[Teorema de la Huella]
 \label{teo:huella}
-Para todo comando $C$ y toda condición de salida $\epsilon \in \{ok, er\}$,
-$$[\![C]\!]_{\epsilon} = \operatorname{frame}(\operatorname{foot}(C)_\epsilon)$$
+Para todo comando $C$ y toda condición de salida $\varepsilon \in \{ok, er\}$,
+$$[\![C]\!]_{\varepsilon} = \operatorname{frame}(\operatorname{foot}(C)_\varepsilon)$$
 \end{teorema}
 
 La igualdad del Teorema~\ref{teo:huella} junta dos propiedades diferentes.
 En primer lugar, $\operatorname{frame}(\operatorname{foot} \\
-(C)_\epsilon) \subseteq [\![C]\!]_\epsilon$.
+(C)_\varepsilon) \subseteq [\![C]\!]_\varepsilon$.
 Esta inclusión expresa la dirección local a global.
 Toda transición mínima sigue siendo una ejecución válida cuando se le agrega un marco compatible.
 Esta dirección es una aplicación de la propiedad de localidad presentada en el Lema~\ref{lem:localidad}, generalizada en la ISL a los canales de terminación errónea y normal.
 
-En segundo lugar, $[\![C]\!]_\epsilon \subseteq \operatorname{frame}(\operatorname{foot}(C)_\epsilon)$.
+En segundo lugar, $[\![C]\!]_\varepsilon \subseteq \operatorname{frame}(\operatorname{foot}(C)_\varepsilon)$.
 Esta inclusión expresa la dirección global a local.
 Establece que toda ejecución global puede descomponerse en una transición mínima y un marco que permanece sin modificaciones.
 

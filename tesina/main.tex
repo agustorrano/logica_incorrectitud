@@ -46,8 +46,6 @@ Presentamos una formalización de la Lógica de Incorrectitud de Separación uti
 Por el lado teórico, demostramos las metapropiedades fundamentales de la lógica dentro del asistente de pruebas, haciendo especial énfasis en probar su solidez (\textit{soundness}) matemática para asegurar que cada error detectado sea verdaderamente alcanzable.
 Por el lado concreto, utilizamos la lógica formalizada para demostrar la existencia de errores en programas no triviales que hacen uso de estado mutable.
 
-\guido{perfecto el resumen}
-
 \chapter*{Agradecimientos}
 \addcontentsline{toc}{chapter}{Agradecimientos}
 Agradezco a ...
@@ -130,6 +128,7 @@ y hacer que sus advertencias sean ignoradas.
 \changed{Por este motivo,
 las herramientas utilizadas en la práctica deben combinar la rapidez para producir resultados y
 la generación de advertencias respaldadas por errores reales.}
+\guido{``deben'' es un poco fuerte, pero ok}
 Para alcanzar estos objetivos, los analizadores suelen ajustar sus heurísticas de manera \emph{ad-hoc},
 sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
 %La experiencia de Facebook constituye un antecedente de una perspectiva diferente:
@@ -152,7 +151,9 @@ La versión original de la Lógica de Incorrectitud (IL) presentada por O'Hearn 
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
 pero sin un \emph{heap}.
 Por lo tanto, no permite razonar sobre memoria dinámica y estructuras de datos mutables.
-En el ámbito de la correctitud, la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
+En el ámbito de la correctitud, la SL
+\guido{recordaría la defn de ``SL'' una vez más acá}
+fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \guido{OK}
@@ -307,6 +308,8 @@ $$\operatorname{post}(R)(p) = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \
 
 Este conjunto contiene exactamente los estados relacionados mediante $R$ con algún estado perteneciente a $p$.
 \end{definicion}
+\guido{no se usa la preimagen? si se usa, por ahi conviene
+definirla acá}
 
 \begin{lema}(Propiedades de la postimagen)
 \label{lem:prop-pi}
@@ -319,6 +322,7 @@ $$\operatorname{post}(R)(p_1 \cup p_2) = \operatorname{post}(R)(p_1) \cup \opera
 \emph{Demostración.} La primera propiedad se sigue directamente de que todo estado perteneciente a $p_1$ también pertenece a $p_2$.
 Para la segunda, un estado pertenece a la postimagen de $p_1 \cup p_2$ si posee un estado inicial en $p_1$ o en $p_2$, lo que equivale a pertenecer a alguna de las dos postimágenes.
 $\ensuremath{\blacksquare}$
+\guido{estas suelen llamarse monotonía y distributividad sobre $\cup$}
 
 \subsection*{Programas como relaciones}
 Las relaciones anteriores proporcionan el marco matemático necesario para
@@ -395,6 +399,15 @@ Por esta razón, su validez semántica se define usando la postimagen asociada a
 $$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q.$$
 Por lo tanto, una ejecución que termina con error no viola esta tripleta,
 ya que la propiedad solo se formula respecto de las terminaciones normales.
+
+\guido{Esto implica que la tripleta
+$\triple{P}{abort()}{Q}$ es siempre válida. Me parece
+raro. En general parcialidad no maneja un programa
+que \emph{diverge}, al menos es lo que suelo ver.
+No está mal de por sí la definición, pero por ejemplo
+no es lo que hace \fstar{} para el efecto Pure.
+Supongo que la forma de arregarlo es agregar que
+post$_{err}$ es vacio.}
 
 La inclusión anterior expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
 Por lo tanto, $q$ debe contener todos esos estados,

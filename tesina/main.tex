@@ -510,7 +510,132 @@ parte del mismo marco relacional, pero cambia el objetivo del razonamiento:
 en lugar de demostrar que ciertos comportamientos no pueden ocurrir,
 busca demostrar que resultados determinados son alcanzables mediante ejecuciones reales.
 
-Las tripletas de la IL tienen la forma:
+Antes de definir formalmente las tripletas de la IL,
+es necesario especificar el lenguaje de comandos sobre el cual se razona.
+El lenguaje utilizado contiene comandos básicos para modificar variables,
+filtrar estados y producir errores,
+junto con construcciones para componer, elegir y repetir comandos.
+
+\subsection*{Lenguaje y sintaxis}
+Sean $x$ una variable, $e$ una expresión y $B$ una expresión booleana.
+La sintaxis de los comandos considerados se define mediante la siguiente gramática:
+
+\begin{definicion}[Sintaxis de los comandos]
+Sea $C$ un comando del lenguaje de la IL:
+$$C ::= \texttt{skip} \mid \texttt{error} \mid \texttt{assume(}B\texttt{)}
+\mid x := e \mid x := \texttt{nondet} \mid C_1; C_2
+\mid C_1 + C_2 \mid C^\star$$
+\end{definicion}
+
+El comando \texttt{skip} no modifica el estado y termina normalmente.
+El comando \texttt{error} representa una terminación provocada por un error.
+Por su parte, \texttt{assume(}$B$\texttt{)} conserva solo los estados en los que la expresión booleana $B$ es verdadera.
+
+La asignación $x := e$ evalúa la expresión $e$ y almacena su resultado en la variable $x$.
+En cambio, $x := \texttt{nondet}$ asigna a $x$ un valor elegido de manera no determinista.
+
+La composición secuencial $C_1; C_2$ ejecuta primero $C_1$ y,
+si este termina normalmente,
+continúa con $C_2$.
+Por último, $C_1 + C_2$ representa una elección no determinista entre ambos comandos.
+
+El lenguaje utilizado incluye el operador de iteración de Kleene,
+denotado por $C^\star$,
+que representa la ejecución de un comando $C$ una cantidad finita y no determinista de veces.
+Para formalizar esta interpretación, definimos:
+$$C^0 \equiv \texttt{skip}, \qquad C^{n + 1} \equiv C^n; C.$$
+Por lo tanto, $C^\star$ puede ejecutar $C$ cero, una o cualquier cantidad finita de veces,
+pero no representa ejecuciones infinitas.
+
+A partir de estas construcciones pueden expresarse comandos habituales.
+Por ejemplo,
+un bucle condicionado puede expresarse como:
+$$\texttt{while(}B\texttt{)} \; C \equiv \left(\texttt{assume(}B\texttt{)}; C\right)^\star; \texttt{assume(}\neg B\texttt{)}.$$
+
+La expresión anterior permite repetir el comando $C$ mientras $B$ sea verdadera
+y finalizar cuando dicha condición deje de cumplirse.
+Del mismo modo,
+una instrucción condicional puede expresarse como:
+$$\texttt{if} \; B \; \texttt{then} \; C_1 \; \texttt{else} \; C_2 \equiv \left(\texttt{assume(}B\texttt{)}; C_1\right) +
+\left(\texttt{assume(}\neg B\texttt{)}; C_2\right).$$
+
+Asimismo, puede definirse el comando de aserción mediante:
+$$\texttt{assert(}B\texttt{)} \equiv \left(\texttt{assume(}\neg B\texttt{)}; \texttt{error}\right) + \texttt{assume(}B\texttt{)}.$$
+En este caso,
+la primera rama representa una terminación errónea cuando $B$ es falsa,
+mientras que la segunda representa la terminación normal cuando $B$ es verdadera.
+
+\subsection*{Semántica relacional del lenguaje}
+Con la sintaxis anterior,
+podemos ahora explicitar la semántica relacional de cada comando.
+Para cada comando $C$ y modo de terminación $\varepsilon \in \{ok, er\}$,
+la relación $[\![C]\!]_\varepsilon$ describe los pares de estados inicial y final
+conectados por una ejecución $C$ que termina con el modo $\varepsilon$.
+La semántica de los comandos considerados se resume en la \autoref{fig:semantica-il}.
+En estas definiciones,
+$[\![e]\!]_\sigma$ denota el valor de la expresión $e$ en el estado $\sigma$,
+mientras que $[\![B]\!]_\sigma$ denota el resultado de evaluar la expresión booleana $B$ en $\sigma$.
+En particular,
+$[\![e]\!]_\sigma \in \mathsf{Val}$ y
+$[\![B]\!]_\sigma \in \{\texttt{true}, \texttt{false}\}$,
+donde $\mathsf{Val}$ representa el conjunto de valores posibles.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{0.98\textwidth}
+\small
+$$
+\begin{aligned}
+\relax[\![\texttt{skip}]\!]_{ok} &= \{(\sigma,\sigma) \mid \sigma \in \Sigma\},
+& [\![\texttt{skip}]\!]_{er} &= \varnothing, \\[4pt]
+[\![\texttt{error}]\!]_{ok} &= \varnothing,
+& [\![\texttt{error}]\!]_{er} &= \{(\sigma,\sigma) \mid \sigma\in\Sigma\}, \\[4pt]
+[\![\texttt{assume}(B)]\!]_{ok} &= \{(\sigma,\sigma) \mid [\![B]\!]_\sigma = \texttt{true}\},
+& [\![\texttt{assume}(B)]\!]_{er} &= \varnothing, \\[4pt]
+[\![x := e]\!]_{ok} &= \{(\sigma,\sigma[x \mapsto [\![e]\!]_\sigma]) \mid \sigma \in \Sigma\},
+& [\![x := e]\!]_{er} &= \varnothing, \\[4pt]
+[\![x := \texttt{nondet}]\!]_{ok} &= \{(\sigma,\sigma[x \mapsto v]) \mid \sigma \in \Sigma,\ v \in \mathsf{Val}\},
+& [\![x := \texttt{nondet}]\!]_{er} &= \varnothing.
+\end{aligned}
+$$
+$$
+\begin{aligned}
+\relax[\![C_1 + C_2]\!]_{\varepsilon} &= [\![C_1]\!]_{\varepsilon} \cup [\![C_2]\!]_{\varepsilon}, \\[4pt]
+[\![C_1;C_2]\!]_{\varepsilon} &= \{(\sigma_1,\sigma_3) \mid
+  \exists \sigma_2. \, (\sigma_1,\sigma_2) \in [\![C_1]\!]_{ok} \land (\sigma_2,\sigma_3) \in [\![C_2]\!]_{\varepsilon}\} \\
+  &\quad \cup
+  \begin{cases}
+    [\![C_1]\!]_{er}, & \text{si } \varepsilon = er,\\
+    \varnothing, & \text{si } \varepsilon = ok,
+  \end{cases} \\[4pt]
+[\![C^\star]\!]_{\varepsilon} &= \displaystyle \bigcup_{n \in \mathbb{N}} [\![C^n]\!]_{\varepsilon}.
+\end{aligned}
+$$
+\vspace{0.1em}
+\end{minipage}
+\rule{\linewidth}{0.4pt}
+\caption{Semántica relacional del lenguaje de la IL.}
+\label{fig:semantica-il}
+\end{figure}
+
+Estas definiciones explicitan los comportamientos relevantes para el razonamiento de la IL.
+La elección no determinista se interpreta mediante la unión de las relaciones de sus ramas,
+mientras que la composición secuencial distingue entre las ejecuciones que alcanzan normalmente el primer comando
+y aquellas que terminan con un error antes de ejecutar el segundo.
+En este último caso,
+el error se propaga directamente al resultado de la secuencia.
+
+Por su parte,
+la semántica de la estrella de Kleene reúne las ejecuciones que realizan una cantidad finita de iteraciones.
+Como las relaciones solo contienen pares de estados correspondientes a ejecuciones terminadas,
+las ejecuciones que divergen no producen un estado final dentro de este modelo.
+Como \texttt{if}, \texttt{while} y \texttt{assert} son construcciones derivadas,
+su semántica se obtiene expandiéndolas en términos de los comandos primitivos anteriores.
+
+\subsection*{Tripletas y validez semántica}
+Sobre esta semántica se definen las tripletas de la IL,
+que permiten especificar los estados iniciales y finales de una ejecución junto con su modo de terminación.
+Estas tienen la forma:
 $$\itriple{p}{C}{\varepsilon : q},$$
 donde $p$ es la precondición, $C$ es un comando, $\varepsilon$ es el modo de terminación considerado y
 $q$ es la postcondición.
@@ -530,10 +655,11 @@ que comienza en un estado que satisface $p$ y termina con el modo $\varepsilon$.
 La postcondición puede describir solo una parte de los estados alcanzables;
 sin embargo, todos los estados que describe deben ser alcanzables.
 
-Esta interpretación contrasta con la de la HL,
-en la que se exige que todos los estados finales normales alcanzables desde $p$ estén incluidos en la postcondición.
+A diferencia de la HL,
+que exige incluir todos los estados finales normales alcanzables en la postcondición,
+la IL exige que todo estado descrito por la postcondición sea alcanzable.
 Aunque los criterios de ambas lógicas son diferentes,
-pueden coincidir cuando la postcondición es igual al conjunto de estados alcanzables.
+pueden coincidir cuando la postcondición es igual a la postimagen.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL0}
@@ -553,9 +679,10 @@ como la de incorrectitud
 $$\itriple{x > 0}{C}{ok : x > 2}.$$
 \end{ejemplo}
 
-El caso anterior muestra que ambas lógicas pueden validar las respectivas tripletas
+El caso anterior muestra que ambas lógicas pueden validar sus respectivas tripletas
 cuando la postcondición coincide con la postimagen.
-En el siguiente ejemplo se modifica la postcondición de modo que describa solo uno de los estados finales alcanzables.
+A continuación,
+se modifica la postcondición para describir solo uno de los estados finales alcanzables.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL}
@@ -574,15 +701,9 @@ Sin embargo, el estado inicial $x = 2$ satisface $x > 0$ y produce el resultado 
 que no satisface la postcondición $x = 3$.
 \end{ejemplo}
 
-El ejemplo anterior muestra que una postcondición que describe un resultado particular puede ser válida en la IL,
-aunque resulte demasiado restrictiva para la HL,
-que debe incluir todos los resultados normales posibles.
-
-Para completar la comparación, se considera ahora el caso inverso.
-Una postcondición más amplia puede ser válida para la HL,
-porque contiene todos los estados finales normales alcanzables.
-Sin embargo, también puede incluir estados que el programa no puede producir y,
-por lo tanto, no ser válida para la IL.
+El ejemplo muestra que una postcondición que describe un resultado particular puede ser válida en la IL,
+aunque resulte demasiado restrictiva para la HL.
+El caso inverso se obtiene utilizando una postcondición más amplia.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL2}
@@ -691,12 +812,10 @@ Por lo tanto,
 $$\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 $\ensuremath{\blacksquare}$
 
-\changed{En particular, cuando $\varepsilon = er$,
-esta caracterización garantiza que cada estado de $q$ está respaldado por una ejecución real que termina con error.
-Por lo tanto, la IL permite certificar errores sin introducir estados finales inalcanzables.}
+\changed{Esta caracterización permite vincular la validez semántica con las reglas deductivas que se presentan a continuación.}
 
 \subsection*{Derivabilidad y reglas de inferencia}
-Las definiciones anteriores caracterizan la validez de una tripleta en términos de la semántica operacional del programa.
+Las definiciones anteriores caracterizan la validez de una tripleta en términos de la semántica relacional del programa.
 Sin embargo, demostrar directamente la inclusión $q \subseteq post_\varepsilon(C)(p)$ puede ser difícil,
 ya que exige justificar la alcanzabilidad de cada estado descrito por $q$.
 Para organizar este razonamiento,
@@ -715,12 +834,10 @@ La derivabilidad es una noción sintáctica,
 ya que depende de las reglas del sistema y de la existencia de una derivación finita.
 La validez, en cambio, es una noción semántica definida mediante la postimagen.
 
-A continuación, se presentan las reglas de inferencia que determinan cómo pueden construirse las derivaciones de la IL.
-Estas reglas se resumen en la \autoref{fig:reglas-il}.
-
-Las reglas permiten construir tripletas a partir de los comandos del lenguaje y de las propiedades de las aserciones.
+A continuación, se presentan las reglas de inferencia de la IL,
+resumidas en la \autoref{fig:reglas-il}.
 Algunas describen comandos básicos, como \texttt{skip}, \texttt{error},
-las asignaciones y la asignación no determinista (\texttt{nondet}).
+las asignaciones y \texttt{nondet}.
 Otras permiten combinar derivaciones,
 como las reglas de \textsc{Consecuencia}, \textsc{Disyunción} y \textsc{Secuencia}.
 Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre repeticiones finitas de un comando.
@@ -781,6 +898,7 @@ Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre re
   {\vdash_{\mathrm{IL}} \itriple{p}{x := \texttt{nondet}}{ok : \exists x'. p}}
 
 \end{mathpar}
+\rule{\linewidth}{0.4pt}
 \caption{Reglas de inferencia de la IL. Adaptadas de~\cite{inclog}.}
 \label{fig:reglas-il}
 \end{figure}
@@ -825,22 +943,6 @@ Al cuantificar existencialmente ese valor,
 la regla elimina de la postcondición las restricciones que dependían del valor anterior de $x$.
 Esto significa que el nuevo valor de $x$ puede ser cualquiera y no depende del valor que tenía antes.
 
-El lenguaje utilizado incluye el operador de iteración de Kleene,
-denotado por $C^\star$.
-Este operador representa la ejecución de un comando $C$ una cantidad finita y no determinista de veces.
-Por lo tanto, $C^\star$ puede ejecutar $C$ cero, una o cualquier cantidad finita de veces,
-pero no representa ejecuciones infinitas.
-
-El operador de Kleene no establece por sí mismo cuándo debe detenerse la iteración.
-Por lo tanto, un bucle condicionado puede expresarse combinándolo con el comando \texttt{assume}.
-Si $B$ es la condición que debe cumplirse para ejecutar una iteración y $C$ es el cuerpo del bucle,
-la expresión
-$$
-(\texttt{assume}\ (B); C)^\star; \texttt{assume}\ (\neg B)
-$$
-representa una ejecución que repite $C$ mientras se satisface $B$
-y termina normalmente cuando $B$ deja de cumplirse.
-
 El análisis de $C^\star$ se realiza mediante tres reglas.
 La regla \textsc{Kleene (base)} representa la ejecución de cero iteraciones.
 Si $p$ describe el estado inicial,
@@ -864,7 +966,7 @@ La regla establece que, si una ejecución normal de $C$ transforma un estado que
 entonces, partiendo de $p(0)$,
 después de cualquier cantidad finita de iteraciones se obtiene un estado que satisface $p(n)$ para algún número natural $n$.
 
-\subsection*{La Regla de Consecuencia y la subaproximación}
+\subsection*{La Regla de Consecuencia en la IL}
 Una de las diferencias más contraintuitivas entre la IL y la HL aparece en la Regla de Consecuencia.
 En la HL, la Regla de Consecuencia permite debilitar la postcondición.
 De esta manera, una propiedad que describe todos los estados finales alcanzables
@@ -881,7 +983,7 @@ Por lo tanto, algunos de los estados incorporados podrían ser inalcanzables.
 
 La Regla de Consecuencia de la IL produce el efecto contrario:
 permite fortalecer la postcondición y conservar solo una parte de los estados alcanzables.
-Esto hace posible ignorar otras ramas de ejecución y concentrarse en una ejecución que se desea certificar.
+Esto hace posible conservar un subconjunto de los resultados alcanzables y concentrarse en los comportamientos que se desean certificar.
 \begin{mathpar}
 \inferrule []
   {p \implies p' \\ \vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \\ q' \implies q}
@@ -999,7 +1101,7 @@ Este razonamiento permite resumir los estados alcanzables tras múltiples iterac
 y combinarlos con un paso final que termina con error.
 
 \subsection*{Teorema de Soundness de la IL}
-La relación entre las reglas deductivas y la semántica operacional se establece mediante el Teorema de Soundness.
+La relación entre las reglas deductivas y la semántica relacional se establece mediante el Teorema de Soundness.
 Este resultado garantiza que toda tripleta derivable en la IL es semánticamente válida.
 
 \begin{teorema}(Teorema de Soundness de la IL)

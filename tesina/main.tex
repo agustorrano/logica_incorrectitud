@@ -354,12 +354,13 @@ se construye la siguiente definición:
 Sea $C$ un comando, $\varepsilon$ un modo de terminación y $p$ una aserción.
 Definimos la postimagen de $p$ mediante $C$ con modo de terminación $\varepsilon$ como
 $$\operatorname{post}_\varepsilon(C)(p) = \operatorname{post}([\![C]\!]_\varepsilon)(p).$$
+\end{definicion}
+
 Desarrollando esta definición, obtenemos
 $$\operatorname{post}_\varepsilon(C)(p) = \{\sigma' \in \Sigma \mid \exists \sigma \in p. \; (\sigma, \sigma') \in [\![C]\!]_\varepsilon\}.$$
 Por lo tanto, $\operatorname{post}_\varepsilon(C)(p)$ contiene los estados que pueden obtenerse mediante
 una ejecución de $C$ que comienza en un estado que satisface $p$
 y termina con el modo $\varepsilon$.
-\end{definicion}
 
 A partir de ahora, en expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
 se omitirá la escritura explícita de la relación $[\![C]\!]_\varepsilon$,
@@ -528,7 +529,7 @@ Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distin
 La IL, introducida por \citet{inclog},
 parte del mismo marco relacional, pero cambia el objetivo del razonamiento:
 en lugar de demostrar que ciertos comportamientos no pueden ocurrir,
-busca demostrar que resultados determinados son alcanzables mediante ejecuciones reales.
+busca demostrar que determinados resultados son alcanzables mediante ejecuciones reales.
 
 Antes de definir formalmente las tripletas de la IL,
 es necesario especificar el lenguaje de comandos sobre el cual se razona.
@@ -838,7 +839,7 @@ $\ensuremath{\blacksquare}$
 
 Esta caracterización permite vincular la validez semántica con las reglas deductivas que se presentan a continuación.
 
-\subsection*{Derivabilidad y reglas de inferencia}
+\subsection*{Reglas de inferencia de la IL}
 Las definiciones anteriores caracterizan la validez de una tripleta en términos de la semántica relacional del programa.
 Sin embargo, demostrar directamente la inclusión $q \subseteq post_\varepsilon(C)(p)$ puede ser difícil,
 ya que exige justificar la alcanzabilidad de cada estado descrito por $q$.
@@ -1139,13 +1140,14 @@ describe resultados respaldados por ejecuciones reales.
 La demostración mecanizada de este resultado para el lenguaje imperativo
 utilizado en esta tesina se presenta en el \autoref{cap:formalizacion-il}.
 
+%\Needspace{12\baselineskip}
 \begin{corolario}
 \label{cor:errores}
 Si
-$$\vdash_{\mathrm{IL}} \itriple{p}{C}{er : q}$$
+$\vdash_{\mathrm{IL}} \itriple{p}{C}{er : q}$
 y $q \neq \varnothing$,
 entonces existen estados $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
-$$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
+$$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
 \end{corolario}
 \emph{Demostración.} Por el Teorema de Soundness~\ref{teo:sound-il},
 la tripleta $\itriple{p}{C}{er : q}$ es semánticamente válida.
@@ -1189,22 +1191,21 @@ que se presenta a continuación.
 \section{Lógica de Separación (SL)}
 \label{sec:logsep}
 La HL es efectiva para razonar sobre variables simples,
-\changed{pero su aplicación resulta más compleja cuando los programas manipulan memoria dinámica mediante punteros.
+pero su aplicación resulta más compleja cuando los programas manipulan memoria dinámica mediante punteros.
 En estos casos,
 no basta con describir los valores de las variables,
-también es necesario representar las celdas de memoria asignadas y la información almacenada en ellas.}
+también es necesario representar las celdas de memoria asignadas y la información almacenada en ellas.
 %Una de las dificultades centrales es el \emph{aliasing},
 %que ocurre cuando dos expresiones de puntero pueden referirse a la misma dirección de memoria.
 %\guido{pequeña explicación y/o citas del problema? se vuelve no escalable.
 %también hay que introducir el termino aliasing}
 
-%\guido{citar a CACM es medio raro, es una revista popular, digamos, y no un paper tecnico}
 La SL, introducida por \citet{sl},
 extiende la HL para permitir el razonamiento sobre este tipo de programas.
-Su objetivo es \changed{describir tanto el estado de las variables
+Su objetivo es describir tanto el estado de las variables
 como el fragmento de memoria relevante para el comando que se está analizando.
 Esto permite realizar un razonamiento local,
-sin tener que describir explícitamente toda la memoria del programa~\cite{local}.}
+sin tener que describir explícitamente toda la memoria del programa~\cite{local}.
 
 Para formalizar este modelo, sean $\mathsf{Var}$ el conjunto de variables del programa,
 $\mathsf{Val}$ el conjunto de valores y $\mathsf{Loc}$ el conjunto de direcciones de memoria.
@@ -1220,17 +1221,17 @@ Un estado espacial es un par:
 $$\sigma = (s, h) \in \mathsf{Store} \times \mathsf{Heap},$$
 donde $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
 Las aserciones de la SL se interpretan sobre estados espaciales.
-\changed{Formalmente, una aserción espacial es un predicado}
+Formalmente, una aserción espacial es un predicado
 $$P : \mathsf{Store} \times \mathsf{Heap} \rightarrow \mathsf{Prop}.$$
 Escribimos
 $$(s, h) \models P$$
 cuando el estado formado por el \emph{store} $s$ y el \emph{heap} $h$ satisface la aserción $P$.
 
-\changed{En este modelo, una dificultad central es determinar cuándo dos expresiones del programa
+En este modelo, una dificultad central es determinar cuándo dos expresiones del programa
 se refieren a la misma dirección de memoria.
 A esta situación se la denomina \emph{aliasing}.
 Si $e$ es una expresión cuya evaluación produce una dirección de memoria y $s$ un \emph{store},
-denotamos por $[\![e]\!]_s$ la dirección obtenida al evaluar $e$ en $s$.}
+denotamos por $[\![e]\!]_s$ la dirección obtenida al evaluar $e$ en $s$.
 
 \begin{definicion}[Aliasing]
 Dos expresiones $e_1$ y $e_2$ presentan \emph{aliasing} en un \emph{store} $s$
@@ -1238,13 +1239,13 @@ cuando ambas se evalúan a la misma dirección de memoria:
 $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 \end{definicion}
 
-\changed{Cuando existe \emph{aliasing},
+Cuando existe \emph{aliasing},
 una modificación realizada a través de una de las expresiones puede afectar el valor observado a través de la otra.
 Por lo tanto, el verificador debe comprobar que esa modificación no contradiga las propiedades
 que deben mantenerse para otras referencias y para el resto de la memoria.
 Estas condiciones de verificación pueden ser difíciles de construir y de demostrar automáticamente,
 lo que también puede limitar la escalabilidad del análisis,
-especialmente en estructuras de datos enlazadas~\cite{bttf}.}
+especialmente en estructuras de datos enlazadas~\cite{bttf}.
 %\guido{alguna cita estaria buena. Este paper de verus \url{https://dl.acm.org/doi/epdf/10.1145/3694715.3695952} menciona algunos problemas de escalabilidad con Lowstar, que no era logica de separacion
 %sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
 
@@ -1265,12 +1266,11 @@ si sus dominios no comparten ninguna dirección:
 $$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing$$
 \end{definicion}
 
-\changed{La condición de disjunción garantiza
-que cada dirección de memoria pertenece, a lo sumo,
+La condición de disjunción garantiza que cada dirección de memoria pertenece, a lo sumo,
 a uno de los dos \emph{heaps}.
 Por lo tanto,
 sus contenidos pueden combinarse en un único \emph{heap} sin generar conflictos.
-Esta operación se denomina \emph{unión disjunta}.}
+Esta operación se denomina \emph{unión disjunta}.
 
 \begin{definicion}[Unión disjunta]
 Sean $h_1, h_2 \in \mathsf{Heap}$ y disjuntos.
@@ -1290,7 +1290,8 @@ h_2(\ell), & \text{si } \ell \in \operatorname{dom}(h_2).
 %hace ruido porque no diste la definicion y porque $\uplus$ solo esta definida cuando
 %son disjuntos (entonces decir ``cuando son disjuntos...'' no tiene sentido).}
 
-La SL incorpora aserciones específicas para describir fragmentos de memoria.
+Sobre esta estructura de \emph{heaps},
+la SL incorpora aserciones específicas para describir fragmentos de memoria.
 Entre las más importantes se encuentran $\mathsf{emp}$, \emph{points-to} y la conjunción separadora.
 
 \begin{definicion}[\emph{Heap} vacío]
@@ -1301,8 +1302,10 @@ $$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \varnothing$$
 \end{definicion}
 
 La aserción $\mathsf{emp}$ no afirma que toda la memoria física del programa se encuentra vacía,
-sino que el fragmento del \emph{heap} descrito por la aserción es vacío.
-Esta distinción resulta útil porque las aserciones de SL describen recursos locales y pueden combinarse mediante la conjunción separadora.
+sino que el fragmento del \emph{heap} descrito por la aserción no contiene ninguna celda.
+A continuación,
+se introduce la aserción \emph{points-to},
+que permite describir celdas individuales del \emph{heap}.
 
 \begin{definicion}[Points-to]
 \label{def:points_to}
@@ -1341,24 +1344,24 @@ $$(s, h) \models P * Q \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2
 \end{definicion}
 %\guido{dar alguna intuicion de por qué el store no se parte?}
 
-\changed{En la fórmula anterior,
+En la fórmula anterior,
 tanto $P$ como $Q$ se comprueban usando el mismo \emph{store}.
 En cambio, cada aserción se comprueba sobre un fragmento diferente del \emph{heap}:
 $P$ sobre $h_1$ y $Q$ sobre $h_2$.
 Esto se debe a que el \emph{store} contiene la asociación entre las variables del programa y sus valores,
 por lo que funciona como un entorno común para evaluar las expresiones de ambas aserciones.
 Por lo tanto, la separación se aplica solo al \emph{heap},
-cuyas celdas se distribuyen entre fragmentos disjuntos.}
+cuyas celdas se distribuyen entre fragmentos disjuntos.
 
 La diferencia entre la conjunción clásica ($\land$) y la separadora ($*$)
-\changed{determina cómo se combinan los fragmentos de \emph{heap} descritos por las aserciones.}
-\changed{Para simplificar la ilustración,
+determina cómo se combinan los fragmentos de \emph{heap} descritos por las aserciones.
+Para simplificar la ilustración,
 en este ejemplo utilizamos la notación abreviada $x \mapsto 3, y$
 para representar un bloque de dos celdas consecutivas:
 la primera contiene el valor 3 y la segunda contiene el valor almacenado en $y$.
 Esta notación se usa solo con fines ilustrativos;
 la definición formal de \emph{points-to} describe una única celda.
-De manera análoga, consideramos la aserción $y \mapsto 3, x$.}
+De manera análoga, consideramos la aserción $y \mapsto 3, x$.
 %Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$,
 %la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente,
 %y la aserción $y \mapsto 3, x$.
@@ -1396,15 +1399,15 @@ Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 \end{figure}
 
 Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$,
-\changed{la conjunción clásica exige que ambas se evalúen sobre el mismo \emph{heap}.
+la conjunción clásica exige que ambas se evalúen sobre el mismo \emph{heap}.
 Por lo tanto, la aserción completa solo se satisface si existe un único \emph{heap}
 sobre el cual se cumplen simultáneamente ambos predicados.
 La conjunción clásica no impone, sin embargo,
-que los fragmentos descritos sean disjuntos.}
+que los fragmentos descritos sean disjuntos.
 %\guido{acá querés decir \emph{\textbf{podría}} cumplirse sobre la misma memoria exacta, no?
 %nada dicta que tenga que ser así}
-\changed{En este ejemplo, ambas aserciones podrían satisfacerse si $x$ e $y$ almacenaran la misma dirección de memoria,
-de modo que describen el mismo bloque,}
+En este ejemplo, ambas aserciones podrían satisfacerse si $x$ e $y$ almacenaran la misma dirección de memoria,
+de modo que describen el mismo bloque,
 como se muestra en la \autoref{fig:conjuncion-clasica}.
 
 \begin{figure}[h]
@@ -1449,10 +1452,10 @@ Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estruct
 \label{fig:conjuncion-separadora}
 \end{figure}
 
-\changed{El ejemplo muestra que la conjunción separadora impone, por defecto,
+El ejemplo muestra que la conjunción separadora impone, por defecto,
 la ausencia de \emph{aliasing} entre los fragmentos de memoria que combina.
 De este modo, una prueba no necesita expresar por separado que
-una modificación realizada sobre uno de esos fragmentos no afectará al otro.}
+una modificación realizada sobre uno de esos fragmentos no afectará al otro.
 %\guido{al principio dijimos ``la SL tiene el poder de describir patrones de aliasing [...] de forma concisa'', pero creo que lo importante es la prohibicion del aliasing por defecto. De hecho
 %expresar aliasing cuando uno sí lo quiere es un garrón}
 
@@ -1466,8 +1469,8 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
 \end{lema}
 
 \subsection*{El lenguaje imperativo extendido}
-\changed{Las aserciones anteriores permiten describir fragmentos del \emph{heap},
-pero todavía es necesario extender el lenguaje de comandos para poder operar sobre esa memoria.}
+Las aserciones anteriores permiten describir fragmentos del \emph{heap},
+pero todavía es necesario extender el lenguaje de comandos para poder operar sobre esa memoria.
 Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
 \begin{enumerate}
   \item \textbf{Alocación (allocation):}
@@ -1483,6 +1486,66 @@ Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación d
   $$\texttt{free(}x\texttt{)}$$
   libera la celda ubicada en la dirección apuntada por $x$.
 \end{enumerate}
+
+\subsection*{Reglas de inferencia de la SL}
+Una vez extendido el lenguaje con comandos para manipular la memoria,
+es necesario introducir las reglas de inferencia que describen sus efectos sobre las aserciones espaciales.
+Las tripletas de la SL conservan la forma $\triple{P}{C}{Q}$,
+pero ahora $P$ y $Q$ son aserciones espaciales interpretadas sobre estados compuestos por un \emph{store} y un \emph{heap}.
+
+Antes de presentar las reglas,
+definimos la noción de derivabilidad en la SL.
+
+\begin{definicion}(Derivabilidad en la SL)
+\label{def:derivabilidad-sl}
+Escribimos
+$$\vdash_{\mathrm{SL}} \triple{P}{C}{Q}$$
+cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de las reglas de inferencia de la SL.
+\end{definicion}
+
+Las reglas correspondientes a comandos como \texttt{skip}, asignación y composición secuencial se heredan de la HL.
+La extensión propia de la SL está dada por las reglas asociadas a las operaciones de alocación,
+lectura, escritura y liberación de memoria en la \autoref{fig:reglas-sl}.
+En estas reglas se introduce la notación $x \mapsto -$,
+que representa una celda ubicada en la dirección almacenada en $x$,
+cuyo contenido no es relevante para el razonamiento.
+
+\begin{figure}[htbp]
+\centering
+\begin{mathpar}
+\inferrule [Alloc]
+  {}
+  {\vdash_{\mathrm{SL}} \triple{\mathsf{emp}}{x := \texttt{alloc()}}{x \mapsto -}}
+
+\inferrule [Free]
+  {}
+  {\vdash_{\mathrm{SL}} \triple{x \mapsto -}{\texttt{free(}x\texttt{)}}{\mathsf{emp}}}
+
+\inferrule [Load]
+  {x \neq y}
+  {\vdash_{\mathrm{SL}} \triple{y \mapsto v}{x := [y]}{x = v \land y \mapsto v}}
+
+\inferrule [Store]
+  {}
+  {\vdash_{\mathrm{SL}} \triple{x \mapsto -}{[x] := y}{x \mapsto y}}
+
+\end{mathpar}
+\caption{Reglas de inferencia de la SL.}
+\label{fig:reglas-sl}
+\end{figure}
+
+La regla \textsc{Alloc} expresa que la alocación reserva una nueva celda y almacena su dirección en $x$.
+La regla \textsc{Load} requiere que la dirección apuntada por $y$ corresponda a una celda activa,
+asigna su contenido a $x$,
+lo que se expresa mediante la igualdad $x = v$,
+preservando la celda en el \emph{heap}.
+La regla \textsc{Store} modifica el contenido de la celda apuntada por $x$,
+mientras que \textsc{Free} elimina dicha celda del fragmento de \emph{heap} descrito y produce la aserción $\mathsf{emp}$.
+
+Estas reglas describen el comportamiento de cada operación sobre el fragmento de memoria que aparece explícitamente en la precondición.
+Para extender este razonamiento a estados que contienen memoria adicional e independiente,
+se introduce el principio de localidad,
+formalizado mediante la Regla del Marco.
 
 \subsection*{Razonamiento local y la Regla del Marco}
 La posibilidad de describir fragmentos disjuntos del \emph{heap}
@@ -1597,9 +1660,7 @@ porque puede permitir derivar una postcondición satisfacible a partir de una pr
 
 En la SL,
 la regla local de liberación se expresa mediante la tripleta de Hoare:
-$$\vdash_\mathrm{SL} \triple{x \mapsto -}{\texttt{free(}x\texttt{)}}{\mathsf{emp}},$$
-donde la notación $x \mapsto -$ representa una celda ubicada en la dirección almacenada en $x$,
-cuyo contenido no es relevante para el razonamiento.
+$$\vdash_\mathrm{SL} \triple{x \mapsto -}{\texttt{free(}x\texttt{)}}{\mathsf{emp}}.$$
 
 Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda descrita por $x \mapsto -$:
 \begin{mathpar}
@@ -1728,7 +1789,7 @@ La monotonía puede observarse en las operaciones básicas:
 Por lo tanto, el dominio puede crecer o permanecer igual,
 pero nunca disminuir.
 
-\subsection*{Reglas de inferencia}
+\subsection*{Reglas de inferencia de la ISL}
 Las reglas de la IL que no manipulan la memoria se mantienen en la ISL.
 Las diferencias se encuentran en las reglas de alocación, lectura, escritura y liberación,
 y en la aplicación de la Regla del Marco dentro de la interpretación subaproximada.

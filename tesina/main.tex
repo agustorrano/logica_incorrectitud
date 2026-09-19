@@ -68,39 +68,38 @@ Con los trabajos fundacionales de \citet{floyd67} y \citet{hoare},
 la mayor parte de esta disciplina se ha concentrado en demostrar la \emph{correctitud} de los programas,
 entendida como el cumplimiento de sus especificaciones.
 Estas especificaciones permiten expresar, entre otras propiedades, que determinadas clases de errores no pueden producirse.
-\guido{OK}
+%\guido{OK}
 
 A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas.
-\changed{Por ejemplo, la lógica de \citet{concurrence} para programas concurrentes,
+Por ejemplo, la lógica de \citet{concurrence} para programas concurrentes,
 la Lógica Temporal de \citet{templog} para la evolución de las ejecuciones,
 La Lógica Dinámica de \citet{dinlog},
 la Lógica de Hoare Relacional~\cite{hlrel} para comparar ejecuciones
 y diversas lógicas probabilísticas aplicadas,
-entre otros casos, a la verificación de construcciones criptográficas~\cite{cripto}.}
-\guido{OK}
+entre otros casos, a la verificación de construcciones criptográficas~\cite{cripto}.
+%\guido{OK}
 %\guido{aca creo que todos los ejemplos deberían estar en la misma oracion}
 
 La aplicación de estos sistemas lógicos a programas de gran escala,
 sin embargo, puede requerir un esfuerzo considerable.
 En particular, los métodos deductivos orientados a la correctitud, como la
 Lógica de Hoare (HL), la Lógica de Separación (SL)~\cite{sl} y
-\changed{todas las lógicas mencionadas en el párrafo anterior},
+todas las lógicas mencionadas en el párrafo anterior,
 %\guido{acá no sería mejor poder decir ``todas las lógicas del párrafo anterior''?}
 requieren especificar formalmente las propiedades que debe cumplir el programa
 y construir demostraciones que cubran sus distintos caminos de ejecución.
 Además, las demostraciones deben mantenerse y adaptarse a medida que el programa cambia.
-\guido{lo ultimo está bueno, es especialmente importante en un entorno industrial, porque
-trata de software, no de demostrar que algun algoritmo en un libro está bien o mal}
+%\guido{lo ultimo está bueno, es especialmente importante en un entorno industrial, porque
+%trata de software, no de demostrar que algun algoritmo en un libro está bien o mal}
 
 La magnitud de este esfuerzo puede observarse en proyectos como seL4~\cite{sel4}.
 Aunque se trata de un microkernel con un núcleo de aproximadamente 10.000 líneas de código,
 su prueba de correctitud demandó cerca de veinte años-persona.
-\changed{Además, su desarrollo y mantenimiento involucraron alrededor de 480.000 líneas de prueba y especificaciones formales.}
-%\guido{y N lineas de prueba?}.
+Además, su desarrollo y mantenimiento involucraron alrededor de 480.000 líneas de prueba y especificaciones formales.
 Project Everest~\cite{everest}, por su parte, comenzó con la expectativa de cinco años de duración
-\changed{y reunió un equipo numeroso de investigadores e ingenieros para} desarrollar componentes verificados del ecosistema HTTPS,
+y reunió un equipo numeroso de investigadores e ingenieros para desarrollar componentes verificados del ecosistema HTTPS,
 incluidos TLS, sus algoritmos criptográficos y protocolos relacionados.
-\changed{Se estima que el proyecto involucró un esfuerzo acumulado de entre cincuenta y cien años-persona.}
+Se estima que el proyecto involucró un esfuerzo acumulado de entre cincuenta y cien años-persona.
 Asimismo, aunque este proyecto produjo varios componentes verificados,
 el resultado final fue más acotado que la meta inicial.
 Estos proyectos muestran que la verificación de sistemas reales es posible,
@@ -125,10 +124,9 @@ entre reportar todos los posibles errores y evitar falsas advertencias.
 En este contexto, eliminar por completo los falsos positivos resulta importante,
 ya que un exceso de reportes incorrectos puede reducir la confianza de los desarrolladores en el analizador
 y hacer que sus advertencias sean ignoradas.
-\changed{Por este motivo,
-las herramientas utilizadas en la práctica deben combinar la rapidez para producir resultados y
-la generación de advertencias respaldadas por errores reales.}
-\guido{``deben'' es un poco fuerte, pero ok}
+Por este motivo,
+las herramientas utilizadas en la práctica combinan la rapidez para producir resultados y
+la generación de advertencias respaldadas por errores reales.
 Para alcanzar estos objetivos, los analizadores suelen ajustar sus heurísticas de manera \emph{ad-hoc},
 sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
 %La experiencia de Facebook constituye un antecedente de una perspectiva diferente:
@@ -138,11 +136,11 @@ sin contar necesariamente con una justificación lógica de por qué cada advert
 
 Este interés por demostrar la presencia de errores reales
 motivó a \citet{inclog} a proponer una lógica de \emph{incorrectitud}.
-\changed{En lugar de intentar describir todos los comportamientos posibles de un programa
+En lugar de intentar describir todos los comportamientos posibles de un programa
 para demostrar que ninguno produce un error,
 busca demostrar que ciertos errores pueden alcanzarse mediante ejecuciones concretas.
 De este modo, una advertencia puede estar acompañada por un certificado formal
-que justifica la existencia del error reportado.}
+que justifica la existencia del error reportado.
 %\guido{acá saltás de mencionar la palabra ``incorrectitud'' a hablar de dos variantes
 %y su comparación con la lógica de hoare, sin explicar qué es la incorrectitud. Agregaría un
 %poco sobre qué es, y por qué tiene relación con los analizadores}
@@ -151,12 +149,16 @@ La versión original de la Lógica de Incorrectitud (IL) presentada por O'Hearn 
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
 pero sin un \emph{heap}.
 Por lo tanto, no permite razonar sobre memoria dinámica y estructuras de datos mutables.
-En el ámbito de la correctitud, la SL
-\guido{recordaría la defn de ``SL'' una vez más acá}
-fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
-Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL), cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
+En el ámbito de la correctitud,
+la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
+%\guido{recordaría la defn de ``SL'' una vez más acá}
+A diferencia de la HL, su modelo de estado incorpora,
+además del \emph{store}, un \emph{heap},
+y sus aserciones permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
+Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL),
+cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
-\guido{OK}
+%\guido{OK}
 \begin{table}[h]
 \centering
 \small
@@ -200,8 +202,8 @@ especificaciones lógicas y automatización mediante el solucionador SMT Z3.
 
 \section{Resultados del trabajo}
 \label{sec:resultados}
-El \changed{trabajo presenta una formalización mecanizada de} la ISL en el asistente de pruebas \fstar{},
-\changed{junto con una demostración de} su solidez (\emph{soundness}) respecto de una semántica operacional explícita.
+El trabajo presenta una formalización mecanizada de la ISL en el asistente de pruebas \fstar{},
+junto con una demostración de su solidez (\emph{soundness}) respecto de una semántica operacional explícita.
 Esta formalización se desarrolló de manera incremental.
 
 En una primera etapa, se mecaniza la IL sobre un lenguaje imperativo simplificado,
@@ -308,21 +310,25 @@ $$\operatorname{post}(R)(p) = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \
 
 Este conjunto contiene exactamente los estados relacionados mediante $R$ con algún estado perteneciente a $p$.
 \end{definicion}
-\guido{no se usa la preimagen? si se usa, por ahi conviene
-definirla acá}
+%\guido{no se usa la preimagen? si se usa, por ahi conviene
+%definirla acá} \agustina{no usamos}
 
-\begin{lema}(Propiedades de la postimagen)
+\begin{lema}(Monotonía y distributividad de la postimagen)
 \label{lem:prop-pi}
 Sea $R \subseteq \Sigma \times \Sigma$ una relación y sean $p_1, p_2 \subseteq \Sigma$.
 Entonces:
 $$p_1 \subseteq p_2 \implies \operatorname{post}(R)(p_1) \subseteq \operatorname{post}(R)(p_2)$$
 y
-$$\operatorname{post}(R)(p_1 \cup p_2) = \operatorname{post}(R)(p_1) \cup \operatorname{post}(R)(p_2)$$
+$$\operatorname{post}(R)(p_1 \cup p_2) = \operatorname{post}(R)(p_1) \cup \operatorname{post}(R)(p_2).$$
+La primera propiedad expresa la monotonía de la postimagen respecto de la inclusión,
+mientras que la segunda expresa su distributividad respecto de la unión.
 \end{lema}
-\emph{Demostración.} La primera propiedad se sigue directamente de que todo estado perteneciente a $p_1$ también pertenece a $p_2$.
-Para la segunda, un estado pertenece a la postimagen de $p_1 \cup p_2$ si posee un estado inicial en $p_1$ o en $p_2$, lo que equivale a pertenecer a alguna de las dos postimágenes.
+\emph{Demostración.} La monotonía se sigue directamente de que todo estado perteneciente a $p_1$ también pertenece a $p_2$.
+Para la segunda propiedad,
+un estado pertenece a la postimagen de $p_1 \cup p_2$ si posee un estado inicial en $p_1$ o en $p_2$,
+lo que equivale a pertenecer a alguna de las dos postimágenes.
 $\ensuremath{\blacksquare}$
-\guido{estas suelen llamarse monotonía y distributividad sobre $\cup$}
+%\guido{estas suelen llamarse monotonía y distributividad sobre $\cup$}
 
 \subsection*{Programas como relaciones}
 Las relaciones anteriores proporcionan el marco matemático necesario para
@@ -330,7 +336,7 @@ representar el comportamiento de los programas.
 En particular, la ejecución de un comando puede interpretarse como una relación entre
 sus posibles estados iniciales y finales.
 Sin embargo, además del estado final, es interesante distinguir la manera en que concluye la ejecución.
-\guido{muy bien!}
+%\guido{muy bien!}
 
 Para ello, consideramos los \emph{modos de terminación} $\varepsilon \in \{ok, er\}$,
 donde $ok$ representa una terminación normal y $er$, una terminación provocada por un error.
@@ -339,7 +345,7 @@ $$[\![C]\!]_\varepsilon \subseteq \Sigma \times \Sigma$$
 La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\varepsilon$ indica que existe una ejecución completa de $C$ que empieza en el estado
 $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\varepsilon$.
 En este sentido, $[\![C]\!]_\varepsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step},
-\changed{que relaciona directamente los estados iniciales y finales sin describir los pasos intermedios}.
+que relaciona directamente los estados iniciales y finales sin describir los pasos intermedios.
 
 Aplicando la definición de postimagen a la relación semántica de un comando,
 se construye la siguiente definición:
@@ -355,20 +361,20 @@ una ejecución de $C$ que comienza en un estado que satisface $p$
 y termina con el modo $\varepsilon$.
 \end{definicion}
 
-\changed{A partir de ahora, en expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
+A partir de ahora, en expresiones como $\operatorname{post}_{\varepsilon}(C)(p)$,
 se omitirá la escritura explícita de la relación $[\![C]\!]_\varepsilon$,
 ya que el comando determina la relación semántica considerada.
-El modo de terminación $\varepsilon$ se indica explícitamente para distinguir el tipo de terminación.}
+El modo de terminación $\varepsilon$ se indica explícitamente para distinguir el tipo de terminación.
 %\guido{esperaba que digas que a veces usamos C equivalentemente tanto como para un programa
 %como para su relacion semantica}
 
-\changed{Esta representación mediante relaciones permite que un comando
+Esta representación mediante relaciones permite que un comando
 alcance distintos estados finales desde un mismo estado inicial.
 También puede ocurrir que no exista un resultado para un modo de terminación determinado.
 Por ejemplo, si una ejecución produce una división por cero o desreferencia un puntero nulo,
 puede no existir un resultado asociado al modo $ok$, aunque sí uno asociado al modo $er$.
 Además, puede ocurrir que no exista ningún resultado para ninguno de los modos considerados,
-por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.}
+por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.
 
 %\guido{la primera oracion bien, el resto creo que no agrega nada.}
 %\guido{falta el caso importante, cuando realmente hay un error tipo dividir por cero
@@ -385,31 +391,40 @@ La aserción $p$ se denomina \emph{precondición}, mientras que $q$ se denomina 
 Para definir el significado de una tripleta,
 es necesario establecer qué requisito se impone sobre la terminación de las ejecuciones.
 Existen versiones de correctitud parcial y de correctitud total de la HL.
-En este trabajo se considera la versión de correctitud parcial,
-donde la tripleta denota que toda ejecución de $C$ iniciada en un estado que satisface $p$,
-si termina normalmente, alcanza un estado que satisface $q$.
-No se exige que todas las ejecuciones terminen, a diferencia de las versiones totales.
+En este trabajo se considera una noción de correctitud parcial con ausencia de terminaciones erróneas.
+Esto significa que no se exige que todas las ejecuciones terminen,
+pero sí que ninguna ejecución iniciada en un estado que satisface la precondición termine con un error.
+Además, toda ejecución que termine normalmente debe alcanzar un estado que satisfaga la postcondición.
 
-Con esta convención, la semántica de la tripleta se expresa mediante la postimagen definida en la Definición~\ref{def:post-comado}.
-Aunque la semántica operacional distingue entre distintos modos de terminación,
-las tripletas de la HL consideradas en este trabajo se refieren implícitamente a las terminaciones normales.
-No establece ninguna propiedad sobre las ejecuciones que terminan con error;
-el razonamiento sobre estos comportamientos se desarrollará mediante la IL.
-Por esta razón, su validez semántica se define usando la postimagen asociada al modo $ok$:
-$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q.$$
-Por lo tanto, una ejecución que termina con error no viola esta tripleta,
-ya que la propiedad solo se formula respecto de las terminaciones normales.
+Dado que la semántica distingue entre terminaciones normales y terminaciones con error,
+la validez de una tripleta se define mediante las postimágenes correspondientes a ambos modos de terminación,
+introducidas en la Definición~\ref{def:post-comado}:
+$$\models_{\mathrm{HL}} \triple{p}{C}{q} \iff \operatorname{post}_{ok}(C)(p) \subseteq q \land \operatorname{post}_{er}(C)(p) = \varnothing.$$
+En esta expresión,
+la primera condición impone el cumplimiento de la postcondición para las terminaciones normales,
+mientras que la segunda excluye las terminaciones erróneas.
 
-\guido{Esto implica que la tripleta
-$\triple{P}{abort()}{Q}$ es siempre válida. Me parece
-raro. En general parcialidad no maneja un programa
-que \emph{diverge}, al menos es lo que suelo ver.
-No está mal de por sí la definición, pero por ejemplo
-no es lo que hace \fstar{} para el efecto Pure.
-Supongo que la forma de arregarlo es agregar que
-post$_{err}$ es vacio.}
+La definición no exige que todas las ejecuciones terminen.
+En particular,
+una ejecución divergente no produce estados finales asociados a ninguno de los modos considerados y,
+por lo tanto,
+no invalida la tripleta bajo esta noción de correctitud parcial.
+Por el contrario,
+si existe una ejecución que comienza en un estado que satisface $p$ y termina con un error,
+la tripleta no es válida.
 
-La inclusión anterior expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
+%\guido{Esto implica que la tripleta
+%$\triple{P}{abort()}{Q}$ es siempre válida. Me parece
+%raro. En general parcialidad no maneja un programa
+%que \emph{diverge}, al menos es lo que suelo ver.
+%No está mal de por sí la definición, pero por ejemplo
+%no es lo que hace \fstar{} para el efecto Pure.
+%Supongo que la forma de arregarlo es agregar que
+%post$_{err}$ es vacio.}
+
+La inclusión
+$$\operatorname{post}_{ok}(C)(p) \subseteq q$$
+expresa que $q$ es una \emph{sobreaproximación} de los estados finales normales alcanzables.
 Por lo tanto, $q$ debe contener todos esos estados,
 aunque también puede incluir estados que el programa no alcanza.
 Para observar esta propiedad, se presenta un ejemplo.
@@ -420,16 +435,21 @@ Consideremos el comando
 $$C \equiv x := x + 2$$
 y la precondición $p \equiv x > 0$.
 Luego de la asignación, todos los estados finales satisfacen $x > 2$.
-Sin embargo, la postcondición $q \equiv x > 1$ también es válida,
+Sin embargo, también puede elegirse la postcondición $q \equiv x > 1$,
 ya que contiene todos los estados que pueden alcanzarse,
 aunque además incluya estados donde $x = 2$,
 que no son resultados de una ejecución donde se comienza con $x > 0$.
 
 En consecuencia,
 $$\operatorname{post}_{ok}(C)(p) \subseteq \{\sigma \in \Sigma \mid \sigma(x) > 1\}$$
+Además, como una asignación no produce terminaciones erróneas,
+se cumple que
+$$\operatorname{post}_{er}(C)(p) = \varnothing.$$
+Por lo tanto,
+se satisfacen ambas condiciones de la definición de validez y la tripleta $\triple{p}{C}{q}$ es válida en la HL.
 \end{ejemplo}
 
-\changed{El ejemplo anterior muestra la validez de una tripleta desde el punto de vista semántico.
+El ejemplo anterior muestra la validez de una tripleta desde el punto de vista semántico.
 Sin embargo, comprobar directamente la inclusión $\operatorname{post}_{ok}(C)(p) \subseteq q$
 puede ser difícil,
 ya que requiere considerar todos los estados finales normales que el comando puede alcanzar desde la
@@ -437,10 +457,10 @@ precondición y verificar que cada uno satisfaga la postcondición.
 Para razonar sobre esta inclusión de manera estructurada,
 la HL proporciona un sistema deductivo compuesto por axiomas y reglas de inferencia,
 que permite construir tripletas a partir de la estructura de los comandos y
-de las relaciones lógicas entre sus aserciones.}
+de las relaciones lógicas entre sus aserciones.
 
-\changed{Para definir qué significa que una tripleta haya sido construida de esta manera,
-introducimos la noción de derivabilidad.}
+Para definir qué significa que una tripleta haya sido construida de esta manera,
+introducimos la noción de derivabilidad.
 
 \begin{definicion}
 \label{def:deriv-hl}
@@ -449,23 +469,23 @@ $$\vdash_{\mathrm{HL}} \triple{p}{C}{q}$$
 cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de los axiomas y las reglas de inferencia de la HL.
 \end{definicion}
 
-\changed{Esta noción permite distinguir entre la validez semántica de una tripleta y
+Esta noción permite distinguir entre la validez semántica de una tripleta y
 la forma en que esta tripleta se construye dentro del sistema lógico.
-A continuación, presentamos un axioma y una regla que permiten obtener tripletas derivables en la HL.}
+A continuación, presentamos un axioma y una regla que permiten obtener tripletas derivables en la HL.
 
-\changed{El primer axioma que consideramos es el de asignación.
+El primer axioma que consideramos es el de asignación.
 Este establece que:
 \begin{mathpar}
 \inferrule []
   {}
   {\vdash_{\mathrm{HL}} \triple{q[e / x]}{x := e}{q},}
 \end{mathpar}
-donde la expresión $q[e / x]$ representa la sustitución de las apariciones libres de $x$ en $q$ por la expresión $e$.}
+donde la expresión $q[e / x]$ representa la sustitución de las apariciones libres de $x$ en $q$ por la expresión $e$.
 
-\changed{Este axioma de asignación permite obtener una tripleta cuya postcondición se elige de antemano y
+Este axioma de asignación permite obtener una tripleta cuya postcondición se elige de antemano y
 cuya precondición queda determinada por la sustitución de la expresión asignada en dicha postcondición.
 Sin embargo, esa precondición no siempre coincide con la que se desea utilizar en el razonamiento.
-La Regla de Consecuencia permite adaptar la tripleta a una precondición más restrictiva o una postcondición más general:}
+La Regla de Consecuencia permite adaptar la tripleta a una precondición más restrictiva o una postcondición más general:
 \begin{mathpar}
 \inferrule []
   {p' \implies p \\ \vdash_{\mathrm{HL}} \triple{p}{C}{q} \\ q \implies q'}
@@ -486,8 +506,8 @@ Como $x > 0 \implies x + 2 > 1$, la Regla de Consecuencia permite derivar:
 \end{mathpar}
 \end{ejemplo}
 
-\changed{La HL proporciona así un mecanismo deductivo para construir y adaptar tripletas que describen la correctitud de las terminaciones normales.
-Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distinto.}
+La HL proporciona así un mecanismo deductivo para construir y adaptar tripletas derivables.
+Sobre este mismo marco teórico se define la IL, aunque tiene un objetivo distinto.
 
 \section{Lógica de Incorrectitud (IL)}
 \label{sec:loginc}
@@ -639,8 +659,10 @@ Estas tienen la forma:
 $$\itriple{p}{C}{\varepsilon : q},$$
 donde $p$ es la precondición, $C$ es un comando, $\varepsilon$ es el modo de terminación considerado y
 $q$ es la postcondición.
-A diferencia de la HL, el modo de terminación aparece explícitamente porque la IL también permite demostrar
-la alcanzabilidad de estados producidos por errores.
+En la HL, el modo de terminación no aparece en la sintaxis de la tripleta,
+aunque interviene en su validez semántica.
+En cambio, en la IL aparece explícitamente,
+ya que permite distinguir si el estado alcanzado corresponde a una terminación normal o a una terminación con error.
 
 %\guido{aca yo me preguntaria por qué la IL necesita el modo de terminacion y la HL no.
 %Creo que la respuesta es que en la HL los errores siempre estan ``mal'' pero acá sí nos
@@ -656,10 +678,10 @@ La postcondición puede describir solo una parte de los estados alcanzables;
 sin embargo, todos los estados que describe deben ser alcanzables.
 
 A diferencia de la HL,
-que exige incluir todos los estados finales normales alcanzables en la postcondición,
-la IL exige que todo estado descrito por la postcondición sea alcanzable.
-Aunque los criterios de ambas lógicas son diferentes,
-pueden coincidir cuando la postcondición es igual a la postimagen.
+la IL puede describir explícitamente estados producidos por terminaciones con error,
+mientras que la HL los excluye al exigir $\operatorname{post}_{er}(C)(p) = \varnothing$.
+Sin embargo,
+ambas lógicas pueden coincidir cuando la postcondición es igual a la postimagen.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL0}
@@ -668,7 +690,9 @@ $$C \equiv x := x + 2$$
 y la misma precondición $p \equiv x > 0$ que en el Ejemplo~\ref{eje:sobreaprox}.
 
 En este caso,
-$$\operatorname{post}_{ok}(C)(p) = \{x > 2\}.$$
+$$\operatorname{post}_{ok}(C)(p) = \{\sigma \in \Sigma \mid \sigma(x) > 2\}.$$
+Además, como la asignación no produce terminaciones con error,
+$\operatorname{post}_{er}(C)(p) = \varnothing.$
 Por lo tanto, si $q \equiv x > 2$,
 la postcondición coincide con la postimagen.
 Se cumplen entonces ambas inclusiones:
@@ -812,7 +836,7 @@ Por lo tanto,
 $$\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 $\ensuremath{\blacksquare}$
 
-\changed{Esta caracterización permite vincular la validez semántica con las reglas deductivas que se presentan a continuación.}
+Esta caracterización permite vincular la validez semántica con las reglas deductivas que se presentan a continuación.
 
 \subsection*{Derivabilidad y reglas de inferencia}
 Las definiciones anteriores caracterizan la validez de una tripleta en términos de la semántica relacional del programa.

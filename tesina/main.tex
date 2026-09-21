@@ -442,7 +442,7 @@ aunque además incluya estados donde $x = 2$,
 que no son resultados de una ejecución donde se comienza con $x > 0$.
 
 En consecuencia,
-$$\operatorname{post}_{ok}(C)(p) \subseteq \{\sigma \in \Sigma \mid \sigma(x) > 1\}$$
+$$\operatorname{post}_{ok}(C)(p) \subseteq \{\sigma \in \Sigma \mid \sigma(x) > 1\}.$$
 Además, como una asignación no produce terminaciones erróneas,
 se cumple que
 $$\operatorname{post}_{er}(C)(p) = \varnothing.$$
@@ -586,7 +586,7 @@ En este caso,
 la primera rama representa una terminación errónea cuando $B$ es falsa,
 mientras que la segunda representa la terminación normal cuando $B$ es verdadera.
 
-\subsection*{Semántica relacional del lenguaje}
+\subsection*{Semántica relacional de la IL}
 Con la sintaxis anterior,
 podemos ahora explicitar la semántica relacional de cada comando.
 Para cada comando $C$ y modo de terminación $\varepsilon \in \{ok, er\}$,
@@ -1297,7 +1297,7 @@ Entre las más importantes se encuentran $\mathsf{emp}$, \emph{points-to} y la c
 \begin{definicion}[\emph{Heap} vacío]
 \label{def:heap_vacio}
 Sean $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
-La aserción $\mathsf{emp}$ se satisface cuando el $h$ no contiene ninguna celda:
+La aserción $\mathsf{emp}$ se satisface cuando $h$ no contiene ninguna celda:
 $$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \varnothing$$
 \end{definicion}
 
@@ -1595,7 +1595,7 @@ Por lo tanto, la condición lateral no se cumple y la Regla del Marco no puede a
 Esto es necesario porque modificar $x$ puede cambiar la dirección de memoria descrita por $R$,
 aunque el comando no modifique directamente el \emph{heap}.
 
-El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica operacional.
+El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica relacional del lenguaje.
 
 \begin{lema}[Localidad operacional]
 \label{lem:localidad}
@@ -1635,12 +1635,12 @@ Las tripletas de la ISL conservan la forma presentada para la IL:
 $$\itriple{p}{C}{\varepsilon : q},$$
 pero ahora $p$ y $q$ son aserciones espaciales que describen conjuntos de estados compuestos por un \emph{store} y un \emph{heap}.
 Su interpretación semántica sigue siendo subaproximada:
-$$\models_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \iff
-\forall \sigma_q \in q. \; \exists \sigma_p \in p. \; (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon$$
-Por lo tanto, todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
+todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
+Para formalizar esta interpretación,
+primero es necesario introducir el modelo de \emph{heaps} negativos.
 
-Antes de continuar,
-definimos la noción de derivabilidad para la ISL.
+Para expresar formalmente la derivación que motiva la introducción de los \emph{heaps} negativos,
+necesitamos fijar previamente la noción de derivabilidad en la ISL.
 
 \begin{definicion}(Derivabilidad en la ISL)
 \label{def:derivabilidad-isl}
@@ -1648,6 +1648,11 @@ Escribimos
 $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}$$
 cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de las reglas de inferencia de la ISL.
 \end{definicion}
+
+Las reglas completas se presentan más adelante,
+luego de definir la semántica relacional.
+Por ahora,
+esta noción permite anticipar el problema que surge al combinar la regla de liberación con la Regla del Marco.
 
 \subsection*{Heaps negativos}
 Intentar construir la ISL combinando directamente la semántica de la SL tradicional
@@ -1661,6 +1666,9 @@ porque puede permitir derivar una postcondición satisfacible a partir de una pr
 En la SL,
 la regla local de liberación se expresa mediante la tripleta de Hoare:
 $$\vdash_\mathrm{SL} \triple{x \mapsto -}{\texttt{free(}x\texttt{)}}{\mathsf{emp}}.$$
+Para ilustrar el problema,
+anticipamos la aplicación de la regla local de liberación y de la Regla del Marco para la ISL,
+cuya formulación formal se presenta más adelante.
 
 Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda descrita por $x \mapsto -$:
 \begin{mathpar}
@@ -1765,7 +1773,105 @@ El efecto puede resumirse en la \autoref{tab:frame-table2}:
   \label{tab:frame-table2}
 \end{table}
 
-La conservación en el dominio de las direcciones liberadas conduce a la siguiente propiedad del modelo de la ISL.
+El ejemplo anterior muestra cómo los \emph{heaps} negativos permiten conservar la inconsistencia al aplicar la Regla del Marco.
+Para continuar,
+es necesario describir formalmente la semántica relacional sobre el espacio de estados extendido.
+
+\subsection*{Semántica relacional de la ISL}
+Una vez definido el \emph{heap} extendido y la aserción que representa una celda liberada,
+podemos formalizar la semántica relacional de la ISL.
+Para cada comando $C$ y modo de terminación $\varepsilon \in \{ok, er\}$,
+se define una relación entre estados espaciales $[\![C]\!]_\varepsilon \subseteq \Sigma_\mathrm{ISL} \times \Sigma_\mathrm{ISL}$.
+
+Los comandos que no manipulan directamente el \emph{heap} conservan la semántica presentada para la IL,
+interpretada ahora sobre estados espaciales.
+En cambio,
+las operaciones de memoria deben distinguir entre celdas activas,
+celdas liberadas y la dirección nula.
+En particular,
+una celda liberada no se elimina del \emph{heap} extendido,
+sino que conserva su dirección y se representa mediante el valor $\bot$.
+La dirección \texttt{null}, en cambio, no corresponde a una celda válida de memoria.
+
+La semántica relacional de los comandos de la ISL se presenta en la \autoref{fig:semantica-isl}.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{0.98\textwidth}
+\small
+$$
+\begin{aligned}
+\relax[\![\texttt{skip}]\!]_{ok} &= \{(\sigma,\sigma) \mid \sigma \in \Sigma_\mathrm{ISL}\},
+& [\![\texttt{skip}]\!]_{er} &= \varnothing, \\[4pt]
+[\![\texttt{error}]\!]_{ok} &= \varnothing,
+& [\![\texttt{error}]\!]_{er} &= \{(\sigma,\sigma) \mid \sigma \in \Sigma_\mathrm{ISL}\}, \\[4pt]
+[\![\texttt{assume}(B)]\!]_{ok} &= \{(\sigma,\sigma) \mid \sigma = (s, h) \land [\![B]\!]_s = \texttt{true}\},
+& [\![\texttt{assume}(B)]\!]_{er} &= \varnothing, \\[4pt]
+[\![x := e]\!]_{ok} &= \{((s, h), (s[x \mapsto [\![e]\!]_s], h))\},
+& [\![x := e]\!]_{er} &= \varnothing, \\[4pt]
+[\![x := \texttt{nondet}]\!]_{ok} &= \{((s, h), (s[x \mapsto v], h)) \mid v \in \mathsf{Val}\},
+& [\![x := \texttt{nondet}]\!]_{er} &= \varnothing.
+\end{aligned}
+$$
+$$
+\begin{aligned}
+\relax[\![C_1 + C_2]\!]_{\varepsilon} &= [\![C_1]\!]_{\varepsilon} \cup [\![C_2]\!]_{\varepsilon}, \\[4pt]
+[\![C_1;C_2]\!]_{\varepsilon} &= \{(\sigma_1,\sigma_3) \mid
+  \exists \sigma_2. \, (\sigma_1,\sigma_2) \in [\![C_1]\!]_{ok} \land (\sigma_2,\sigma_3) \in [\![C_2]\!]_{\varepsilon}\} \\
+  &\quad \cup
+  \begin{cases}
+    [\![C_1]\!]_{er}, & \text{si } \varepsilon = er,\\
+    \varnothing, & \text{si } \varepsilon = ok,
+  \end{cases} \\[4pt]
+[\![C^\star]\!]_{\varepsilon} &= \displaystyle \bigcup_{n \in \mathbb{N}} [\![C^n]\!]_{\varepsilon}, \\[4pt]
+[\![x := \texttt{alloc()}]\!]_{ok} &= \{(\sigma, (s[x \mapsto l], h[l \mapsto v]))
+  \mid \sigma = (s, h) \land v \in \mathsf{Val} \land (l \notin \operatorname{dom}(h) \lor h(l) = \bot)\}, \\[4pt]
+[\![x := \texttt{alloc()}]\!]_{er} &= \varnothing, \\[4pt]
+[\![\texttt{free(}x\texttt{)}]\!]_{ok} &= \{(\sigma, (s, h[s(x) \mapsto \bot]))
+  \mid \sigma = (s, h) \land h(s(x)) \in \mathsf{Val}\}, \\[4pt]
+[\![\texttt{free(}x\texttt{)}]\!]_{er} &= \{(\sigma, \sigma)
+  \mid \sigma = (s, h) \land (s(x) = \texttt{null} \lor h(s(x)) = \bot)\}, \\[4pt]
+[\![x := [y]]\!]_{ok} &= \{(\sigma, (s[x \mapsto v], h))
+  \mid \sigma = (s, h) \land h(s(y)) = v \in \mathsf{Val}\}, \\[4pt]
+[\![x := [y]]\!]_{er} &= \{(\sigma, \sigma) \mid \sigma = (s, h) \land (s(y) = \texttt{null} \lor h(s(y)) = \bot)\}, \\[4pt]
+[\![[x] := y]\!]_{ok} &= \{(\sigma, (s, h[s(x) \mapsto s(y)]))
+  \mid \sigma = (s, h) \land h(s(x)) \in \mathsf{Val}\}, \\[4pt]
+[\![[x] := y]\!]_{er} &= \{(\sigma, \sigma)
+  \mid \sigma = (s, h) \land (s(x) = \texttt{null} \lor h(s(x)) = \bot)\}.
+\end{aligned}
+$$
+\vspace{0.1em}
+\end{minipage}
+\rule{\linewidth}{0.4pt}
+\caption{Semántica relacional del lenguaje de la ISL.}
+\label{fig:semantica-isl}
+\end{figure}
+
+Las definiciones de la figura permiten representar tanto las ejecuciones normales como las ejecuciones erróneas.
+En particular,
+una liberación exitosa transforma una celda activa en una celda liberada,
+sin eleiminar su dirección del dominio del \emph{heap}.
+Asimismo,
+una alocación puede reservar una dirección que no estaba previamente en el dominio
+o reutilizar una dirección que se encontraba representada mediante un \emph{heap} negativo.
+
+La formalización de la validez semántica de las tripletas de la ISL se define mediante la interpretación subaproximada:
+$$\models_\mathrm{ISL} \itriple{p}{C}{\varepsilon : q} \iff
+\forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
+Con esta definición,
+se exige que cada estado espacial descrito por la postcondición esté respaldado por una ejecución real del comando
+desde algún estado espacial que satisface la precondición.
+La condición se aplica tanto a las terminaciones normales como a las terminaciones erróneas,
+según el modo $\varepsilon$ considerado.
+
+A partir de estas definiciones se obtiene una propiedad fundamental del \emph{heap} extendido.
+Una ejecución puede modificar el estado asociado a una dirección,
+por ejemplo,
+transformando una celda activa en una celda liberada,
+pero no puede eliminar del dominio una dirección que ya era conocida.
+Del mismo modo,
+una alocación puede transformar una dirección liberada en una celda activa sin modificar el dominio conocido.
+Esta propiedad se formaliza en el siguiente lema.
 
 \begin{lema}[Monotonía del \emph{heap}]
 \label{lem:monotonia}
@@ -1776,7 +1882,6 @@ $$\operatorname{dom}(h) \subseteq \operatorname{dom}(h')$$
 \end{lema}
 
 Esto quiere decir que una dirección conocida al comienzo de una ejecución sigue siendo conocida cuando esta finaliza.
-
 La monotonía puede observarse en las operaciones básicas:
 \begin{itemize}
   \item una alocación sobre una dirección nueva amplía el dominio;
@@ -1793,13 +1898,8 @@ pero nunca disminuir.
 Las reglas de la IL que no manipulan la memoria se mantienen en la ISL.
 Las diferencias se encuentran en las reglas de alocación, lectura, escritura y liberación,
 y en la aplicación de la Regla del Marco dentro de la interpretación subaproximada.
-Estas nuevas reglas se presentan en la \autoref{fig:reglas-isl}.
-
-En estos casos,
-\texttt{null} representa una dirección especial que no corresponde a una celda válida de memoria.
-Una dirección nula se distingue de una dirección liberada:
-la primera no identifica ninguna celda válida,
-mientras que la segunda corresponde a una celda que fue asignada y luego liberada.
+La noción de derivabilidad utilizada en esta sección fue introducida en la Definición~\ref{def:derivabilidad-isl}.
+A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:reglas-isl}.
 
 \begin{figure}[htbp]
 \centering
@@ -1865,8 +1965,6 @@ La regla \textsc{Free} representa la liberación exitosa.
 Requiere que $x$ describa una celda activa,
 representada por $x \mapsto e$,
 y transforma esa celda en un \emph{heap} negativo $x \nmapsto$.
-La dirección no se elimina del \emph{heap}:
-se conserva la información de que fue liberada.
 Por otro lado, \textsc{FreeEr} y \textsc{FreeNull} representan el caso de error.
 El primero intercepta la violación de tipo \emph{double free};
 si se intenta liberar una dirección que ya está representada como liberada,
@@ -1910,14 +2008,15 @@ como para tripletas con $\varepsilon = er$.
 En este último caso,
 los \emph{heaps} negativos permiten conservar en la postcondición la información espacial que justifica el error.
 De este modo,
-una derivación local puede extenderse a un estado que contiene memoria adicional,
-sin describir explícitamente todo el \emph{heap}.
+una derivación local puede extenderse a un estado que contiene memoria adicional sin describir explícitamente todo el \emph{heap}.
+Por su parte,
+el Lema~\ref{lem:monotonia} garantiza que las operaciones de memoria no eliminan del dominion las direcciones que ya eran conocidas.
 
 Con estas reglas queda definido el sistema deductivo de la ISL.
-Su relación con la semántica operacional se establece en la siguiente subsección.
+Su relación con la semántica relacional se establece en la siguiente subsección.
 
 \subsection*{Teorema de Soundness de la ISL}
-El siguiente teorema relaciona la derivabilidad de una tripleta de la ISL con su validez respecto de la semántica operacional.
+El siguiente teorema relaciona la derivabilidad de una tripleta de la ISL con su validez respecto de la semántica relacional.
 
 \begin{teorema}[Teorema de Soundness de la ISL]
 \label{teo:sound-isl}
@@ -1927,7 +2026,7 @@ $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathr
 \end{teorema}
 
 El teorema establece que toda tripleta derivable mediante las reglas de la ISL
-es válida respecto de la semántica operacional.
+es válida respecto de la semántica relacional.
 En particular,
 si $\vdash_{\mathrm{ISL}} \itriple{p}{C}{er : q}$,
 entonces cada estado que satisface $q$ puede alcanzarse mediante una ejecución de $C$
@@ -1963,15 +2062,18 @@ es necesario caracterizar cómo se relacionan las ejecuciones locales con las ej
 Esta caracterización se presenta en el Teorema de la Huella.
 
 \subsection*{El Teorema de la Huella (\textit{Footprint Theorem})}
-El Lema~\ref{lem:localidad} establece que una ejecución sobre un fragmento del \emph{heap}
-puede extenderse con un fragmento disjunto que permanece sin modificaciones.
-El Teorema de la Huella completa esta propiedad en ambas direcciones:
-además de permitir extender ejecuciones locales,
-muestra que toda ejecución global puede descomponerse en una ejecución mínima y un marco adicional.
+El Lema~\ref{lem:localidad} establece la propiedad de localidad para la semántica sobre \emph{heaps}:
+una ejecución que utiliza un fragmento de memoria puede extenderse con un fragmento disjunto que permanece sin modificaciones.
+En la ISL, esta propiedad se interpreta sobre el $\mathsf{HeapExt}$,
+cuyos fragmentos pueden contener tanto celdas activas como celdas liberadas.
+
+El Teorema de la Huella completa esta propiedad en la dirección opuesta.
+Mientras que la localidad permite extender una ejecución local con memoria adicional,
+el teorema muestra que toda ejecución global puede descomponerse en una ejecución mínima y un marco adicional.
 
 Para formalizar esta descomposición,
-primero debemos describir cómo se incorpora un fragmento adicional de memoria a un estado.
-Esta operación debe agregar el fragmento al \emph{heap} sin modificar el \emph{store}
+primero debemos definir cómo se incorpora un fragmento adicional de memoria a un estado.
+Esta operación debe agregar el fragmento al \emph{heap} extendido sin modificar el \emph{store}
 y solo puede realizarse cuando ambos fragmentos son disjuntos.
 
 \begin{definicion}[Extensión de un estado por un marco]
@@ -1989,7 +2091,7 @@ es decir, $h(\sigma) = h_\sigma$.
 
 \begin{definicion}[Extensión de una relación por marcos]
 \label{def:frame-ext}
-Sea $R \subseteq \Sigma \times \Sigma$ una relación entre estados
+Sea $R \subseteq \Sigma_\mathrm{ISL} \times \Sigma_\mathrm{ISL}$ una relación entre estados
 y sea $h_f \in \mathsf{HeapExt}$ un fragmento adicional.
 Su extensión por marcos se define como:
 $$\operatorname{frame}(R) = \{(\sigma_p \bullet h_f, \sigma_q \bullet h_f) \mid (\sigma_p, \sigma_q) \in R

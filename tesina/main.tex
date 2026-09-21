@@ -1122,8 +1122,8 @@ $$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \opera
 
 La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores
 exigida por la interpretación subaproximada de las tripletas.
-Este razonamiento permite resumir los estados alcanzables tras múltiples iteraciones exitosas
-y combinarlos con un paso final que termina con error.
+Esta caracterización también puede combinarse con la regla de \textsc{Kleene (paso)} para describir una ejecución
+que realiza una cantidad arbitraria de iteraciones normales y luego termina con un error.
 
 \subsection*{Teorema de Soundness de la IL}
 La relación entre las reglas deductivas y la semántica relacional se establece mediante el Teorema de Soundness.
@@ -1597,7 +1597,7 @@ aunque el comando no modifique directamente el \emph{heap}.
 
 El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica relacional del lenguaje.
 
-\begin{lema}[Localidad operacional]
+\begin{lema}[Localidad semántica]
 \label{lem:localidad}
 Sean $C$ un comando, $\varepsilon$ un modo de terminación,
 $s$ y $s'$ los \emph{stores} inicial y final,
@@ -1850,7 +1850,7 @@ $$
 Las definiciones de la figura permiten representar tanto las ejecuciones normales como las ejecuciones erróneas.
 En particular,
 una liberación exitosa transforma una celda activa en una celda liberada,
-sin eleiminar su dirección del dominio del \emph{heap}.
+sin eliminar su dirección del dominio del \emph{heap}.
 Asimismo,
 una alocación puede reservar una dirección que no estaba previamente en el dominio
 o reutilizar una dirección que se encontraba representada mediante un \emph{heap} negativo.
@@ -2010,7 +2010,7 @@ los \emph{heaps} negativos permiten conservar en la postcondición la informaci�
 De este modo,
 una derivación local puede extenderse a un estado que contiene memoria adicional sin describir explícitamente todo el \emph{heap}.
 Por su parte,
-el Lema~\ref{lem:monotonia} garantiza que las operaciones de memoria no eliminan del dominion las direcciones que ya eran conocidas.
+el Lema~\ref{lem:monotonia} garantiza que las operaciones de memoria no eliminan del dominio las direcciones que ya eran conocidas.
 
 Con estas reglas queda definido el sistema deductivo de la ISL.
 Su relación con la semántica relacional se establece en la siguiente subsección.
@@ -2152,45 +2152,62 @@ En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del 
 
 \section{El lenguaje \fstar{}}
 \label{sec:fstar}
-Para garantizar el rigor matemático de los sistemas deductivos complejos, es una práctica estándar mecanizar su semántica y teoremas en un asistente de pruebas.
-En este trabajo, la formalización completa se desarrolla utilizando \fstar{}, un lenguaje de programación funcional con tipos dependientes que también funciona como asistente de pruebas y verificador de programas~\cite{fstar}.
-Este lenguaje está integrado con el solucionador SMT Z3.
-Su paradigma se denomina programación orientada a pruebas (\emph{proof-oriented programming}), ya que los programas, sus especificaciones y sus demostraciones se desarrollan dentro de un mismo lenguaje.
+Los resultados semánticos y deductivos presentados en este capítulo se mecanizan en los capítulos siguientes utilizando \fstar{},
+un lenguaje de programación funcional con tipos dependientes que también funciona como asistente de pruebas
+y verificador de programas~\cite{fstar}.
+Este lenguaje está integrado con el solucionador SMT Z3
+y adopta un enfoque de programación orientada a pruebas (\emph{proof-oriented programming}),
+en el que los programas, sus especificaciones y sus demostraciones se desarrollan dentro de un mismo lenguaje.
 
-Además de utilizarse como asistente de pruebas, \fstar{} puede emplearse para desarrollar programas ejecutables.
-Los fragmentos relevantes pueden extraerse a lenguajes como OCaml y F\#, y el ecosistema también provee mecanismos de compilación a C y WebAssembly.
-Esta capacidad de extracción no se utiliza directamente en la formalización presentada, cuyo contenido es principalmente lógico y fantasma, pero forma parte del carácter híbrido de \fstar{} como lenguaje de programación y verificación.
+Además de utilizarse como asistente de pruebas,
+\fstar{} permite desarrollar programas ejecutables y extraerlos a otros lenguajes.
+Esta capacidad no se utiliza directamente en esta tesina,
+cuyo contenido es principalmente lógico y fantasma,
+pero forma parte del carácter híbrido de \fstar{} como lenguaje de programación y verificación.
 
-En esta tesina, \fstar{} no se utiliza para implementar un analizador automático ni para producir código ejecutable.
-Su función es mecanizar la semántica operacional de los lenguajes considerados, representar los sistemas deductivos de la IL y la ISL, y comprobar sus propiedades metateóricas.
-En particular, permite expresar las reglas de inferencia como tipos inductivos y demostrar \emph{soundness} mediante funciones recursivas sobre las derivaciones.
+En esta tesina,
+\fstar{} no se utiliza para implementar un analizador automático ni para producir código ejecutable.
+Su función es mecanizar la semántica operacional de los lenguajes considerados,
+representar los sistemas deductivos de la IL y la ISL,
+y comprobar sus propiedades metateóricas.
+En particular,
+permite expresar las reglas de inferencia como tipos inductivos y demostrar \emph{soundness} mediante funciones recursivas sobre las derivaciones.
 
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
 \subsection*{Tipos dependientes y refinamientos}
 En \fstar{}, los tipos pueden depender de valores.
 La manifestación más práctica de esto son los tipos de refinamiento.
-Un tipo de refinamiento permite expresar propiedades de los datos directamente en sus tipos, de modo que su cumplimiento sea comprobado estáticamente.
+Un tipo de refinamiento permite expresar propiedades de los datos directamente en sus tipos,
+de modo que su cumplimiento sea comprobado estáticamente.
 
-Dado un tipo \texttt{t} y un predicado \texttt{P}, la expresión \texttt{x : t \{ P x \}} representa los valores \texttt{x} de tipo \texttt{t} que además satisfacen la propiedad \texttt{P x}.
-Por ejemplo, en la biblioteca estándar de \fstar{}, el tipo de los números naturales no es un tipo primitivo aislado, sino el tipo de los enteros refinado por una condición booleana:
+Dado un tipo \texttt{t} y un predicado \texttt{P},
+la expresión \texttt{x : t \{ P x \}} representa los valores \texttt{x} de tipo \texttt{t} que además satisfacen la propiedad \texttt{P x}.
+Por ejemplo, en la biblioteca estándar de \fstar{},
+el tipo de los números naturales no es un tipo primitivo aislado,
+sino el tipo de los enteros refinado por una condición booleana:
 
 \begin{lstlisting}[style=fstar]
 let nat = x : int { x >= 0 }
 \end{lstlisting}
 
-Cualquier función que requiera un argumento del tipo \texttt{nat} fuerza al verificador estático a demostrar matemáticamente que el valor provisto satisface la restricción $x \geq 0$ antes de compilar.
-De este modo, propiedades que en otros lenguajes se verificarían durante la ejecución se convierten en obligaciones estáticas.
+Cualquier función que requiera un argumento del tipo \texttt{nat}
+fuerza al verificador estático a demostrar matemáticamente que el valor provisto satisface la restricción $x \geq 0$ antes de compilar.
+De este modo,
+propiedades que en otros lenguajes se verificarían durante la ejecución se convierten en obligaciones estáticas.
 
 Esta dependencia entre valores y tipos permite que la firma de una función actúe como su propia especificación matemática.
-Por ejemplo, la función de incremento puede definirse garantizando estáticamente que el valor de retorno \texttt{y} será exactamente igual al argumento \texttt{x} más uno:
+Por ejemplo,
+la función de incremento puede definirse garantizando estáticamente
+que el valor de retorno \texttt{y} será exactamente igual al argumento \texttt{x} más uno:
 
 \begin{lstlisting}[style=fstar]
 val incr : x : int -> y : int { y = x + 1 }
 let incr x = x + 1
 \end{lstlisting}
 
-En la formalización desarrollada, las aserciones lógicas se representan como predicados sobre estados:
+En la formalización desarrollada,
+las aserciones lógicas se representan como predicados sobre estados:
 
 \begin{lstlisting}[style=fstar]
 type cond = state -> prop
@@ -2201,40 +2218,51 @@ Por ejemplo, el siguiente parámetro:
 \begin{lstlisting}[style=fstar]
 s : state { post s }
 \end{lstlisting}
-representa un estado \texttt{s} acompañado por la garantía estática de que satisface la postcondición \texttt{post}.
-Esta forma aparece en el enunciado mecanizado del Teorema de Soundness, donde la prueba recibe un estado final que satisface el resultado de una tripleta y debe construir un estado inicial que satisfaga su presunción.
+representa un estado \texttt{s} cuya tipificación exige demostrar estáticamente que satisface la postcondición \texttt{post}.
+Esta forma aparece en el enunciado mecanizado del Teorema de Soundness,
+donde la prueba recibe un estado final que satisface el resultado de una tripleta y debe construir un estado inicial que satisfaga su presunción.
 
 \subsection*{Tipos inductivos indexados y Curry-Howard}
 \fstar{} hace un uso extensivo de los tipos inductivos para definir estructuras de datos y proposiciones lógicas.
-Una de las características más potentes del lenguaje es la capacidad de crear tipos inductivos indexados, los cuales permiten capturar invariantes complejos directamente en la forma de la estructura.
+Una de las características más potentes del lenguaje es la capacidad de crear tipos inductivos indexados,
+los cuales permiten capturar invariantes complejos directamente en la forma de la estructura.
 
-La formalización se apoya en la correspondencia Curry-Howard \cite{howard}, donde las proposiciones se interpretan como tipos y las demostraciones como valores que habitan esos tipos.
+La formalización se apoya en la correspondencia Curry-Howard \cite{howard},
+donde las proposiciones se interpretan como tipos y las demostraciones como valores que habitan esos tipos.
 La ventaja de esto es que \fstar{} obliga a considerar todos los constructores al demostrar una metapropiedad por inducción estructural.
-En particular, la función de \emph{soundness} analiza la forma de una derivación y construye, para cada regla, el estado inicial y la traza operacional que justifican el estado final.
+En particular, la función de \emph{soundness} analiza la forma de una derivación y construye,
+para cada regla, el estado inicial y la traza operacional que justifican el estado final.
 
-Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores, donde la longitud forma parte del propio tipo:
+Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores,
+donde la longitud forma parte del propio tipo:
 \begin{lstlisting}[style=fstar]
 type vec (a : Type) : nat -> Type =
   | Nil : vec a 0
   | Cons : #n : nat -> hd : a -> tl : vec a n -> vec a (n + 1)
 \end{lstlisting}
-El constructor \texttt{Nil} solo produce vectores de longitud cero, mientras que \texttt{Cons} recibe un vector de longitud \texttt{n} y produce uno de longitud \texttt{n + 1}.
-Por lo tanto, la longitud no es una propiedad externa que deba verificarse luego, sino un invariante impuesto por el sistema de tipos.
-Esta información permite definir funciones de acceso cuyos índices estén refinados por la longitud del vector, excluyendo estáticamente los accesos fuera de rango.
+El constructor \texttt{Nil} solo produce vectores de longitud cero,
+mientras que \texttt{Cons} recibe un vector de longitud \texttt{n} y produce uno de longitud \texttt{n + 1}.
+Por lo tanto, la longitud no es una propiedad externa que deba verificarse luego,
+sino un invariante impuesto por el sistema de tipos.
+Esta información permite definir funciones de acceso cuyos índices estén refinados por la longitud del vector,
+excluyendo estáticamente los accesos fuera de rango.
 
 Esta característica se utiliza en la tesina para representar tanto la semántica operacional como los sistemas deductivos.
 La relación \texttt{runsto : stmt -> \, state -> \, state -> \, Type0} es un tipo indexado por un comando y dos estados.
-Un habitante de \texttt{runsto c s0 s1} constituye una derivación que certifica que el comando \texttt{c} puede ejecutarse desde un estado \texttt{s0} hasta otro estado \texttt{s1}.
+Un habitante de \texttt{runsto c s0 s1} constituye una derivación que certifica
+que el comando \texttt{c} puede ejecutarse desde un estado \texttt{s0} hasta otro estado \texttt{s1}.
 Cada constructor de \texttt{runsto} corresponde a una regla de la semántica operacional.
 
-De manera similar, el tipo \texttt{il\_triple : cond -> \, stmt -> \, cond -> \, Type} representa las derivaciones admitidas por el sistema deductivo de la IL.
+De manera similar,
+el tipo \texttt{il\_triple : cond -> \, stmt -> \, cond -> \, Type} representa las derivaciones admitidas por el sistema deductivo de la IL.
 Las admitidas por la ISL tienen una estructura similar.
 Un valor de tipo \texttt{il\_triple pre c post} representa la derivación de la tripleta de incorrectitud correspondiente.
 Cada regla lógica se codifica como un constructor del tipo.
 
-\subsection*{Pruebas fantasma y automatizaciones}
+\subsection*{Código fantasma y automatización}
 La mayor parte de la formalización tiene contenido lógico y no está destinada a ejecutarse.
-\fstar{} permite distinguir este tipo de definiciones mediante cómputos fantasma, que son comprobados por el verificador pero eliminados durante la extracción de código.
+\fstar{} permite distinguir este tipo de definiciones mediante cómputos fantasma,
+que son comprobados por el verificador pero eliminados durante la extracción de código.
 
 El efecto \texttt{GTot} describe una función total y fantasma.
 Por ejemplo:
@@ -2243,9 +2271,12 @@ let eval_expr (s : state) (e : expr) : GTot int =
 \end{lstlisting}
 indica que la función siempre termina y que su resultado se utiliza solo dentro de especificaciones o demostraciones.
 
-Para enunciar y demostrar teoremas abstractos, \fstar{} proporciona el efecto \texttt{Lemma}.
-Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{requires} y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
-Su resultado computacional es irrelevante, lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
+Para enunciar y demostrar teoremas abstractos,
+\fstar{} proporciona el efecto \texttt{Lemma}.
+Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{requires}
+y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
+Su resultado computacional es irrelevante,
+lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
 Por ejemplo, una firma de la forma:
 \begin{lstlisting}[style=fstar]
 val lemma :
@@ -2254,10 +2285,13 @@ val lemma :
     (requires P x)
     (ensures Q x)
 \end{lstlisting}
-establece que, siempre que se cumpla la premisa \texttt{P x}, el lema garantiza la conclusión \texttt{Q x}.
+establece que, siempre que se cumpla la premisa \texttt{P x},
+el lema garantiza la conclusión \texttt{Q x}.
 
 Otra construcción utilizada en la formalización es \texttt{squash}.
-Dada una proposición \texttt{P}, el tipo \texttt{squash P} conserva únicamente la información de que \texttt{P} es verdadera, sin conservar una estructura computacional de su demostración.
+Dada una proposición \texttt{P},
+el tipo \texttt{squash P} conserva únicamente la información de que \texttt{P} es verdadera,
+sin conservar una estructura computacional de su demostración.
 Por eso se habla de una prueba ``aplastada'' o irrelevante desde el punto de vista computacional.
 Esta construcción resulta adecuada para condiciones laterales como:
 \begin{lstlisting}[style=fstar]
@@ -2268,19 +2302,30 @@ que es una condición lateral de la Regla de Consecuencia.
 En este caso, la formalización solo necesita establecer que la implicación es válida.
 No necesita inspeccionar posteriormente cómo fue demostrada.
 El uso de \texttt{squash} también facilita que estas obligaciones sean tratadas por el \emph{solver} SMT Z3.
-El \emph{solver} puede resolver automáticamente muchas obligaciones de primer orden, como implicaciones, igualdades, restricciones aritméticas e inclusiones entre predicados.
+El \emph{solver} puede resolver automáticamente muchas obligaciones de primer orden,
+como implicaciones, igualdades, restricciones aritméticas e inclusiones entre predicados.
 
 Sin embargo, esta automatización no elimina la necesidad de construir las demostraciones.
-El usuario debe proporcionar la estructura principal de los argumentos, especialmente cuando requieren inducción o la construcción de testigos existenciales.
-Cuando el \emph{solver} no puede resolver una obligación automáticamente, es necesario agregar lemas auxiliares, revelar definiciones o proporcionar pasos intermedios que orienten la prueba.
+El usuario debe proporcionar la estructura principal de los argumentos,
+especialmente cuando requieren inducción o la construcción de testigos existenciales.
+Cuando el \emph{solver} no puede resolver una obligación automáticamente,
+es necesario agregar lemas auxiliares,
+revelar definiciones o proporcionar pasos intermedios que orienten la prueba.
 
 Además, las funciones recursivas tienen que demostrar su terminación.
-Cuando esto no resulta evidente de manera automática, \fstar{} permite indicar una medida decreciente mediante la cláusula \texttt{decreases}.
-En las demostraciones de \emph{soundness}, la medida utilizada es la propia derivación, ya que cada llamada recursiva se realiza sobre una subderivación estrictamente menor.
+Cuando esto no resulta evidente de manera automática,
+\fstar{} permite indicar una medida decreciente mediante la cláusula \texttt{decreases}.
+En las demostraciones de \emph{soundness},
+la medida utilizada es la propia derivación,
+ya que cada llamada recursiva se realiza sobre una subderivación estrictamente menor.
 
 Estas características determinan la estrategia de mecanización utilizada en los capítulos siguientes.
-Las aserciones se representan como predicados sobre estados; las semánticas operacionales y los sistemas deductivos, como tipos inductivos indexados; y sus propiedades metateóricas, como funciones recursivas y lemas fantasma.
-La integración con Z3 permite automatizar las obligaciones lógicas locales, mientras que la estructura global de cada demostración permanece explícita en el código de \fstar{}.
+Las aserciones se representan como predicados sobre estados;
+las semánticas operacionales concretas y los sistemas deductivos,
+como tipos inductivos indexados;
+y sus propiedades metateóricas, como funciones recursivas y lemas fantasma.
+La integración con Z3 permite automatizar las obligaciones lógicas locales,
+mientras que la estructura global de cada demostración permanece explícita en el código de \fstar{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

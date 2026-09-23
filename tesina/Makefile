@@ -2,6 +2,7 @@ MAIN = main
 
 TEX_SRC = $(wildcard *.tex)
 BIB_SRC = tesina.bib
+BST_SRC = $(wildcard *.bst)
 IMG_SRC = $(wildcard img/*)
 
 LATEXMK = latexmk -pdf -halt-on-error -interaction=nonstopmode
@@ -10,12 +11,12 @@ LATEXMK = latexmk -pdf -halt-on-error -interaction=nonstopmode
 
 all: $(MAIN).pdf
 
-$(MAIN).pdf: $(TEX_SRC) $(BIB_SRC) $(IMG_SRC)
+$(MAIN).pdf: $(TEX_SRC) $(BIB_SRC) $(BST_SRC) $(IMG_SRC)
 	$(LATEXMK) $(MAIN).tex
 
 # inotifywait does not exist on macOS, use fswatch there.
 ifeq ($(shell uname),Darwin)
-WAIT = fswatch -1 $(TEX_SRC) $(BIB_SRC) img >/dev/null
+WAIT = fswatch -1 $(TEX_SRC) $(BIB_SRC) $(BST_SRC) img >/dev/null
 else
 WAIT = inotifywait -qre close_write .
 endif

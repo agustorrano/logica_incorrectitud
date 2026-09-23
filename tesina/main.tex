@@ -74,16 +74,16 @@ A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógi
 Por ejemplo, la lógica de \citet{concurrence} para programas concurrentes,
 la Lógica Temporal de \citet{templog} para la evolución de las ejecuciones,
 La Lógica Dinámica de \citet{dinlog},
-la Lógica de Hoare Relacional~\cite{hlrel} para comparar ejecuciones
+la Lógica de Hoare Relacional~\citep{hlrel} para comparar ejecuciones
 y diversas lógicas probabilísticas aplicadas,
-entre otros casos, a la verificación de construcciones criptográficas~\cite{cripto}.
+entre otros casos, a la verificación de construcciones criptográficas~\citep{cripto}.
 %\guido{OK}
 %\guido{aca creo que todos los ejemplos deberían estar en la misma oracion}
 
 La aplicación de estos sistemas lógicos a programas de gran escala,
 sin embargo, puede requerir un esfuerzo considerable.
 En particular, los métodos deductivos orientados a la correctitud, como la
-Lógica de Hoare (HL), la Lógica de Separación (SL)~\cite{sl} y
+Lógica de Hoare (HL), la Lógica de Separación (SL)~\citep{sl} y
 todas las lógicas mencionadas en el párrafo anterior,
 %\guido{acá no sería mejor poder decir ``todas las lógicas del párrafo anterior''?}
 requieren especificar formalmente las propiedades que debe cumplir el programa
@@ -92,11 +92,11 @@ Además, las demostraciones deben mantenerse y adaptarse a medida que el program
 %\guido{lo ultimo está bueno, es especialmente importante en un entorno industrial, porque
 %trata de software, no de demostrar que algun algoritmo en un libro está bien o mal}
 
-La magnitud de este esfuerzo puede observarse en proyectos como seL4~\cite{sel4}.
+La magnitud de este esfuerzo puede observarse en proyectos como seL4~\citep{sel4}.
 Aunque se trata de un microkernel con un núcleo de aproximadamente 10.000 líneas de código,
 su prueba de correctitud demandó cerca de veinte años-persona.
 Además, su desarrollo y mantenimiento involucraron alrededor de 480.000 líneas de prueba y especificaciones formales.
-Project Everest~\cite{everest}, por su parte, comenzó con la expectativa de cinco años de duración
+Project Everest~\citep{everest}, por su parte, comenzó con la expectativa de cinco años de duración
 y reunió un equipo numeroso de investigadores e ingenieros para desarrollar componentes verificados del ecosistema HTTPS,
 incluidos TLS, sus algoritmos criptográficos y protocolos relacionados.
 Se estima que el proyecto involucró un esfuerzo acumulado de entre cincuenta y cien años-persona.
@@ -117,7 +117,7 @@ con el objetivo de encontrar posibles errores comunes.
 En general, los analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
 pero pueden perder precisión y dar lugar a falsos positivos.
 La necesidad de aproximar está relacionada con la indecibilidad de las propiedades semánticas no triviales de los programas,
-establecida por el Teorema de Rice~\cite{riceteo}.
+establecida por el Teorema de Rice~\citep{riceteo}.
 Por lo tanto, los analizadores estáticos tienen una tensión inevitable
 entre reportar todos los posibles errores y evitar falsas advertencias.
 
@@ -130,7 +130,7 @@ la generación de advertencias respaldadas por errores reales.
 Para alcanzar estos objetivos, los analizadores suelen ajustar sus heurísticas de manera \emph{ad-hoc},
 sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
 %La experiencia de Facebook constituye un antecedente de una perspectiva diferente:
-%sus analizadores se utilizaban para identificar regresiones concretas introducidas durante la evolución del código~\cite{facebook}.
+%sus analizadores se utilizaban para identificar regresiones concretas introducidas durante la evolución del código~\citep{facebook}.
 %\guido{no entiendo lo anterior, no me parece que eso sea muy interesante?
 %pero sí que necesitaban 1) algo muy rápido y 2) que no diera falsos positivos}
 
@@ -924,7 +924,7 @@ Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre re
 
 \end{mathpar}
 \rule{\linewidth}{0.4pt}
-\caption{Reglas de inferencia de la IL. Adaptadas de~\cite{inclog}.}
+\caption{Reglas de inferencia de la IL. Adaptadas de~\citep{inclog}.}
 \label{fig:reglas-il}
 \end{figure}
 
@@ -1171,12 +1171,12 @@ La relevancia práctica del razonamiento sobre incorrectitud puede observarse
 en distintos trabajos desarrollados en el entorno de Facebook/Meta.
 Entre los antecedentes industriales,
 herramientas como Infer y Zoncolan mostraron que los análisis estáticos composicionales
-podían integrarse en procesos de desarrollo industriales y aplicarse sobre bases de código de gran tamaño~\cite{fast, facebook}.
+podían integrarse en procesos de desarrollo industriales y aplicarse sobre bases de código de gran tamaño~\citep{fast, facebook}.
 Aunque estas herramientas son anteriores a la introducción de la IL
 y no constituyen implementaciones directas de esta lógica,
 sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
 
-Una evidencia más directa sobre la aplicabilidad de la IL es el desarrollo de Pulse-X~\cite{bugs}.
+Una evidencia más directa sobre la aplicabilidad de la IL es el desarrollo de Pulse-X~\citep{bugs}.
 En su evaluación sobre OpenSSL,
 un proyecto de código abierto que proporciona bibliotecas y herramientas criptográficas para comunicaciones seguras,
 encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
@@ -1205,7 +1205,7 @@ extiende la HL para permitir el razonamiento sobre este tipo de programas.
 Su objetivo es describir tanto el estado de las variables
 como el fragmento de memoria relevante para el comando que se está analizando.
 Esto permite realizar un razonamiento local,
-sin tener que describir explícitamente toda la memoria del programa~\cite{local}.
+sin tener que describir explícitamente toda la memoria del programa~\citep{local}.
 
 Para formalizar este modelo, sean $\mathsf{Var}$ el conjunto de variables del programa,
 $\mathsf{Val}$ el conjunto de valores y $\mathsf{Loc}$ el conjunto de direcciones de memoria.
@@ -1245,7 +1245,7 @@ Por lo tanto, el verificador debe comprobar que esa modificación no contradiga 
 que deben mantenerse para otras referencias y para el resto de la memoria.
 Estas condiciones de verificación pueden ser difíciles de construir y de demostrar automáticamente,
 lo que también puede limitar la escalabilidad del análisis,
-especialmente en estructuras de datos enlazadas~\cite{bttf}.
+especialmente en estructuras de datos enlazadas~\citep{bttf}.
 %\guido{alguna cita estaria buena. Este paper de verus \url{https://dl.acm.org/doi/epdf/10.1145/3694715.3695952} menciona algunos problemas de escalabilidad con Lowstar, que no era logica de separacion
 %sino razonar sobre aliasing via SMT. Tal vez haya alguna cita mejor}
 
@@ -1949,7 +1949,7 @@ A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:regl
   {\vdash_{\mathrm{ISL}} \itriple{x = \texttt{null}}{[x] := y}{er : x = \texttt{null}}}
 
 \end{mathpar}
-\caption{Reglas de inferencia de la ISL. Adaptadas de~\cite{isl}.}
+\caption{Reglas de inferencia de la ISL. Adaptadas de~\citep{isl}.}
 \label{fig:reglas-isl}
 \end{figure}
 
@@ -2137,7 +2137,7 @@ $$[\![C]\!]_{\varepsilon} = \operatorname{frame}(\operatorname{foot}(C)_\varepsi
 \end{teorema}
 
 La igualdad del Teorema~\ref{teo:huella} expresa dos direcciones complementarias.
-La primera inclusión, 
+La primera inclusión,
 $\operatorname{frame}(\operatorname{foot}(C)_\varepsilon) \subseteq [\![C]\!]_\varepsilon$,
 expresa la dirección local a global.
 Toda transición mínima sigue siendo una ejecución válida cuando se le agrega un marco compatible.
@@ -2154,7 +2154,7 @@ En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del 
 \label{sec:fstar}
 Los resultados semánticos y deductivos presentados en este capítulo se mecanizan en los capítulos siguientes utilizando \fstar{},
 un lenguaje de programación funcional con tipos dependientes que también funciona como asistente de pruebas
-y verificador de programas~\cite{fstar}.
+y verificador de programas~\citep{fstar}.
 Este lenguaje está integrado con el solucionador SMT Z3
 y adopta un enfoque de programación orientada a pruebas (\emph{proof-oriented programming}),
 en el que los programas, sus especificaciones y sus demostraciones se desarrollan dentro de un mismo lenguaje.
@@ -2227,7 +2227,7 @@ donde la prueba recibe un estado final que satisface el resultado de una triplet
 Una de las características más potentes del lenguaje es la capacidad de crear tipos inductivos indexados,
 los cuales permiten capturar invariantes complejos directamente en la forma de la estructura.
 
-La formalización se apoya en la correspondencia Curry-Howard \cite{howard},
+La formalización se apoya en la correspondencia Curry-Howard \citep{howard},
 donde las proposiciones se interpretan como tipos y las demostraciones como valores que habitan esos tipos.
 La ventaja de esto es que \fstar{} obliga a considerar todos los constructores al demostrar una metapropiedad por inducción estructural.
 En particular, la función de \emph{soundness} analiza la forma de una derivación y construye,
@@ -4357,7 +4357,7 @@ Los presentamos a continuación, comparándolos con el desarrollo realizado en e
 \subsection*{Mecanización de la HL para código máquina}
 \citet{mchoare} presentan un framework mecanizado de estilo Hoare para razonar sobre programas escritos en código máquina.
 La lógica se construye sobre una semántica operacional que representa características propias de máquinas reales, como la memoria finita, la coexistencia de código y datos en un mismo espacio de direcciones, los registros de estado y el riesgo de modificar registros como el contador de programa, el puntero de pila y el registro de retorno.
-El desarrollo fue formalizado en lógica de orden superior y mecanizado en HOL4~\cite{hol4}.
+El desarrollo fue formalizado en lógica de orden superior y mecanizado en HOL4~\citep{hol4}.
 
 El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales y de uso de recursos directamente sobre programas de bajo nivel.
 Aunque el modelo conserva detalles de la máquina, las especificaciones se expresan con una especificación flexible del estado inspirada en el razonamiento local de la SL.
@@ -4378,7 +4378,7 @@ La presente formalización usa un lenguaje imperativo reducido, lo que permite c
 El trabajo redefine Cminor para facilitar el razonamiento con la HL y da una semántica operacional de paso pequeño, en lugar de solo usar la semántica de paso grande del compilador.
 Esta elección se encuentra motivada por la posibilidad de extender luego el lenguaje con concurrencia.
 
-El desarrollo incluye una demostración mecanizada en Coq~\cite{coq} de la solidez de la SL respecto de esa semántica.
+El desarrollo incluye una demostración mecanizada en Coq~\citep{coq} de la solidez de la SL respecto de esa semántica.
 Los autores presentan el resultado como la primera demostración mecanizada de una SL respecto de una semántica de paso pequeño.
 
 Este trabajo es cercano a esta tesina por su metodología.
@@ -4398,7 +4398,7 @@ Esta representación permite justificar accesos erróneos a memoria liberada, un
 
 \subsection*{IsaBIL: verificación de correctitud e incorrectitud de binarios}
 \citet{isabil} presentan IsaBIL, un framework desarrollado en Isabelle/HOL para verificar propiedades de programas binarios.
-La herramienta usa \emph{Binary Analysis Platform} (BAP)~\cite{bap} para traducir los binarios al lenguaje intermedio BIL y genera un entorno dentro de Isabelle/HOL en el que pueden construirse pruebas basadas tanto en HL como IL.
+La herramienta usa \emph{Binary Analysis Platform} (BAP)~\citep{bap} para traducir los binarios al lenguaje intermedio BIL y genera un entorno dentro de Isabelle/HOL en el que pueden construirse pruebas basadas tanto en HL como IL.
 IsaBIL incluye una formalización de la sintaxis y la semántica operacional de BIL.
 Las lógicas de correctitud e incorrectitud se definen de forma paramétrica respecto de una relación operacional, lo que permite reutilizar sus reglas con diferentes modelos de estado.
 La estructura se implementa mediante el sistema de \emph{locales} de Isabelle/HOL.
@@ -4486,7 +4486,7 @@ Actualmente, los caminos de ejecución, las aserciones intermedias y los constru
 Una extensión consiste en desarrollar un procedimiento que recorra la sintaxis del programa y construya automáticamente derivaciones de \texttt{isl\_triple}.
 Este procedimiento podría calcular postcondiciones, seleccionar ramas de elección no determinista, descubrir caminos que llevan a errores y generar las obligaciones lógicas.
 
-En el caso espacial, técnicas de bi-abducción \cite{biabd} podrían usarse para inferir los recursos requeridos por una operación y los marcos que deben conservarse.
+En el caso espacial, técnicas de bi-abducción \citep{biabd} podrían usarse para inferir los recursos requeridos por una operación y los marcos que deben conservarse.
 Esto permitiría aproximar la formalización a una herramienta de análisis estático sin abandonar las garantías mecanizadas del núcleo lógico.
 
 \subsection*{Extensión del lenguaje y del modelo de memoria}
@@ -4521,7 +4521,8 @@ Mecanizar las propiedades de concurrencia en \fstar{} permitiría estudiar error
 % \label{sec:appendix}
 
 %\nocite{*}
-\bibliographystyle{plainnat}
+% Variante local de plainnat: usa "y" entre autores y editores.
+\bibliographystyle{plainnat-es}
 \bibliography{tesina}
 
 \end{document}

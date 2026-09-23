@@ -10,3 +10,5 @@ comment.cut
 *.fls
 *.pdf
 *.toc
+*.bcf
+*.run.xml

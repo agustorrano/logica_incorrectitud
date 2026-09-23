@@ -2,6 +2,8 @@
 % Include preambles
 \input{preamble.tex}
 
+\usepackage{combelow}
+
 % Comentarios
 \usepackage{xcolor}
 \newif\ifdraft\drafttrue
@@ -73,7 +75,7 @@ Estas especificaciones permiten expresar, entre otras propiedades, que determina
 A partir de estas primeras propuestas, se desarrollaron numerosos sistemas lógicos capaces de verificar propiedades cada vez más complejas.
 Por ejemplo, la lógica de \citet{concurrence} para programas concurrentes,
 la Lógica Temporal de \citet{templog} para la evolución de las ejecuciones,
-La Lógica Dinámica de \citet{dinlog},
+la Lógica Dinámica de \citet{dinlog},
 la Lógica de Hoare Relacional~\citep{hlrel} para comparar ejecuciones
 y diversas lógicas probabilísticas aplicadas,
 entre otros casos, a la verificación de construcciones criptográficas~\citep{cripto}.
@@ -81,38 +83,53 @@ entre otros casos, a la verificación de construcciones criptográficas~\citep{c
 %\guido{aca creo que todos los ejemplos deberían estar en la misma oracion}
 
 La aplicación de estos sistemas lógicos a programas de gran escala,
-sin embargo, puede requerir un esfuerzo considerable.
+sin embargo, requiere un esfuerzo considerable.
 En particular, los métodos deductivos orientados a la correctitud, como la
-Lógica de Hoare (HL), la Lógica de Separación (SL)~\citep{sl} y
+Lógica de Hoare (HL), la Lógica de Separación (SL, \cite{sl}) y
 todas las lógicas mencionadas en el párrafo anterior,
 %\guido{acá no sería mejor poder decir ``todas las lógicas del párrafo anterior''?}
 requieren especificar formalmente las propiedades que debe cumplir el programa
-y construir demostraciones que cubran sus distintos caminos de ejecución.
+y construir demostraciones que cubran todos sus distintos caminos de ejecución.
 Además, las demostraciones deben mantenerse y adaptarse a medida que el programa cambia.
 %\guido{lo ultimo está bueno, es especialmente importante en un entorno industrial, porque
 %trata de software, no de demostrar que algun algoritmo en un libro está bien o mal}
 
 La magnitud de este esfuerzo puede observarse en proyectos como seL4~\citep{sel4}.
-Aunque se trata de un microkernel con un núcleo de aproximadamente 10.000 líneas de código,
+Aunque se trata de un microkernel de aproximadamente 10.000 líneas de código,
 su prueba de correctitud demandó cerca de veinte años-persona.
-Además, su desarrollo y mantenimiento involucraron alrededor de 480.000 líneas de prueba y especificaciones formales.
-Project Everest~\citep{everest}, por su parte, comenzó con la expectativa de cinco años de duración
-y reunió un equipo numeroso de investigadores e ingenieros para desarrollar componentes verificados del ecosistema HTTPS,
-incluidos TLS, sus algoritmos criptográficos y protocolos relacionados.
-Se estima que el proyecto involucró un esfuerzo acumulado de entre cincuenta y cien años-persona.
-Asimismo, aunque este proyecto produjo varios componentes verificados,
-el resultado final fue más acotado que la meta inicial.
-Estos proyectos muestran que la verificación de sistemas reales es posible,
-pero también que requiere una gran inversión de recursos,
-lo que ha hecho que haya poca aplicación en la industria.
+Además, su desarrollo y mantenimiento involucraron alrededor de 480,000 líneas de prueba y especificaciones formales.
+\guido{el mantenimiento demando 480k lineas? no entiendo. Por ahi queres
+decir que el proof-to-code ratio es 48x?}
+%
+Por otro lado, el Project Everest~\citep{everest} reunió un equipo numeroso de
+investigadores e ingenieros para desarrollar una implementación completamente
+verificada del ecosistema HTTPS, incluidos TLS, sus varios algoritmos
+criptográficos, y componentes de parsing y serialización.
+% comenzó con la expectativa de cinco años de duración
+Durante sus cinco años de duración, se estima que el proyecto involucró un
+esfuerzo acumulado de entre cincuenta y cien años-persona.
+Asimismo, aunque este proyecto produjo varios componentes verificados, el
+resultado final fue más acotado que la meta inicial, no llegando a verificar
+el \emph{handshake} de TLS, pero sí sus componentes criptográficos y parsing/serialización.
+%
+Estos proyectos muestran que la verificación de sistemas reales es posible, pero
+también que requiere una gran inversión de recursos, lo que ha hecho que haya
+poca aplicación en la industria general.
 %\guido{mencionar cuanta gente trabajó en esto, creo que estimamos entre 50 y 100 años-persona}
 %\guido{El esfuerzo de verificar es muy alto,
 %buscar proyectos como seL4, Proyecto Everest
 %(https://dl.acm.org/doi/10.1145/3805702),
 %DeepSpec}
 
-Frente a este costo, los analizadores estáticos son una familia de herramientas que ha tenido una adopción más amplia.
-Estos son herramientas automatizadas que examinan un programa sin necesidad de ejecutarlo sobre entradas concretas,
+Frente a este costo, la atención ha estado más enfocada en herramientas
+de búsqueda de bugs (\emph{bug finders}).
+Los analizadores estáticos son una familia de buscadores de bugs
+que ha
+tenido una adopción mucho más amplia que la verificación formal.
+%
+Éstos son herramientas automatizadas que
+examinan un
+programa sin necesidad de ejecutarlo sobre entradas concretas,
 con el objetivo de encontrar posibles errores comunes.
 En general, los analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
 pero pueden perder precisión y dar lugar a falsos positivos.
@@ -127,6 +144,10 @@ y hacer que sus advertencias sean ignoradas.
 Por este motivo,
 las herramientas utilizadas en la práctica combinan la rapidez para producir resultados y
 la generación de advertencias respaldadas por errores reales.
+\guido{``combinan ... y advertencias respaldadas por errores reales'' suena
+a que todos los analizadores estáticos hacen esto, pero los que usan IL
+o algo con fundamentos son la minoría}
+%
 Para alcanzar estos objetivos, los analizadores suelen ajustar sus heurísticas de manera \emph{ad-hoc},
 sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
 %La experiencia de Facebook constituye un antecedente de una perspectiva diferente:
@@ -135,6 +156,7 @@ sin contar necesariamente con una justificación lógica de por qué cada advert
 %pero sí que necesitaban 1) algo muy rápido y 2) que no diera falsos positivos}
 
 Este interés por demostrar la presencia de errores reales
+\guido{cambiar a ``eliminar falsos positivos''?}
 motivó a \citet{inclog} a proponer una lógica de \emph{incorrectitud}.
 En lugar de intentar describir todos los comportamientos posibles de un programa
 para demostrar que ninguno produce un error,
@@ -148,7 +170,7 @@ que justifica la existencia del error reportado.
 La versión original de la Lógica de Incorrectitud (IL) presentada por O'Hearn es análoga a la HL clásica,
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
 pero sin un \emph{heap}.
-Por lo tanto, no permite razonar sobre memoria dinámica y estructuras de datos mutables.
+Por lo tanto, no permite operaciones sobre memoria dinámica y estructuras de datos mutables.
 En el ámbito de la correctitud,
 la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
 %\guido{recordaría la defn de ``SL'' una vez más acá}
@@ -181,13 +203,19 @@ Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 
 La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL,
 con el razonamiento local sobre memoria dinámica de la SL.
+
+\guido{rompo en 2 parrafos acá}
+
 Sin embargo, para confiar en las conclusiones obtenidas con este sistema,
 no basta con definir sus aserciones y reglas de inferencia,
 también es necesario demostrar sus \emph{metapropiedades}, es decir,
 propiedades del propio sistema lógico y de su relación con la semántica de los programas.
 Una de las más importantes es la \emph{solidez} (\emph{soundness}),
-que garantiza que toda conclusión obtenida mediante las reglas de la lógica corresponde a
+que garantiza, en este caso, que toda conclusión obtenida mediante las reglas de la lógica corresponde a
 un comportamiento admitido por la semántica.
+
+\guido{agregue ``en este caso'', mas en general soundness indica que la
+version sintactica de una prueba implica su verdad semantica}
 
 Estas propiedades pueden demostrarse matemáticamente sobre un papel.
 Sin embargo, este tipo de razonamientos pueden contener errores u omisiones difíciles de identificar.
@@ -226,6 +254,13 @@ En particular, \fstar{} comprueba paso a paso las demostraciones de solidez de l
 lo que proporciona un alto grado de confianza en su validez.
 Además, permite construir certificados formales de error y
 verificar que cada certificado está respaldado por una derivación válida.
+
+\guido{y si decimos explicitamente que la aplicamos a algunos programas
+ilustrativos, obteniendo certificados formales de error? por otro lado,
+en algun momento habria que mencionar que la utilidad de la IL viene
+mucho por el no-determinismo. Si no, en vez de un certificado,
+te puedo dar las entradas que rompen al programa y listo.
+Aunque otra ventaja también es poder demostrar familias de errores.}
 
 %\guido{podrías agregar que permite ademas construir certificados de error (tripletas)
 %en un lenguaje verificado, o sea, no solo demostramos que la lógica es sound de forma

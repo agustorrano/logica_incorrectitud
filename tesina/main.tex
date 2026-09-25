@@ -2565,7 +2565,7 @@ let eval_expr (s : state) (e : expr) : GTot nat =
 \end{lstlisting}
 
 La definición de comandos es similar, pero incluye instrucciones que modifican el estado o controlan el flujo.
-Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.
+\guido{\sout{Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.}}
 
 \begin{lstlisting}[style=fstar]
 type stmt =
@@ -2593,6 +2593,9 @@ Existen dos impedimentos teóricos para construir un intérprete funcional tradi
     Una función simple no diferencia entre un resultado exitoso y uno erróneo.
     \item No determinismo: al incluir instrucciones como \texttt{Nondet} o \texttt{Choice}, un mismo estado inicial de la memoria puede derivar en varios caminos y estados finales válidos distintos.
 \end{enumerate}
+\guido{Esto me parece obvio, ya explicamos arriba que la semántica es una (o
+varias) relaciones. Lo del modo es un detalle de implementacion interesante, lo
+otro no}
 
 Para resolver el primer problema, se incorporó el modo de terminación directamente dentro del \emph{state}, entonces la propagación de errores ocurre de forma natural.
 Por otro lado, para resolver el segundo problema, abandonamos las funciones y modelamos la ejecución como una relación matemática utilizando un tipo inductivo indexado:
@@ -2601,6 +2604,9 @@ Por otro lado, para resolver el segundo problema, abandonamos las funciones y mo
 noeq
 type runsto : stmt -> state -> state -> Type0
 \end{lstlisting}
+\guido{para después, por ahí en la seccion intro de F* podes mostrar un ejemplo
+de relacion inductiva, por ejemplo una relacion que demuestra que dos vectores
+tienen la misma longitud.}
 
 En la \autoref{sec:loginc}, la semántica de un comando se representó mediante una relación binaria sobre estados.
 El tipo \texttt{runsto} constituye la mecanización de dicha relación.
@@ -2632,6 +2638,8 @@ Su función es permitir que \fstar{} identifique como equivalentes estados cuyos
   (#_ : squash (state_equiv s1 s1')) ->
   runsto p s0' s1'
 \end{lstlisting}
+\guido{creo que capaz $R_Ext$ no hace falta porque podemos usar
+functionalextensionality? se puede borrar y demostrar que es admisible?}
 
 La instrucción más elemental que modifica el estado es la asignación.
 Esta se formaliza mediante:
@@ -2645,6 +2653,7 @@ Esta se formaliza mediante:
 Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
 Toma un estado de éxito arbitrario $s$, evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e}, y garantiza que el estado final es idéntico a $s$, pero con el valor de la variable $x$ actualizado mediante \texttt{override}.
 Por último, como \texttt{Assign} es una operación segura en nuestro lenguaje, el modo de terminación siempre es el canal de éxito.
+\guido{reemplaza el ultimo \lstinline{s._2} por \lstinline{Ok}}
 
 La asignación no determinista se representa mediante:
 
@@ -2666,6 +2675,8 @@ Representamos la terminación normal, de error y filtrado de caminos de la sigui
   squash (eval_expr s e =!= 0) ->
   runsto (Assume e) s s
 \end{lstlisting}
+\guido{podriamos aclarar que s siempre tiene que estar en OK?}
+\guido{Error seria Abort?}
 
 \texttt{R\_Skip} conserva el estado.
 La regla \texttt{R\_Error} conserva el \emph{store}, pero cambia el modo de terminación.
@@ -2677,19 +2688,20 @@ De esta manera, los caminos que no satisfacen la condición son eliminados de la
 La composición secuencial se divide según el modo de terminación del primer comando:
 
 \begin{lstlisting}[style=fstar]
-| R_SeqEr : #p : stmt -> #q : stmt ->
-  #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
-  runsto p s t -> runsto (Seq p q) s t
 | R_Seq : #p : stmt -> #q : stmt ->
   #s : state { s._2 == Ok } -> #t : state { t._2 == Ok } -> #u : state ->
   runsto p s t -> runsto q t u ->
   runsto (Seq p q) s u
+| R_SeqEr : #p : stmt -> #q : stmt ->
+  #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
+  runsto p s t -> runsto (Seq p q) s t
 \end{lstlisting}
 
 La regla \texttt{R\_Seq} establece que si la primera instrucción \texttt{p} termina con éxito en un estado intermedio \texttt{t}, la ejecución normal continúa evaluando \texttt{q} a partir de \texttt{t} hasta llegar al estado final \texttt{u}.
 Sin embargo, el comportamiento cambia en la regla \texttt{R\_SeqEr}.
 Si la semántica garantiza que el comando \texttt{p} abortó dejando un estado de error \texttt{t}, la regla corta la ejecución.
 El comando secundario \texttt{q} nunca se menciona en las premisas, lo que significa matemáticamente que no se evalúa.
+\guido{no entiendo la oracion previa}
 El estado de error \texttt{t} se propaga hacia la superficie de la secuencia, garantizando la interrupción que la subaproximación requiere para capturar \emph{bugs} tempranos.
 
 La elección no determinista posee una regla para cada rama:

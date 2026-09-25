@@ -2025,6 +2025,9 @@ y en la aplicación de la Regla del Marco dentro de la interpretación subaproxi
 La noción de derivabilidad utilizada en esta sección fue introducida en la Definición~\ref{def:derivabilidad-isl}.
 A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:reglas-isl}.
 
+\guido{de qué sirve $x = x'$ en la pre de alloc1/alloc2? si $x$ es una variable local,
+esto es siempre cierto}
+
 \begin{figure}[htbp]
 \centering
 \begin{mathpar}
@@ -2179,6 +2182,7 @@ $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
 Por lo tanto,
 existe una ejecución de $C$ que comienza en un estado que satisface $p$ y termina con el modo $er$.
 $\ensuremath{\blacksquare}$
+\guido{si esto es idéntico al caso anterior solamente diría eso}
 
 El Teorema de Soundness garantiza que los estados descritos por una tripleta derivable están respaldados por ejecuciones reales.
 Para entender por qué este respaldo se conserva al aplicar la Regla del Marco,
@@ -2252,6 +2256,7 @@ Un comando con distintas ramas puede tener varias ejecuciones mínimas con reque
 Por ejemplo,
 una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una celda activa en la dirección almacenada en $x$,
 pero no necesita describir las demás celdas de \emph{heap}.
+\guido{no entiendo, eso no tiene ramas, y empieza con ``por ejemplo''}
 El resto de la memoria puede incorporarse con un marco.
 
 \begin{teorema}[Teorema de la Huella]
@@ -2273,6 +2278,8 @@ expresa la dirección global a local.
 Establece que toda ejecución global puede descomponerse en una transición mínima y un marco agregado a sus estados inicial y final.
 
 En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del desarrollo formal en \fstar{}.
+\guido{no se si aclararía esto acá porque me hace dudar de si todo
+el resto de los lemas están formalizados también (y entiendo que sí!)}
 
 \section{El lenguaje \fstar{}}
 \label{sec:fstar}
@@ -2286,8 +2293,11 @@ en el que los programas, sus especificaciones y sus demostraciones se desarrolla
 Además de utilizarse como asistente de pruebas,
 \fstar{} permite desarrollar programas ejecutables y extraerlos a otros lenguajes.
 Esta capacidad no se utiliza directamente en esta tesina,
-cuyo contenido es principalmente lógico y fantasma,
+cuyo contenido es principalmente lógico y fantasma\guido{no usaría este término
+sin definirlo, pone lógico y listo},
 pero forma parte del carácter híbrido de \fstar{} como lenguaje de programación y verificación.
+\guido{y podés ser más breve: ``si bien \fstar{} es un lenguaje de programación
+ejecutable, aquí lo usamos solamente como demostrador de teoremas''}
 
 En esta tesina,
 \fstar{} no se utiliza para implementar un analizador automático ni para producir código ejecutable.
@@ -2300,6 +2310,10 @@ permite expresar las reglas de inferencia como tipos inductivos y demostrar \emp
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
 \subsection*{Tipos dependientes y refinamientos}
+
+\guido{los llamaria ``tipos refinados'' en vez de ``tipos de refinamiento'',
+pero también está bien}
+
 En \fstar{}, los tipos pueden depender de valores.
 La manifestación más práctica de esto son los tipos de refinamiento.
 Un tipo de refinamiento permite expresar propiedades de los datos directamente en sus tipos,
@@ -2356,6 +2370,8 @@ donde las proposiciones se interpretan como tipos y las demostraciones como valo
 La ventaja de esto es que \fstar{} obliga a considerar todos los constructores al demostrar una metapropiedad por inducción estructural.
 En particular, la función de \emph{soundness} analiza la forma de una derivación y construye,
 para cada regla, el estado inicial y la traza operacional que justifican el estado final.
+\guido{esta ultima oración es confusa, podés limitarte a hablar de F* nomás, los
+teoremas tuyos vienen después}
 
 Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores,
 donde la longitud forma parte del propio tipo:
@@ -2401,7 +2417,7 @@ Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{req
 y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
 Su resultado computacional es irrelevante,
 lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
-Por ejemplo, una firma de la forma:
+Por ejemplo, una firma\guido{signatura} de la forma:
 \begin{lstlisting}[style=fstar]
 val lemma :
   x : t ->

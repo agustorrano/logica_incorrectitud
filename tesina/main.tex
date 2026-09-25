@@ -334,6 +334,10 @@ Sea $R \subseteq \Sigma \times \Sigma$ una relación binaria entre estados.
 La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma$ está relacionado mediante $R$
 con el estado $\sigma'$.
 A partir de una relación, podemos determinar qué estados se encuentran relacionados con los elementos de una aserción.
+\guido{esta ultima oración es muy confusa, por ahi diria
+algo como ``dado un conjunto de estados iniciales, definimos
+como su postimagen via R al conjunto de estados alcanzables por
+la relacion'', y luego la definicion formla abajo}
 
 \begin{definicion}[Postimagen]
 \label{def:post-img}
@@ -382,6 +386,9 @@ $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\varepsilon$
 En este sentido, $[\![C]\!]_\varepsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step},
 que relaciona directamente los estados iniciales y finales sin describir los pasos intermedios.
 
+\guido{Hay que dar una intuicion del modo de terminacion, algun
+ejemplo chico con abort o algo asi.}
+
 Aplicando la definición de postimagen a la relación semántica de un comando,
 se construye la siguiente definición:
 \begin{definicion}
@@ -423,6 +430,11 @@ Su unidad básica es la \emph{tripleta de Hoare}:
 $$\triple{p}{C}{q}$$
 donde $p$ y $q$ son aserciones y $C$ es un comando.
 La aserción $p$ se denomina \emph{precondición}, mientras que $q$ se denomina \emph{postcondición}.
+
+\guido{agregar que una tripleta representada
+que toda ejecucion que empieza en p termina en q, mas o menos,
+y luego aclarar el tema parcialidad? asi como está salta
+a hablar de terminacion sin decir nada sobre qué es una tripleta}
 
 Para definir el significado de una tripleta,
 es necesario establecer qué requisito se impone sobre la terminación de las ejecuciones.
@@ -505,6 +517,9 @@ $$\vdash_{\mathrm{HL}} \triple{p}{C}{q}$$
 cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de los axiomas y las reglas de inferencia de la HL.
 \end{definicion}
 
+\guido{si no vamos a dar las reglas, creo que deberiamos arrancar la sección
+diciendo que todo esto es un recordatorio sobre lógica de Hoare}
+
 Esta noción permite distinguir entre la validez semántica de una tripleta y
 la forma en que esta tripleta se construye dentro del sistema lógico.
 A continuación, presentamos un axioma y una regla que permiten obtener tripletas derivables en la HL.
@@ -537,7 +552,8 @@ $$\vdash_{\mathrm{HL}} \triple{x + 2 > 1}{C}{x > 1}.$$
 Como $x > 0 \implies x + 2 > 1$, la Regla de Consecuencia permite derivar:
 \begin{mathpar}
 \inferrule []
-  {x > 0 \implies x + 2 > 1 \\ \vdash_{\mathrm{HL}} \triple{x + 2 > 1}{C}{x > 1}}
+  {x > 0 \implies x + 2 > 1 \\ \vdash_{\mathrm{HL}} \triple{x + 2 > 1}{C}{x > 1}
+    \\ x > 1 \implies x > 1}
   {\vdash_{\mathrm{HL}} \triple{x > 0}{C}{x > 1}}
 \end{mathpar}
 \end{ejemplo}
@@ -600,6 +616,10 @@ denotado por $C^\star$,
 que representa la ejecución de un comando $C$ una cantidad finita y no determinista de veces.
 Para formalizar esta interpretación, definimos:
 $$C^0 \equiv \texttt{skip}, \qquad C^{n + 1} \equiv C^n; C.$$
+\guido{Este ``por lo tanto'' es muy raro. Definiste lo que es $C^n$, y son
+todos programas distintos. No hay una definición de $C^{*}$ ni una manera
+de demostrar esto. No puede haberla porque es una primitiva. Entiendo que usas
+$C^n$ abajo en la semantica, por ahi podés mover esto ahí.}
 Por lo tanto, $C^\star$ puede ejecutar $C$ cero, una o cualquier cantidad finita de veces,
 pero no representa ejecuciones infinitas.
 
@@ -631,6 +651,7 @@ La semántica de los comandos considerados se resume en la \autoref{fig:semantic
 En estas definiciones,
 $[\![e]\!]_\sigma$ denota el valor de la expresión $e$ en el estado $\sigma$,
 mientras que $[\![B]\!]_\sigma$ denota el resultado de evaluar la expresión booleana $B$ en $\sigma$.
+\guido{no son ambas lo mismo? por que distinguir los booleanos?}
 En particular,
 $[\![e]\!]_\sigma \in \mathsf{Val}$ y
 $[\![B]\!]_\sigma \in \{\texttt{true}, \texttt{false}\}$,
@@ -687,6 +708,10 @@ Como las relaciones solo contienen pares de estados correspondientes a ejecucion
 las ejecuciones que divergen no producen un estado final dentro de este modelo.
 Como \texttt{if}, \texttt{while} y \texttt{assert} son construcciones derivadas,
 su semántica se obtiene expandiéndolas en términos de los comandos primitivos anteriores.
+
+\guido{el caso nondet es un poco raro porque seguramente hay que restringir
+con el tipo de la variable... al menos eventualmente, tal vez en el
+paper original la situacion es mas simple}
 
 \subsection*{Tripletas y validez semántica}
 Sobre esta semántica se definen las tripletas de la IL,
@@ -764,6 +789,7 @@ que no satisface la postcondición $x = 3$.
 El ejemplo muestra que una postcondición que describe un resultado particular puede ser válida en la IL,
 aunque resulte demasiado restrictiva para la HL.
 El caso inverso se obtiene utilizando una postcondición más amplia.
+\guido{no agrega mucho esta oracion, creo}
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL2}
@@ -879,7 +905,8 @@ Las definiciones anteriores caracterizan la validez de una tripleta en términos
 Sin embargo, demostrar directamente la inclusión $q \subseteq post_\varepsilon(C)(p)$ puede ser difícil,
 ya que exige justificar la alcanzabilidad de cada estado descrito por $q$.
 Para organizar este razonamiento,
-la IL proporciona un sistema deductivo compuesto por reglas de inferencia.
+la IL proporciona un sistema deductivo compuesto por reglas de inferencia
+\guido{``al igual que la HL''?}.
 Estas reglas permiten construir derivaciones a partir de la estructura de los comandos y de las relaciones entre aserciones.
 Antes de presentarlas, definimos formalmente la noción de derivabilidad.
 
@@ -917,13 +944,13 @@ Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre re
   {}
   {\vdash_{\mathrm{IL}} \itriple{p}{\texttt{skip}}{ok : p}}
 
-\inferrule [Secuencia (error)]
-  {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{er : r}}
-  {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{er : r}}
-
 \inferrule [Secuencia (normal)]
   {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{ok : q} \\ \vdash_{\mathrm{IL}} \itriple{q}{C_2}{\varepsilon : r}}
   {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{\varepsilon : r}}
+
+\inferrule [Secuencia (error)]
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1}{er : r}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{C_1; C_2}{er : r}}
 
 \inferrule [Kleene (base)]
   {}
@@ -955,7 +982,7 @@ Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre re
 
 \inferrule [Nondet]
   {}
-  {\vdash_{\mathrm{IL}} \itriple{p}{x := \texttt{nondet}}{ok : \exists x'. p}}
+  {\vdash_{\mathrm{IL}} \itriple{p}{x := \texttt{nondet}}{ok : \exists x'. p\mbox{\guido{no es $p[x'/x]$???}}}}
 
 \end{mathpar}
 \rule{\linewidth}{0.4pt}
@@ -975,11 +1002,14 @@ Por el contrario, la regla \textsc{Error} expresa que el comando \texttt{error} 
 y conserva el estado descrito por la precondición.
 
 Para el caso de secuenciación hay dos reglas.
-La primera regla (\textsc{Secuencia (error)}) contempla el caso en que el primer comando termina con un error;
-por lo tanto, el segundo comando no llega a ejecutarse.
-La segunda (\textsc{Secuencia (normal)}) contempla el caso en que el primer comando termina normalmente
-y su postcondición se usa como precondición del segundo comando.
+La primera regla (\textsc{Secuencia (normal)}) contempla el caso en que el
+primer comando termina normalmente y su postcondición se usa como precondición
+del segundo comando.
 En este caso, el modo de terminación final puede ser $ok$ o $er$.
+%
+La segunda regla (\textsc{Secuencia (error)}) contempla el caso en que el
+primer comando termina con un error; por lo tanto, el segundo comando no llega a
+ejecutarse.
 
 La regla \textsc{Choice} permite construir una derivación seleccionando una de las dos ramas del comando no determinista $C_1 + C_2$.
 Esto es suficiente porque la IL busca certificar la alcanzabilidad de resultados determinados
@@ -1039,6 +1069,7 @@ En la IL, este debilitamiento de la postcondición, en general, no es válido.
 Al reemplazar $q_1 \land q_2$ por $q_1$,
 la nueva postcondición puede incluir estados que satisfacen $q_1$,
 pero que no satisfacen las demás condiciones necesarias para que el programa los produzca.
+\guido{por que no decir ``pero que no satisfacen $q_2$'' y listo?}
 Por lo tanto, algunos de los estados incorporados podrían ser inalcanzables.
 
 La Regla de Consecuencia de la IL produce el efecto contrario:
@@ -1131,15 +1162,19 @@ El análisis de los bucles iterativos constituye uno de los principales desafío
 En la HL, razonar sobre un bucle requiere encontrar un invariante, es decir,
 una propiedad que se mantenga cada vez que el control vuelve al comienzo del ciclo
 y que permita razonar sobre todas sus iteraciones posibles.
-Esta tarea no es trivial y a menudo requiere invención humana o dominios abstractos complejos,
+Esta tarea no es trivial y a menudo requiere invención humana o dominios abstractos complejos
+\guido{qué sería ``dominios abstractos complejos''?},
 lo que dificulta la escalabilidad y automatización de las herramientas.
+\guido{encontrar invariantes es indecidible, por cierto, así que nunca puede
+ser totalmente automático}
 
 La IL no necesita encontrar un invariante que describa todas las ejecuciones del bucle
 cuando el objetivo es certificar una ejecución particular.
 En ese caso, puede concentrarse en una cantidad finita de iteraciones.
 
 Una forma de aplicar este enfoque consiste en \emph{desenrollar el bucle}, es decir,
-reemplazarlo por una cantidad finita de repeticiones de su cuerpo.
+reemplazarlo por una cantidad finita de repeticiones de su cuerpo mediante
+las reglas \textsc{Kleene (base)} y \textsc{Kleene (paso)}.
 Si la derivación obtenida de este modo produce una tripleta con modo de terminación $er$,
 entonces certifica la existencia de una ejecución real que alcanza ese error,
 sin necesidad de describir los demás comportamientos posibles del bucle.
@@ -1195,7 +1230,7 @@ Por lo tanto,
 existe una ejecución de $C$ que comienza en un estado que satisface $p$ y termina con el modo $er$.
 $\ensuremath{\blacksquare}$
 
-El corolario expresa la ausencia de falsos positivos:
+El corolario \guido{no sería el teorema?} expresa la ausencia de falsos positivos:
 todo estado descrito por la postcondición de una tripleta de error derivable
 está respaldado por una ejecución real.
 Además, si $q \neq \varnothing$,
@@ -1210,6 +1245,8 @@ podían integrarse en procesos de desarrollo industriales y aplicarse sobre base
 Aunque estas herramientas son anteriores a la introducción de la IL
 y no constituyen implementaciones directas de esta lógica,
 sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
+\guido{creo que hay literalmente cientos de analizadores, me parece raro este
+párrafo distinguiendo a estos dos cuando aparte tampoco usan IL?}
 
 Una evidencia más directa sobre la aplicabilidad de la IL es el desarrollo de Pulse-X~\citep{bugs}.
 En su evaluación sobre OpenSSL,
@@ -1217,6 +1254,8 @@ un proyecto de código abierto que proporciona bibliotecas y herramientas cripto
 encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
 Este resultado muestra que la IL no solo proporciona un marco teórico para razonar sobre errores alcanzables,
 sino que también puede servir como fundamento para diseñar herramientas capaces de detectar errores reales en programas de tamaño considerable.
+\guido{esto está mejor, también podés citar que esto corre en cada parche
+o algo así con lo cual es escalable y etc}
 
 Sin embargo, para aplicar este tipo de razonamiento a programas con memoria dinámica y estructuras enlazadas
 es necesario incorporar mecanismos de razonamiento local.
@@ -1237,6 +1276,10 @@ también es necesario representar las celdas de memoria asignadas y la informaci
 
 La SL, introducida por \citet{sl},
 extiende la HL para permitir el razonamiento sobre este tipo de programas.
+\guido{En realidad la SL lo hace mucho más composicional. En HL se puede
+verificar programas con alocación y memoria dinámica, pero te la pasás
+escribiendo predicados como $p \rightarrow 1 \wedge r \rightarrow 1 \wedge p \ne
+r$, y cuando tenés estructuras de datos se hace casi imposible.}
 Su objetivo es describir tanto el estado de las variables
 como el fragmento de memoria relevante para el comando que se está analizando.
 Esto permite realizar un razonamiento local,
@@ -1255,14 +1298,21 @@ Denotamos por $\operatorname{dom}(h)$ el conjunto de direcciones para las cuales
 Un estado espacial es un par:
 $$\sigma = (s, h) \in \mathsf{Store} \times \mathsf{Heap},$$
 donde $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
+\guido{yo diría solamente
+``Un estado espacial es un par $(s,h)$
+donde $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$'', sin la formula.}
 Las aserciones de la SL se interpretan sobre estados espaciales.
 Formalmente, una aserción espacial es un predicado
 $$P : \mathsf{Store} \times \mathsf{Heap} \rightarrow \mathsf{Prop}.$$
 Escribimos
 $$(s, h) \models P$$
 cuando el estado formado por el \emph{store} $s$ y el \emph{heap} $h$ satisface la aserción $P$.
+\guido{Usar $\models$ por ahí confunde, ya que el teorema principal
+es sobre derivabilidad vs verdad ($\models$). por qué no $P(s,h)$ nomás?
+es una función}
 
-En este modelo, una dificultad central es determinar cuándo dos expresiones del programa
+En \guido{\sout{este modelo} la presencia de memoria
+dinámica y punteros}, una dificultad central es determinar cuándo dos expresiones del programa
 se refieren a la misma dirección de memoria.
 A esta situación se la denomina \emph{aliasing}.
 Si $e$ es una expresión cuya evaluación produce una dirección de memoria y $s$ un \emph{store},
@@ -1273,6 +1323,10 @@ Dos expresiones $e_1$ y $e_2$ presentan \emph{aliasing} en un \emph{store} $s$
 cuando ambas se evalúan a la misma dirección de memoria:
 $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 \end{definicion}
+
+\guido{Esta parte me parece un poco confusa sin un ejemplo. Podrías explicar que
+que $\triple{p \rightarrow 1 \wedge s \rightarrow 1}{*p := 2}{p \rightarrow 2
+\wedge s \rightarrow 1}$ no vale en general}
 
 Cuando existe \emph{aliasing},
 una modificación realizada a través de una de las expresiones puede afectar el valor observado a través de la otra.
@@ -1288,6 +1342,9 @@ especialmente en estructuras de datos enlazadas~\citep{bttf}.
 El problema del \emph{aliasing} también afecta la forma de combinar aserciones.
 Si dos aserciones describen distintas celdas de memoria,
 se debe poder expresar que cada una se refiere a su propio fragmento del \emph{heap} y que dichos fragmentos no comparten direcciones.
+\guido{Lo anterior puede hacerse con predicados, e.g. $p \ne r$, pero no escala.
+Yo empezaría esta sección diciendo que la contribución principal de la SL
+es un conectivo, la conj sep, que da una forma más elegante de manejar esto.}
 Para formalizar esta idea,
 primero definimos cuándo dos \emph{heaps} son disjuntos
 y cómo pueden combinarse cuando cumplen esta propiedad.
@@ -1360,7 +1417,8 @@ $$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \;
 %\guido{leyendo más adelante me contesto que sí, aunque chequealo por favor}
 
 Por ejemplo, $x \mapsto 3$ describe un \emph{heap} formado
-exactamente por una celda ubicada en la dirección almacenada en $x$,
+exactamente por una celda ubicada en la dirección almacenada en $x$
+\guido{$x$ es una variable del store?},
 cuyo contenido es 3.
 Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda,
 sino un fragmento compuesto únicamente por ella,
@@ -1396,6 +1454,8 @@ para representar un bloque de dos celdas consecutivas:
 la primera contiene el valor 3 y la segunda contiene el valor almacenado en $y$.
 Esta notación se usa solo con fines ilustrativos;
 la definición formal de \emph{points-to} describe una única celda.
+\guido{usualmente esto se define como $x \mapsto 3 * (x+1) \mapsto y$, donde $x+1$ es
+la ``siguiente'' celda en la memoria}
 De manera análoga, consideramos la aserción $y \mapsto 3, x$.
 %Para ilustrar esto visualmente, consideramos la aserción $x \mapsto 3, y$,
 %la cual indica que $x$ apunta a un bloque de dos celdas adyacentes que contienen los valores 3 e $y$ respectivamente,
@@ -1459,12 +1519,13 @@ como se muestra en la \autoref{fig:conjuncion-clasica}.
     \draw[ptr] (y) -- ([yshift=-0.03cm]c1.west);
     \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=0, looseness=2] (c1.east);
   \end{tikzpicture}
-\caption{Conjunción clásica.}
+\caption{Conjunción clásica.\guido{aclará que esto es solamente una \emph{posibilidad}}}
 \label{fig:conjuncion-clasica}
 \end{figure}
 
 Por el contrario, si utilizamos la conjunción separadora $(x \mapsto 3, y) * (y \mapsto 3, x)$, estamos forzando lógicamente a que las memorias descritas sean disjuntas.
 Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estructura en la que existen dos bloques de memoria separados, donde cada uno guarda un puntero hacia el otro.
+\guido{esto también es posible con conj clasica, pero el caso anterior ahora es imposible}
 
 \begin{figure}[h]
   \centering
@@ -1491,6 +1552,7 @@ El ejemplo muestra que la conjunción separadora impone, por defecto,
 la ausencia de \emph{aliasing} entre los fragmentos de memoria que combina.
 De este modo, una prueba no necesita expresar por separado que
 una modificación realizada sobre uno de esos fragmentos no afectará al otro.
+\guido{este es un buen momento para mencionar la frame rule?}
 %\guido{al principio dijimos ``la SL tiene el poder de describir patrones de aliasing [...] de forma concisa'', pero creo que lo importante es la prohibicion del aliasing por defecto. De hecho
 %expresar aliasing cuando uno sí lo quiere es un garrón}
 
@@ -1502,6 +1564,7 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
   \item $P * \mathsf{emp} \iff P$
 \end{enumerate}
 \end{lema}
+\guido{esto puede estar antes, es un non sequitur del ejemplo a esto}
 
 \subsection*{El lenguaje imperativo extendido}
 Las aserciones anteriores permiten describir fragmentos del \emph{heap},
@@ -1544,6 +1607,7 @@ lectura, escritura y liberación de memoria en la \autoref{fig:reglas-sl}.
 En estas reglas se introduce la notación $x \mapsto -$,
 que representa una celda ubicada en la dirección almacenada en $x$,
 cuyo contenido no es relevante para el razonamiento.
+\guido{esto es solamente una abreviación para $\exists v. x \mapsto v$}
 
 \begin{figure}[htbp]
 \centering
@@ -1574,6 +1638,8 @@ La regla \textsc{Load} requiere que la dirección apuntada por $y$ corresponda a
 asigna su contenido a $x$,
 lo que se expresa mediante la igualdad $x = v$,
 preservando la celda en el \emph{heap}.
+\guido{$x$ es siempre variable local? pero $y$ es una expresión? hay que explicar
+lo de $x \ne y$, es medio un tecnicismo}
 La regla \textsc{Store} modifica el contenido de la celda apuntada por $x$,
 mientras que \textsc{Free} elimina dicha celda del fragmento de \emph{heap} descrito y produce la aserción $\mathsf{emp}$.
 
@@ -1623,9 +1689,12 @@ el conjunto de variables del \emph{store} que pueden ser modificadas por $C$,
 y $\operatorname{fv}(R)$, el conjunto de variables libres de la aserción $R$.
 Esta condición garantiza que $C$ no modifique ninguna variable de las que depende $R$,
 de modo que $R$ siga describiendo el mismo fragmento de memoria después de ejecutar $C$.
-
+\guido{no romper parrafo acá}
 Por ejemplo, si $R$ es la aserción $x \mapsto 1$ y el comando es $C \equiv x := 3$,
 entonces $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
+\guido{me parece que esta mal el ejemplo, $x$ es variable local?
+en ese caso no puede cumplir $x \mapsto 1$? y si no, no puedo tener
+el permiso a $x$ en el marco porque lo necesito para el comando base}
 Por lo tanto, la condición lateral no se cumple y la Regla del Marco no puede aplicarse.
 Esto es necesario porque modificar $x$ puede cambiar la dirección de memoria descrita por $R$,
 aunque el comando no modifique directamente el \emph{heap}.
@@ -1643,6 +1712,7 @@ $$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp 
 entonces
 $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
 \end{lema}
+\guido{esto también vale en HL, por cierto}
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
@@ -1655,6 +1725,10 @@ mientras que $h_f$ permanece sin modificaciones.
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
 Sin embargo, cuando se libera memoria, en el modelo clásico,
 no se conserva una marca que indique este cambio.
+\guido{esto no se entiende acá, estás adelantando un problema que se resuelve
+después pero el lector no tiene claro que ese problema existe. reemplazaria este
+parráfo por ``ahora tornamos nuestra atención a una pregunta natural: si pueden
+combinarse la subaproximación de la IL con el razonamiento local de la SL''}
 Esta limitación resulta relevante al combinar el razonamiento local de la SL con la subaproximación de la IL.
 La siguiente sección presenta la ISL y los mecanismos que permiten resolver esta incompatibilidad.
 
@@ -1673,6 +1747,7 @@ Su interpretación semántica sigue siendo subaproximada:
 todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
 Para formalizar esta interpretación,
 primero es necesario introducir el modelo de \emph{heaps} negativos.
+\guido{de nuevo, no adelantes esto}
 
 Para expresar formalmente la derivación que motiva la introducción de los \emph{heaps} negativos,
 necesitamos fijar previamente la noción de derivabilidad en la ISL.
@@ -1688,6 +1763,8 @@ Las reglas completas se presentan más adelante,
 luego de definir la semántica relacional.
 Por ahora,
 esta noción permite anticipar el problema que surge al combinar la regla de liberación con la Regla del Marco.
+\guido{esto es lo interesante, que aplicar ingenuamente la regla del marco
+te da algo unsound}
 
 \subsection*{Heaps negativos}
 Intentar construir la ISL combinando directamente la semántica de la SL tradicional
@@ -1712,11 +1789,14 @@ Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda des
   {\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} * x \mapsto -}}
 \end{mathpar}
 
-La precondición $x \mapsto - * x \mapsto -$ es inconsistente porque exige que dos fragmentos disjuntos posean la misma dirección.
+La precondición $x \mapsto - * x \mapsto -$ es \guido{\sout{inconsistente} insatisfacible} porque exige que dos fragmentos disjuntos posean la misma dirección.
 No existe ningún estado que la satisfaga.
 Sin embargo, la postcondición $\mathsf{emp} * x \mapsto -$ es satisfacible.
 Esto produciría una tripleta con una precondición inconsistente y una postcondición satisfacible.
 Por lo tanto, parecería existir un estado final alcanzable aunque no hubiera ningún estado inicial desde el cual ejecutar el comando.
+\guido{``parecería'' es raro, por qué no ``recordando la semántica de una tripleta
+de subaproximación, y dado que la postcondicion es no-vacia,
+esto indicaría que existe un estado que satisface la precondicion, lo cual es absurdo''}
 
 El problema no pertenece a la IL en sí misma,
 sino a la combinación directa de la subaproximación,
@@ -1757,7 +1837,7 @@ $$(s,h) \models e \nmapsto \iff \exists \ell \in \mathsf{Loc}. \;
 Por lo tanto,
 $e \nmapsto$ expresa que la dirección almacenada en $e$:
 \begin{enumerate}
-  \item es una dirección conocida;
+  \item es una dirección conocida\guido{?};
   \item fue liberada;
   \item todavía no fue reasignada.
 \end{enumerate}
@@ -1807,6 +1887,8 @@ El efecto puede resumirse en la \autoref{tab:frame-table2}:
   \caption{Preservación de la inconsistencia mediante \emph{heaps} negativos.}
   \label{tab:frame-table2}
 \end{table}
+
+\guido{esta tabla no agrega mucho...}
 
 El ejemplo anterior muestra cómo los \emph{heaps} negativos permiten conservar la inconsistencia al aplicar la Regla del Marco.
 Para continuar,
@@ -1890,6 +1972,13 @@ Asimismo,
 una alocación puede reservar una dirección que no estaba previamente en el dominio
 o reutilizar una dirección que se encontraba representada mediante un \emph{heap} negativo.
 
+\guido{Leyendo esto me pregunté qué pasa en el caso concurrente.
+En general la SL es directamente extendible a CSL (concurrent SL) porque
+todo es muy local. Pero algo raro con esto es que al liberar un puntero
+tengo una prueba de que no está alocado, pero otro hilo en paralelo puede
+alocar y conseguir el mismo puntero de casualidad. O sea que creo que la ``CISL''
+presentaría más dificultades también.}
+
 La formalización de la validez semántica de las tripletas de la ISL se define mediante la interpretación subaproximada:
 $$\models_\mathrm{ISL} \itriple{p}{C}{\varepsilon : q} \iff
 \forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
@@ -1935,6 +2024,9 @@ Las diferencias se encuentran en las reglas de alocación, lectura, escritura y 
 y en la aplicación de la Regla del Marco dentro de la interpretación subaproximada.
 La noción de derivabilidad utilizada en esta sección fue introducida en la Definición~\ref{def:derivabilidad-isl}.
 A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:reglas-isl}.
+
+\guido{de qué sirve $x = x'$ en la pre de alloc1/alloc2? si $x$ es una variable local,
+esto es siempre cierto}
 
 \begin{figure}[htbp]
 \centering
@@ -2090,6 +2182,7 @@ $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
 Por lo tanto,
 existe una ejecución de $C$ que comienza en un estado que satisface $p$ y termina con el modo $er$.
 $\ensuremath{\blacksquare}$
+\guido{si esto es idéntico al caso anterior solamente diría eso}
 
 El Teorema de Soundness garantiza que los estados descritos por una tripleta derivable están respaldados por ejecuciones reales.
 Para entender por qué este respaldo se conserva al aplicar la Regla del Marco,
@@ -2163,6 +2256,7 @@ Un comando con distintas ramas puede tener varias ejecuciones mínimas con reque
 Por ejemplo,
 una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una celda activa en la dirección almacenada en $x$,
 pero no necesita describir las demás celdas de \emph{heap}.
+\guido{no entiendo, eso no tiene ramas, y empieza con ``por ejemplo''}
 El resto de la memoria puede incorporarse con un marco.
 
 \begin{teorema}[Teorema de la Huella]
@@ -2184,6 +2278,8 @@ expresa la dirección global a local.
 Establece que toda ejecución global puede descomponerse en una transición mínima y un marco agregado a sus estados inicial y final.
 
 En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del desarrollo formal en \fstar{}.
+\guido{no se si aclararía esto acá porque me hace dudar de si todo
+el resto de los lemas están formalizados también (y entiendo que sí!)}
 
 \section{El lenguaje \fstar{}}
 \label{sec:fstar}
@@ -2197,8 +2293,11 @@ en el que los programas, sus especificaciones y sus demostraciones se desarrolla
 Además de utilizarse como asistente de pruebas,
 \fstar{} permite desarrollar programas ejecutables y extraerlos a otros lenguajes.
 Esta capacidad no se utiliza directamente en esta tesina,
-cuyo contenido es principalmente lógico y fantasma,
+cuyo contenido es principalmente lógico y fantasma\guido{no usaría este término
+sin definirlo, pone lógico y listo},
 pero forma parte del carácter híbrido de \fstar{} como lenguaje de programación y verificación.
+\guido{y podés ser más breve: ``si bien \fstar{} es un lenguaje de programación
+ejecutable, aquí lo usamos solamente como demostrador de teoremas''}
 
 En esta tesina,
 \fstar{} no se utiliza para implementar un analizador automático ni para producir código ejecutable.
@@ -2211,6 +2310,10 @@ permite expresar las reglas de inferencia como tipos inductivos y demostrar \emp
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
 \subsection*{Tipos dependientes y refinamientos}
+
+\guido{los llamaria ``tipos refinados'' en vez de ``tipos de refinamiento'',
+pero también está bien}
+
 En \fstar{}, los tipos pueden depender de valores.
 La manifestación más práctica de esto son los tipos de refinamiento.
 Un tipo de refinamiento permite expresar propiedades de los datos directamente en sus tipos,
@@ -2267,6 +2370,8 @@ donde las proposiciones se interpretan como tipos y las demostraciones como valo
 La ventaja de esto es que \fstar{} obliga a considerar todos los constructores al demostrar una metapropiedad por inducción estructural.
 En particular, la función de \emph{soundness} analiza la forma de una derivación y construye,
 para cada regla, el estado inicial y la traza operacional que justifican el estado final.
+\guido{esta ultima oración es confusa, podés limitarte a hablar de F* nomás, los
+teoremas tuyos vienen después}
 
 Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores,
 donde la longitud forma parte del propio tipo:
@@ -2312,7 +2417,7 @@ Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{req
 y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
 Su resultado computacional es irrelevante,
 lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
-Por ejemplo, una firma de la forma:
+Por ejemplo, una firma\guido{signatura} de la forma:
 \begin{lstlisting}[style=fstar]
 val lemma :
   x : t ->
@@ -2460,7 +2565,7 @@ let eval_expr (s : state) (e : expr) : GTot nat =
 \end{lstlisting}
 
 La definición de comandos es similar, pero incluye instrucciones que modifican el estado o controlan el flujo.
-Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.
+\guido{\sout{Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.}}
 
 \begin{lstlisting}[style=fstar]
 type stmt =
@@ -2488,6 +2593,9 @@ Existen dos impedimentos teóricos para construir un intérprete funcional tradi
     Una función simple no diferencia entre un resultado exitoso y uno erróneo.
     \item No determinismo: al incluir instrucciones como \texttt{Nondet} o \texttt{Choice}, un mismo estado inicial de la memoria puede derivar en varios caminos y estados finales válidos distintos.
 \end{enumerate}
+\guido{Esto me parece obvio, ya explicamos arriba que la semántica es una (o
+varias) relaciones. Lo del modo es un detalle de implementacion interesante, lo
+otro no}
 
 Para resolver el primer problema, se incorporó el modo de terminación directamente dentro del \emph{state}, entonces la propagación de errores ocurre de forma natural.
 Por otro lado, para resolver el segundo problema, abandonamos las funciones y modelamos la ejecución como una relación matemática utilizando un tipo inductivo indexado:
@@ -2496,6 +2604,9 @@ Por otro lado, para resolver el segundo problema, abandonamos las funciones y mo
 noeq
 type runsto : stmt -> state -> state -> Type0
 \end{lstlisting}
+\guido{para después, por ahí en la seccion intro de F* podes mostrar un ejemplo
+de relacion inductiva, por ejemplo una relacion que demuestra que dos vectores
+tienen la misma longitud.}
 
 En la \autoref{sec:loginc}, la semántica de un comando se representó mediante una relación binaria sobre estados.
 El tipo \texttt{runsto} constituye la mecanización de dicha relación.
@@ -2527,6 +2638,8 @@ Su función es permitir que \fstar{} identifique como equivalentes estados cuyos
   (#_ : squash (state_equiv s1 s1')) ->
   runsto p s0' s1'
 \end{lstlisting}
+\guido{creo que capaz $R_Ext$ no hace falta porque podemos usar
+functionalextensionality? se puede borrar y demostrar que es admisible?}
 
 La instrucción más elemental que modifica el estado es la asignación.
 Esta se formaliza mediante:
@@ -2540,6 +2653,7 @@ Esta se formaliza mediante:
 Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
 Toma un estado de éxito arbitrario $s$, evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e}, y garantiza que el estado final es idéntico a $s$, pero con el valor de la variable $x$ actualizado mediante \texttt{override}.
 Por último, como \texttt{Assign} es una operación segura en nuestro lenguaje, el modo de terminación siempre es el canal de éxito.
+\guido{reemplaza el ultimo \lstinline{s._2} por \lstinline{Ok}}
 
 La asignación no determinista se representa mediante:
 
@@ -2561,6 +2675,8 @@ Representamos la terminación normal, de error y filtrado de caminos de la sigui
   squash (eval_expr s e =!= 0) ->
   runsto (Assume e) s s
 \end{lstlisting}
+\guido{podriamos aclarar que s siempre tiene que estar en OK?}
+\guido{Error seria Abort?}
 
 \texttt{R\_Skip} conserva el estado.
 La regla \texttt{R\_Error} conserva el \emph{store}, pero cambia el modo de terminación.
@@ -2572,19 +2688,20 @@ De esta manera, los caminos que no satisfacen la condición son eliminados de la
 La composición secuencial se divide según el modo de terminación del primer comando:
 
 \begin{lstlisting}[style=fstar]
-| R_SeqEr : #p : stmt -> #q : stmt ->
-  #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
-  runsto p s t -> runsto (Seq p q) s t
 | R_Seq : #p : stmt -> #q : stmt ->
   #s : state { s._2 == Ok } -> #t : state { t._2 == Ok } -> #u : state ->
   runsto p s t -> runsto q t u ->
   runsto (Seq p q) s u
+| R_SeqEr : #p : stmt -> #q : stmt ->
+  #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
+  runsto p s t -> runsto (Seq p q) s t
 \end{lstlisting}
 
 La regla \texttt{R\_Seq} establece que si la primera instrucción \texttt{p} termina con éxito en un estado intermedio \texttt{t}, la ejecución normal continúa evaluando \texttt{q} a partir de \texttt{t} hasta llegar al estado final \texttt{u}.
 Sin embargo, el comportamiento cambia en la regla \texttt{R\_SeqEr}.
 Si la semántica garantiza que el comando \texttt{p} abortó dejando un estado de error \texttt{t}, la regla corta la ejecución.
 El comando secundario \texttt{q} nunca se menciona en las premisas, lo que significa matemáticamente que no se evalúa.
+\guido{no entiendo la oracion previa}
 El estado de error \texttt{t} se propaga hacia la superficie de la secuencia, garantizando la interrupción que la subaproximación requiere para capturar \emph{bugs} tempranos.
 
 La elección no determinista posee una regla para cada rama:

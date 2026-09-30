@@ -1317,28 +1317,48 @@ cuando ambas se evalúan a la misma dirección de memoria:
 $$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
 \end{definicion}
 
-\guido{Esta parte me parece un poco confusa sin un ejemplo. Podrías explicar que
-que $\triple{p \rightarrow 1 \wedge s \rightarrow 1}{*p := 2}{p \rightarrow 2
-\wedge s \rightarrow 1}$ no vale en general}
+%\guido{Esta parte me parece un poco confusa sin un ejemplo. Podrías explicar que
+%que $\triple{p \rightarrow 1 \wedge s \rightarrow 1}{*p := 2}{p \rightarrow 2
+%\wedge s \rightarrow 1}$ no vale en general}
 
 Cuando existe \emph{aliasing},
 una modificación realizada a través de una de las expresiones puede afectar el valor observado a través de la otra.
-Por lo tanto, el verificador debe comprobar que esa modificación no contradiga las propiedades
-que deben mantenerse para otras referencias y para el resto de la memoria.
+
+\begin{ejemplo}
+Supongamos que las variables $x$ e $y$ apuntan a una misma dirección $\ell$,
+cuya celda contiene el valor 1.
+Es decir, si $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$,
+$$s(x) = s(y) = \ell \qquad \text{y} \qquad h(\ell) = 1.$$
+
+Si se escribe el valor 2 en la celda referenciada por $x$,
+se obtiene un \emph{heap} $h'$ tal que $h'(\ell) = 2$.
+Como $y$ apunta a esa misma celda,
+también se cumple
+$$h'(s(y)) = 2.$$
+
+Aunque la escritura se realiza mediante $x$,
+también cambia el valor que se obtiene al leer mediante $y$,
+ya que ambas variables apuntan a la misma celda.
+\end{ejemplo}
+
+\changed{Para garantizar que esa escritura preserve el contenido de la celda referenciada por $y$,
+es necesario establecer que $s(x) \neq s(y)$.}
 Estas condiciones de verificación pueden ser difíciles de construir y de demostrar automáticamente,
 lo que también puede limitar la escalabilidad del análisis,
 especialmente en estructuras de datos enlazadas~\citep{bttf}.
 
 \subsection*{La conjunción separadora y aserciones espaciales}
-El problema del \emph{aliasing} también afecta la forma de combinar aserciones.
-Si dos aserciones describen distintas celdas de memoria,
-se debe poder expresar que cada una se refiere a su propio fragmento del \emph{heap} y que dichos fragmentos no comparten direcciones.
-\guido{Lo anterior puede hacerse con predicados, e.g. $p \ne r$, pero no escala.
-Yo empezaría esta sección diciendo que la contribución principal de la SL
-es un conectivo, la conj sep, que da una forma más elegante de manejar esto.}
-Para formalizar esta idea,
-primero definimos cuándo dos \emph{heaps} son disjuntos
-y cómo pueden combinarse cuando cumplen esta propiedad.
+\changed{Una contribución central de la SL es la conjunción separadora,
+un conectivo que permite combinar aserciones sobre fragmantos disjuntos de memoria.
+De este modo,
+la separación se expresa madiante la estructura de las aserciones,
+sin enumerar individualmente las desigualdades entre las direcciones involucradas.
+Para definir este conectivo,
+primero introducimos}
+%\guido{Lo anterior puede hacerse con predicados, e.g. $p \ne r$, pero no escala.
+%Yo empezaría esta sección diciendo que la contribución principal de la SL
+%es un conectivo, la conj sep, que da una forma más elegante de manejar esto.}
+cuándo dos \emph{heaps} son disjuntos y cómo pueden combinarse.
 
 \begin{definicion}[\emph{Heaps} disjuntos]
 \label{def:disj_heaps}
@@ -1349,7 +1369,7 @@ si sus dominios no comparten ninguna dirección:
 $$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing$$
 \end{definicion}
 
-La condición de disjunción garantiza que cada dirección de memoria pertenece, a lo sumo,
+La disjunción de los \emph{heaps} garantiza que cada dirección de memoria pertenece, a lo sumo,
 a uno de los dos \emph{heaps}.
 Por lo tanto,
 sus contenidos pueden combinarse en un único \emph{heap} sin generar conflictos.
@@ -1398,9 +1418,10 @@ $$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \;
 \ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s$$
 \end{definicion}
 
-Por ejemplo, $x \mapsto 3$ describe un \emph{heap} formado
-exactamente por una celda ubicada en la dirección almacenada en $x$
-\guido{$x$ es una variable del store?},
+Por ejemplo,
+\changed{para una variable $x$ y un \emph{store} $s$,}
+la aserción $x \mapsto 3$ describe un \emph{heap} formado exactamente por una celda ubicada en la dirección \changed{$s(x)$,}
+%\guido{$x$ es una variable del store?},
 cuyo contenido es 3.
 Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda,
 sino un fragmento compuesto únicamente por ella,
@@ -1426,16 +1447,29 @@ por lo que funciona como un entorno común para evaluar las expresiones de ambas
 Por lo tanto, la separación se aplica solo al \emph{heap},
 cuyas celdas se distribuyen entre fragmentos disjuntos.
 
+\changed{La conjunción separadora satisface las siguientes propiedades algebraicas,
+que permite reorganizar las aserciones sin cambiar su significado.}
+
+\begin{lema}[Propiedades de la conjunción separadora]
+Para todas las aserciones espaciales $P$, $Q$ y $R$:
+\begin{enumerate}
+  \item $P * Q \iff Q * P$
+  \item $(P * Q) * R \iff P * (Q * R)$
+  \item $P * \mathsf{emp} \iff P$
+\end{enumerate}
+\end{lema}
+%\guido{esto puede estar antes, es un non sequitur del ejemplo a esto}
+
 La diferencia entre la conjunción clásica ($\land$) y la separadora ($*$)
 determina cómo se combinan los fragmentos de \emph{heap} descritos por las aserciones.
-Para simplificar la ilustración,
-en este ejemplo utilizamos la notación abreviada $x \mapsto 3, y$
-para representar un bloque de dos celdas consecutivas:
+\changed{Utilizamos la abreviatura 
+$$x \mapsto 3, y \equiv (x \mapsto 3) * (x + 1 \mapsto y),$$
+que describe dos celdas consecutivas:}
 la primera contiene el valor 3 y la segunda contiene el valor almacenado en $y$.
-Esta notación se usa solo con fines ilustrativos;
-la definición formal de \emph{points-to} describe una única celda.
-\guido{usualmente esto se define como $x \mapsto 3 * (x+1) \mapsto y$, donde $x+1$ es
-la ``siguiente'' celda en la memoria}
+\changed{Para este ejemplo,
+suponemos que $x + 1$ denota la dirección siguiente a la almacenada en $x$.}
+%\guido{usualmente esto se define como $x \mapsto 3 * (x+1) \mapsto y$, donde $x+1$ es
+%la ``siguiente'' celda en la memoria}
 De manera análoga, consideramos la aserción $y \mapsto 3, x$.
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
@@ -1527,35 +1561,36 @@ El ejemplo muestra que la conjunción separadora impone, por defecto,
 la ausencia de \emph{aliasing} entre los fragmentos de memoria que combina.
 De este modo, una prueba no necesita expresar por separado que
 una modificación realizada sobre uno de esos fragmentos no afectará al otro.
-\guido{este es un buen momento para mencionar la frame rule?}
+%\guido{este es un buen momento para mencionar la frame rule?}
 
-\begin{lema}[Propiedades de la conjunción separadora]
-Para todas las aserciones espaciales $P$, $Q$ y $R$:
-\begin{enumerate}
-  \item $P * Q \iff Q * P$
-  \item $(P * Q) * R \iff P * (Q * R)$
-  \item $P * \mathsf{emp} \iff P$
-\end{enumerate}
-\end{lema}
-\guido{esto puede estar antes, es un non sequitur del ejemplo a esto}
+\changed{Esta separación permite razonar sobre las modificaciones de un fragmento del \emph{heap}
+y conservar la información sobre otros fragmentos disjuntos.
+La Regla del Marco, presentada más adelante,
+formaliza este razonamiento bajo las condiciones necesarias para que la información conservada no resulte afectada por el comando.}
 
 \subsection*{El lenguaje imperativo extendido}
 Las aserciones anteriores permiten describir fragmentos del \emph{heap},
 pero todavía es necesario extender el lenguaje de comandos para poder operar sobre esa memoria.
-Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación de estructuras de datos mutables:
+Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación de estructuras de datos mutables.
+\changed{En estos comandos,
+$x$ es una variable del programa,
+mientras que $e$, $e_1$ y $e_2$ son expresiones.
+Las expresiones utilizadas para acceder al \emph{heap} se evalúan en el \emph{store} para obtener la dirección de memoria correspondiente.}
 \begin{enumerate}
   \item \textbf{Alocación (allocation):}
   $$x := \texttt{alloc()}$$
   reserva una nueva celda y almacena su dirección en $x$.
   \item \textbf{Lectura (lookup):}
-  $$x := [y]$$
-  lee el valor guardado en la dirección apuntada por $y$ y lo asigna a $x$.
+  $$x := [e]$$
+  \changed{evalúa la expresión $e$ para obtener una dirección de memoria,
+  lee el contenido de la celda ubicada en esa dirección y lo asigna a $x$.}
   \item \textbf{Mutación (mutation):}
-  $$[x] := y$$
-  sobrescribe el contenido de la celda apuntada por $x$ con el valor de $y$.
+  $$[e_1] := e_2$$
+  \changed{evalúa la expresión $e_1$ para obtener una dirección de memoria y
+  sobrescribe el contenido de esa celda con el resultado de evaluar $e_2$.}
   \item \textbf{Liberación (deallocation):}
-  $$\texttt{free(}x\texttt{)}$$
-  libera la celda ubicada en la dirección apuntada por $x$.
+  $$\texttt{free(}e\texttt{)}$$
+  libera la celda ubicada en la dirección \changed{que se obtiene de evaluar $e$}.
 \end{enumerate}
 
 \subsection*{Reglas de inferencia de la SL}
@@ -1577,10 +1612,11 @@ cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de
 Las reglas correspondientes a comandos como \texttt{skip}, asignación y composición secuencial se heredan de la HL.
 La extensión propia de la SL está dada por las reglas asociadas a las operaciones de alocación,
 lectura, escritura y liberación de memoria en la \autoref{fig:reglas-sl}.
-En estas reglas se introduce la notación $x \mapsto -$,
-que representa una celda ubicada en la dirección almacenada en $x$,
+En estas reglas se \changed{utiliza la abreviatura $e \mapsto -$,
+equivalente a $\exists v. e \mapsto v$,}
+que representa una celda ubicada en la dirección obtenida al evaluar $e$,
 cuyo contenido no es relevante para el razonamiento.
-\guido{esto es solamente una abreviación para $\exists v. x \mapsto v$}
+%\guido{esto es solamente una abreviación para $\exists v. x \mapsto v$}
 
 \begin{figure}[htbp]
 \centering
@@ -1591,15 +1627,15 @@ cuyo contenido no es relevante para el razonamiento.
 
 \inferrule [Free]
   {}
-  {\vdash_{\mathrm{SL}} \triple{x \mapsto -}{\texttt{free(}x\texttt{)}}{\mathsf{emp}}}
+  {\vdash_{\mathrm{SL}} \triple{e \mapsto -}{\texttt{free(}e\texttt{)}}{\mathsf{emp}}}
 
 \inferrule [Load]
-  {x \neq y}
-  {\vdash_{\mathrm{SL}} \triple{y \mapsto v}{x := [y]}{x = v \land y \mapsto v}}
+  {}
+  {\vdash_{\mathrm{SL}} \triple{x = x' \land e \mapsto v}{x := [e]}{x = v \land e[x'/x] \mapsto v}}
 
 \inferrule [Store]
   {}
-  {\vdash_{\mathrm{SL}} \triple{x \mapsto -}{[x] := y}{x \mapsto y}}
+  {\vdash_{\mathrm{SL}} \triple{e_1 \mapsto -}{[e_1] := e_2}{e_1 \mapsto e_2}}
 
 \end{mathpar}
 \caption{Reglas de inferencia de la SL.}
@@ -1607,14 +1643,24 @@ cuyo contenido no es relevante para el razonamiento.
 \end{figure}
 
 La regla \textsc{Alloc} expresa que la alocación reserva una nueva celda y almacena su dirección en $x$.
-La regla \textsc{Load} requiere que la dirección apuntada por $y$ corresponda a una celda activa,
-asigna su contenido a $x$,
-lo que se expresa mediante la igualdad $x = v$,
-preservando la celda en el \emph{heap}.
-\guido{$x$ es siempre variable local? pero $y$ es una expresión? hay que explicar
-lo de $x \ne y$, es medio un tecnicismo}
-La regla \textsc{Store} modifica el contenido de la celda apuntada por $x$,
-mientras que \textsc{Free} elimina dicha celda del fragmento de \emph{heap} descrito y produce la aserción $\mathsf{emp}$.
+\changed{Por su parte,
+\textsc{Free} elimina del fragmento de \emph{heap} descrito la celda ubicada en la dirección obtenida al evaluar $e$
+y produce la aserción $\mathsf{emp}$.}
+
+La regla \textsc{Load}
+\changed{lee el contenido de la celda indicada por $e$ y lo asigna a $x$,
+sin modificar el \emph{heap}.
+La variable auxiliar $x'$ conserva el valor inicial de $x$,
+mientras que $v$ representa el contenido leído.
+Como la asignación puede cambiar el valor de la expresión $e$ si esta contiene a $x$,
+la postcondición utiliza $e[x'/x]$ para seguir describiendo la dirección original.}
+
+%\guido{$x$ es siempre variable local? pero $y$ es una expresión? hay que explicar
+%lo de $x \ne y$, es medio un tecnicismo}
+La regla \textsc{Store} modifica el contenido de la celda
+\changed{indicada por $e_1$ con el resultado de evaluar $e_2$.
+Esta operación modifica el \emph{heap},
+pero conserva el \emph{store}.}
 
 Estas reglas describen el comportamiento de cada operación sobre el fragmento de memoria que aparece explícitamente en la precondición.
 Para extender este razonamiento a estados que contienen memoria adicional e independiente,
@@ -1663,14 +1709,23 @@ y $\operatorname{fv}(R)$, el conjunto de variables libres de la aserción $R$.
 Esta condición garantiza que $C$ no modifique ninguna variable de las que depende $R$,
 de modo que $R$ siga describiendo el mismo fragmento de memoria después de ejecutar $C$.
 %\guido{no romper parrafo acá}
-Por ejemplo, si $R$ es la aserción $x \mapsto 1$ y el comando es $C \equiv x := 3$,
-entonces $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
-\guido{me parece que esta mal el ejemplo, $x$ es variable local?
-en ese caso no puede cumplir $x \mapsto 1$? y si no, no puedo tener
-el permiso a $x$ en el marco porque lo necesito para el comando base}
-Por lo tanto, la condición lateral no se cumple y la Regla del Marco no puede aplicarse.
-Esto es necesario porque modificar $x$ puede cambiar la dirección de memoria descrita por $R$,
-aunque el comando no modifique directamente el \emph{heap}.
+Por ejemplo,
+\changed{sean $R \equiv x \mapsto 1$ y $C \equiv x := 3$,
+donde $x$ es una variable del \emph{store}.
+La aserción $R$ describe una celda del \emph{heap} ubicada en la dirección almacenada en $x$,
+mientra que el comando modifica el valor de la propia variable.
+Por lo tanto,
+aunque el \emph{heap} premanezca intacto,
+$R$ puede dejar de cumplirse porque $x$ ya no tiene la dirección de la celda descrita.
+La condición lateral impide esta aplicación de la Regla del Marco,
+ya que $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.}
+%entonces $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
+%\guido{me parece que esta mal el ejemplo, $x$ es variable local?
+%en ese caso no puede cumplir $x \mapsto 1$? y si no, no puedo tener
+%el permiso a $x$ en el marco porque lo necesito para el comando base}
+%Por lo tanto, la condición lateral no se cumple y la Regla del Marco no puede aplicarse.
+%Esto es necesario porque modificar $x$ puede cambiar la dirección de memoria descrita por $R$,
+%aunque el comando no modifique directamente el \emph{heap}.
 
 El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica relacional del lenguaje.
 
@@ -1696,14 +1751,12 @@ el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
 mientras que $h_f$ permanece sin modificaciones.
 
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
-Sin embargo, cuando se libera memoria, en el modelo clásico,
-no se conserva una marca que indique este cambio.
-\guido{esto no se entiende acá, estás adelantando un problema que se resuelve
-después pero el lector no tiene claro que ese problema existe. reemplazaria este
-parráfo por ``ahora tornamos nuestra atención a una pregunta natural: si pueden
-combinarse la subaproximación de la IL con el razonamiento local de la SL''}
-Esta limitación resulta relevante al combinar el razonamiento local de la SL con la subaproximación de la IL.
-La siguiente sección presenta la ISL y los mecanismos que permiten resolver esta incompatibilidad.
+%\guido{esto no se entiende acá, estás adelantando un problema que se resuelve
+%después pero el lector no tiene claro que ese problema existe. reemplazaria este
+%parráfo por ``ahora tornamos nuestra atención a una pregunta natural: si pueden
+%combinarse la subaproximación de la IL con el razonamiento local de la SL''}
+\changed{A continuación,
+consideramos cómo combinar este razonamiento con la interpretación subaprximada de la IL.}
 
 \section{Lógica de Incorrectitud de Separación (ISL)}
 \label{sec:logincsep}
@@ -1762,7 +1815,7 @@ Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda des
   {\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} * x \mapsto -}}
 \end{mathpar}
 
-La precondición $x \mapsto - * x \mapsto -$ es \guido{\sout{inconsistente} insatisfacible} porque exige que dos fragmentos disjuntos posean la misma dirección.
+La precondición $x \mapsto - * x \mapsto -$ es insatisfacible porque exige que dos fragmentos disjuntos posean la misma dirección.
 No existe ningún estado que la satisfaga.
 Sin embargo, la postcondición $\mathsf{emp} * x \mapsto -$ es satisfacible.
 Esto produciría una tripleta con una precondición inconsistente y una postcondición satisfacible.
@@ -1832,36 +1885,6 @@ Por lo tanto, la conclusión es semánticamente válida:
 $$\varnothing \subseteq post_{ok}(\texttt{free(}x\texttt{)})(\varnothing).$$
 De este modo,
 los \emph{heaps} negativos impiden que la Regla del Marco transforme una precondición inconsistente en una postcondición satisfacible.
-El efecto puede resumirse en la \autoref{tab:frame-table2}:
-\begin{table}[ht]
-  \centering
-  \small
-  \renewcommand{\arraystretch}{1.3}
-  \begin{tabular}{@{}lcccc@{}}
-    \toprule
-    Modelo
-    & Precondición
-    & Comando
-    & Postcondición \\
-    \midrule
-
-    Semántica clásica
-    & $[x \mapsto - \ * \ x \mapsto -]$
-    & $\texttt{free(}x\texttt{)}$
-    & $[\mathsf{emp} \ * \ x \mapsto -]$ \\
-
-    \emph{Heaps} negativos
-    & $[x \mapsto - \ * \ x \mapsto -]$
-    & $\texttt{free(}x\texttt{)}$
-    & $[x \nmapsto \ * \ x \mapsto -]$ \\
-
-    \bottomrule
-  \end{tabular}
-  \caption{Preservación de la inconsistencia mediante \emph{heaps} negativos.}
-  \label{tab:frame-table2}
-\end{table}
-
-\guido{esta tabla no agrega mucho...}
 
 El ejemplo anterior muestra cómo los \emph{heaps} negativos permiten conservar la inconsistencia al aplicar la Regla del Marco.
 Para continuar,
@@ -2282,14 +2305,14 @@ permite expresar las reglas de inferencia como tipos inductivos y demostrar \emp
 
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
-\subsection*{Tipos dependientes y refinamientos}
+\subsection*{Tipos dependientes y refinados}
 
-\guido{los llamaria ``tipos refinados'' en vez de ``tipos de refinamiento'',
-pero también está bien}
+%\guido{los llamaria ``tipos refinados'' en vez de ``tipos de refinamiento'',
+%pero también está bien}
 
 En \fstar{}, los tipos pueden depender de valores.
-La manifestación más práctica de esto son los tipos de refinamiento.
-Un tipo de refinamiento permite expresar propiedades de los datos directamente en sus tipos,
+La manifestación más práctica de esto son los tipos refinados.
+Un tipo refinados permite expresar propiedades de los datos directamente en sus tipos,
 de modo que su cumplimiento sea comprobado estáticamente.
 
 Dado un tipo \texttt{t} y un predicado \texttt{P},
@@ -2390,7 +2413,7 @@ Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{req
 y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
 Su resultado computacional es irrelevante,
 lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
-Por ejemplo, una firma\guido{signatura} de la forma:
+Por ejemplo, una signatura de la forma:
 \begin{lstlisting}[style=fstar]
 val lemma :
   x : t ->

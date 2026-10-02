@@ -91,8 +91,8 @@ Además, las demostraciones deben mantenerse y adaptarse a medida que el program
 La magnitud de este esfuerzo puede observarse en proyectos como seL4~\citep{sel4}.
 Aunque se trata de un microkernel de aproximadamente 10.000 líneas de código,
 su prueba de correctitud demandó cerca de veinte años-persona.
-\changed{Al momento de la publicación,
-el conjunto de pruebas y especificaciones formales alcanzaba unas 480,000 líneas.}
+Al momento de la publicación,
+el conjunto de pruebas y especificaciones formales alcanzaba unas 480,000 líneas.
 %\guido{el mantenimiento demando 480k lineas? no entiendo. Por ahi queres
 %decir que el proof-to-code ratio es 48x?}
 %
@@ -132,8 +132,8 @@ ya que un exceso de reportes incorrectos puede reducir la confianza de los desar
 y hacer que sus advertencias sean ignoradas.
 Por este motivo,
 las herramientas utilizadas en la práctica
-\changed{buscan producir resultados con} rapidez y
-\changed{minimizar las falsas advertencias}.
+buscan producir resultados con rapidez y
+minimizar las falsas advertencias.
 %\guido{``combinan ... y advertencias respaldadas por errores reales'' suena
 %a que todos los analizadores estáticos hacen esto, pero los que usan IL
 %o algo con fundamentos son la minoría}
@@ -141,8 +141,7 @@ las herramientas utilizadas en la práctica
 Para alcanzar estos objetivos, los analizadores suelen ajustar sus heurísticas de manera \emph{ad-hoc},
 sin contar necesariamente con una justificación lógica de por qué cada advertencia corresponde a un error real.
 
-Este interés por \changed{eliminar falsos positivos}
-%\guido{cambiar a ``eliminar falsos positivos''?}
+Este interés por eliminar falsos positivos
 motivó a \citet{inclog} a proponer una lógica de \emph{incorrectitud}.
 En lugar de intentar describir todos los comportamientos posibles de un programa
 para demostrar que ninguno produce un error,
@@ -150,12 +149,12 @@ busca demostrar que ciertos errores pueden alcanzarse mediante ejecuciones concr
 De este modo, una advertencia puede estar acompañada por un certificado formal
 que justifica la existencia del error reportado.
 
-\changed{Este razonamiento resulta especialmente útil cuando el programa presenta comportamiento no determinista.
-Por ejemplo, si un error depende del resultado de una elección aleatoria,
+Este razonamiento resulta especialmente útil cuando el programa presenta comportamiento no determinista.
+Por ejemplo, si un error depende del resultado de una elección aleatoria o no predecible,
 ejecutar el programa varias veces con la misma entrada puede no revelar el fallo.
 La IL permite construir una demostración de que existe una ejecución que alcanza el error,
 aunque otras ejecuciones puedan terminar normalmente.
-Esta demostración puede comporbarse sin volver a ejecutar el programa ni depender de que se repitan las elecciones que producen el fallo.}
+Esta demostración puede comporbarse sin ejecutar el programa ni depender de que se repitan las elecciones que producen el fallo.
 
 La versión original de la Lógica de Incorrectitud (IL) presentada por O'Hearn es análoga a la HL clásica,
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
@@ -191,7 +190,6 @@ Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 
 La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL,
 con el razonamiento local sobre memoria dinámica de la SL.
-%\guido{rompo en 2 parrafos acá}
 
 Sin embargo, para confiar en las conclusiones obtenidas con este sistema,
 no basta con definir sus aserciones y reglas de inferencia,
@@ -200,8 +198,6 @@ propiedades del propio sistema lógico y de su relación con la semántica de lo
 Una de las más importantes es la \emph{solidez} (\emph{soundness}),
 que garantiza, en este caso, que toda conclusión obtenida mediante las reglas de la lógica corresponde a
 un comportamiento admitido por la semántica.
-%\guido{agregue ``en este caso'', mas en general soundness indica que la
-%version sintactica de una prueba implica su verdad semantica}
 
 Estas propiedades pueden demostrarse matemáticamente sobre un papel.
 Sin embargo, este tipo de razonamientos pueden contener errores u omisiones difíciles de identificar.
@@ -231,11 +227,11 @@ Sobre esta extensión se formaliza la ISL, se demuestra su solidez y se prueba e
 que fundamenta una de las propiedades del razonamiento espacial desarrollado en el trabajo.
 
 A partir de las formalizaciones desarrolladas en estas dos etapas,
-\changed{se verifican programas ilustrativos que incluyen errores de memoria,
+se verifican programas ilustrativos que incluyen errores de memoria,
 elecciones no deterministas, bucles y estructuras enlazadas.
 Para estos programas se construyen derivaciones comprobadas por \fstar{} que actúan como certificados formales de error.
 Los teoremas de solidez garantizan que cada estado descrito por sus postcondiciones está respaldado
-por una ejecución del programa desde algún estado que satisface la precondición.}
+por una ejecución del programa desde algún estado que satisface la precondición.
 
 %\guido{y si decimos explicitamente que la aplicamos a algunos programas
 %ilustrativos, obteniendo certificados formales de error? por otro lado,
@@ -310,12 +306,8 @@ Para esto se utilizan relaciones binarias sobre $\Sigma$.
 Sea $R \subseteq \Sigma \times \Sigma$ una relación binaria entre estados.
 La pertenencia $(\sigma, \sigma') \in R$ indica que el estado $\sigma$ está relacionado mediante $R$
 con el estado $\sigma'$.
-\changed{Dado un conjunto de estados iniciales,
-la postimagen mediante $R$ reúne los estados que pueden alcanzarse desde alguno de ellos a través de esta relación.}
-%\guido{esta ultima oración es muy confusa, por ahi diria
-%algo como ``dado un conjunto de estados iniciales, definimos
-%como su postimagen via R al conjunto de estados alcanzables por
-%la relacion'', y luego la definicion formla abajo}
+Dado un conjunto de estados iniciales,
+la postimagen mediante $R$ reúne los estados que pueden alcanzarse desde alguno de ellos a través de esta relación.
 
 \begin{definicion}[Postimagen]
 \label{def:post-img}
@@ -360,14 +352,12 @@ $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\varepsilon$
 En este sentido, $[\![C]\!]_\varepsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step},
 que relaciona directamente los estados iniciales y finales sin describir los pasos intermedios.
 
-\changed{Por ejemplo,
+Por ejemplo,
 un comando que no modifica el estado y termina normalmente relaciona cada estado incial consigo mismo mediante $[\![C]\!]_{ok}$.
 En cambio,
 un comando que señala un error sin modificar el estado establece esa misma relación mediante $[\![C]\!]_{er}$.
 Así, el modo de terminación permite distinguir ambos comportamientos,
-aunque los estados inicial y final coincidan.}
-%\guido{Hay que dar una intuicion del modo de terminacion, algun
-%ejemplo chico con abort o algo asi.}
+aunque los estados inicial y final coincidan.
 
 Aplicando la definición de postimagen a la relación semántica de un comando,
 se construye la siguiente definición:
@@ -399,28 +389,29 @@ por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.
 
 \section{Lógica de Hoare (HL)}
 \label{sec:hoare}
-\changed{Esta sección presenta un recordatorio de los conceptos de la Lógica de Hoare
+Esta sección presenta un recordatorio de los conceptos de la Lógica de Hoare
 que se utilizarán posteriormente para contrastarla con la Lógica de Incorrectitud.
 Se supone que el lector posee cierta familiaridad con los fundamentos de esta lógica,
-por lo que no se desarrolla sus sistema deductivo completo.}
+por lo que no se desarrolla sus sistema deductivo completo.
 
 La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación.
 Su unidad básica es la \emph{tripleta de Hoare}:
 $$\triple{p}{C}{q}$$
 donde $p$ y $q$ son aserciones y $C$ es un comando.
 La aserción $p$ se denomina \emph{precondición}, mientras que $q$ se denomina \emph{postcondición}.
-\changed{La tripleta expresa que, si la ejecución de $C$ comienza en un estado que satisface $p$ y termina normalmente,
-el estado final debe satisfacer $q$.}
+La tripleta expresa que, si la ejecución de $C$ comienza en un estado que satisface $p$ y termina normalmente,
+el estado final debe satisfacer $q$.
 %\guido{agregar que una tripleta representada
 %que toda ejecucion que empieza en p termina en q, mas o menos,
 %y luego aclarar el tema parcialidad? asi como está salta
 %a hablar de terminacion sin decir nada sobre qué es una tripleta}
 
-\changed{El significado de la tripleta también depende de qué se exige sobre la terminación de las ejecuciones.
+El significado de la tripleta también depende de qué se exige sobre la terminación de las ejecuciones.
+Existen dos variantes de correctitud en Lógica de Hoare: \emph{total} y \emph{parcial}.
 La correctitud total exige que todas las ejecuciones iniciadas desde la precondición terminen,
-mientras que la correctitud parcial admite ejecuciones divergentes.}
+mientras que la correctitud parcial admite ejecuciones divergentes.
 En este trabajo se considera una noción de correctitud parcial con ausencia de terminaciones erróneas:
-\changed{ninguna ejecución iniciada en un estado que satisface $p$ puede terminar con un error.}
+ninguna ejecución iniciada en un estado que satisface $p$ puede terminar con un error.
 
 Dado que la semántica distingue entre terminaciones normales y terminaciones con error,
 la validez de una tripleta se define mediante las postimágenes correspondientes a ambos modos de terminación,
@@ -610,28 +601,18 @@ Para cada comando $C$ y modo de terminación $\varepsilon \in \{ok, er\}$,
 la relación $[\![C]\!]_\varepsilon$ describe los pares de estados inicial y final
 conectados por una ejecución $C$ que termina con el modo $\varepsilon$.
 
-\changed{En esta sección,
+En esta sección,
 los estados se representan mediante funciones $\sigma : \mathsf{Var} \to \mathsf{Val}$,
 donde $\mathsf{Var}$ es el conjunto de variables y $\mathsf{Val}$ es un dominio común de valores que puede tomar cualquiera de ellas.
-La notación $[\![e]\!]_\sigma$ denota el valor de la expresión $e$ en el estado $\sigma$.}
-%mientras que $[\![B]\!]_\sigma$ denota el resultado de evaluar la expresión booleana $B$ en $\sigma$.
-%\guido{no son ambas lo mismo? por que distinguir los booleanos?}
-%En particular,
-%$[\![e]\!]_\sigma \in \mathsf{Val}$,
-%y $[\![B]\!]_\sigma \in \{\texttt{true}, \texttt{false}\}$,
-%donde $\mathsf{Val}$ representa el conjunto de valores posibles.
+La notación $[\![e]\!]_\sigma$ denota el valor de la expresión $e$ en el estado $\sigma$.
 
-\changed{Para definir la semántica de $C^\star$,
+Para definir la semántica de $C^\star$,
 utilizamos la notación auxiliar $C^n$,
 para denotar $n$ repeticiones de $C$:
 $$C^0 \equiv \texttt{skip}, \qquad C^{n + 1} \equiv C^n; C.$$
 La \autoref{fig:semantica-il} reúne las definiciones semánticas;
 en particular,
-interpreta $C^\star$ mediante la unión de las relaciones asociadas a $C^n$ para $n \in \mathbb{N}$.}
-%\guido{Este ``por lo tanto'' es muy raro. Definiste lo que es $C^n$, y son
-%todos programas distintos. No hay una definición de $C^{*}$ ni una manera
-%de demostrar esto. No puede haberla porque es una primitiva. Entiendo que usas
-%$C^n$ abajo en la semantica, por ahi podés mover esto ahí.}
+interpreta $C^\star$ mediante la unión de las relaciones asociadas a $C^n$ para $n \in \mathbb{N}$.
 
 \begin{figure}[htbp]
 \centering
@@ -678,12 +659,24 @@ y aquellas que terminan con un error antes de ejecutar el segundo.
 En este último caso,
 el error se propaga directamente al resultado de la secuencia.
 
-Por su parte,
-la semántica de la estrella de Kleene reúne las ejecuciones que realizan una cantidad finita de iteraciones.
-Como las relaciones solo contienen pares de estados correspondientes a ejecuciones terminadas,
-las ejecuciones que divergen no producen un estado final dentro de este modelo.
-Como \texttt{if}, \texttt{while} y \texttt{assert} son construcciones derivadas,
-su semántica se obtiene expandiéndolas en términos de los comandos primitivos anteriores.
+\changed{En el caso de la estrella de Kleene,
+la interpretación depende del modo de terminación.
+Una ejecución de $C^\star$ termina normalmente si realiza cero o más iteraciones de $C$,
+todas con terminación normal.
+Por eso,
+$[\![C^\star]\!]_{ok}$ coincide con la clausura reflexiva transitiva de $[\![C]\!]_{ok}$.
+En cambio,
+una ejecución termina con error cuando,
+tras cero o más iteraciones normales,
+una iteración termina con error e impide continuar.
+Por lo tanto,
+$[\![C^\star]\!]_{er}$ no se define como la clausura reflexiva transitiva de $[\![C]\!]_{er}$.
+Las ejecuciones divergentes no quedan representadas en ninguna de estas relaciones,
+ya que no alcanzan una terminación normal ni errónea.}
+
+\changed{Las definiciones anteriores también permiten interpretar las construcciones derivadas}
+\texttt{if}, \texttt{while} y \texttt{assert},
+cuya semántica se obtiene expandiéndolas en términos de los comandos primitivos anteriores.
 
 %\guido{el caso nondet es un poco raro porque seguramente hay que restringir
 %con el tipo de la variable... al menos eventualmente, tal vez en el
@@ -742,8 +735,10 @@ $$\itriple{x > 0}{C}{ok : x > 2}.$$
 
 El caso anterior muestra que ambas lógicas pueden validar sus respectivas tripletas
 cuando la postcondición coincide con la postimagen.
-A continuación,
-se modifica la postcondición para describir solo uno de los estados finales alcanzables.
+\changed{Los siguientes ejemplos muestran cómo,
+al modificar la postcondición,
+puede obtenerse una tripleta válida en una de las lógicas,
+pero no en la otra.}
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL}
@@ -761,12 +756,6 @@ En la HL, la postcondición debe cumplirse para toda ejecución normal que comie
 Sin embargo, el estado inicial $x = 2$ satisface $x > 0$ y produce el resultado $x = 4$,
 que no satisface la postcondición $x = 3$.
 \end{ejemplo}
-
-El ejemplo muestra que una postcondición que describe un resultado particular puede ser válida en la IL,
-aunque resulte demasiado restrictiva para la HL.
-El caso inverso se obtiene utilizando una postcondición más amplia.
-\guido{no agrega mucho esta oracion, creo}
-\agustina{la uso para introducir un poco el siguiente ejemplo y que no quede colgado.}
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL2}
@@ -883,9 +872,8 @@ Sin embargo, demostrar directamente la inclusión $q \subseteq post_\varepsilon(
 ya que exige justificar la alcanzabilidad de cada estado descrito por $q$.
 Para organizar este razonamiento,
 la IL proporciona,
-\changed{al igual que la HL,}
+al igual que la HL,
 un sistema deductivo compuesto por reglas de inferencia.
-%\guido{``al igual que la HL''?}.
 Estas reglas permiten construir derivaciones a partir de la estructura de los comandos y de las relaciones entre aserciones.
 Antes de presentarlas, definimos formalmente la noción de derivabilidad.
 
@@ -1048,7 +1036,6 @@ En la IL, este debilitamiento de la postcondición, en general, no es válido.
 Al reemplazar $q_1 \land q_2$ por $q_1$,
 la nueva postcondición puede incluir estados que satisfacen $q_1$,
 pero que no satisfacen $q_2$.
-%\guido{por que no decir ``pero que no satisfacen $q_2$'' y listo?}
 Por lo tanto, algunos de los estados incorporados podrían ser inalcanzables.
 
 La Regla de Consecuencia de la IL produce el efecto contrario:
@@ -1140,14 +1127,11 @@ $$\itriple{z = 11}{C}{ok: z = 42 \land (x \bmod 2 = 0) \land (y \bmod 2 \ne 0)}$
 El análisis de los bucles iterativos constituye uno de los principales desafíos de la verificación formal de software.
 En la HL,
 razonar sobre un bucle requiere encontrar un invariante
-\changed{que se preserve entre iteraciones y sea sufiencientemente fuerte para demostrar la propiedad buscada}.
+que se preserve entre iteraciones y sea sufiencientemente fuerte para demostrar la propiedad buscada.
 Esta tarea no es trivial y a menudo requiere invención humana,
-%\guido{qué sería ``dominios abstractos complejos''?},
 lo que dificulta la escalabilidad y automatización de las herramientas.
-\changed{Aunque existen técnicas automáticas,
-no hay un procedimiento que resuelva esta tarea para programas arbitrarios.}
-%\guido{encontrar invariantes es indecidible, por cierto, así que nunca puede
-%ser totalmente automático}
+Aunque existen técnicas automáticas,
+no hay un procedimiento que resuelva esta tarea para programas arbitrarios.
 
 La IL no necesita encontrar un invariante que describa todas las ejecuciones del bucle
 cuando el objetivo es certificar una ejecución particular.
@@ -1211,43 +1195,29 @@ Por lo tanto,
 existe una ejecución de $C$ que comienza en un estado que satisface $p$ y termina con el modo $er$.
 $\ensuremath{\blacksquare}$
 
-El corolario \changed{explicita,
+El corolario explicita,
 para el caso de terminación con error,
-la garantía de ausencia de falsos positivos que se desprende del Torema de Soundness~\ref{teo:sound-il}:}
-%\guido{no sería el teorema?} expresa la ausencia de falsos positivos:
+la garantía de ausencia de falsos positivos que se desprende del Torema de Soundness~\ref{teo:sound-il}:
 todo estado descrito por la postcondición de una tripleta de error derivable
 está respaldado por una ejecución real.
 Además, si $q \neq \varnothing$,
 existe al menos una ejecución que comienza en un estado que satisface $p$ y termina con el modo $er$.
 
 \subsection*{Relevancia práctica}
-%La relevancia práctica del razonamiento sobre incorrectitud puede observarse
-%en distintos trabajos desarrollados en el entorno de Facebook/Meta.
-%Entre los antecedentes industriales,
-%herramientas como Infer y Zoncolan mostraron que los análisis estáticos composicionales
-%podían integrarse en procesos de desarrollo industriales y aplicarse sobre bases de código de gran tamaño~\citep{fast, facebook}.
-%Aunque estas herramientas son anteriores a la introducción de la IL
-%y no constituyen implementaciones directas de esta lógica,
-%sus experiencias mostraron tanto la necesidad de escalabilidad como la importancia de producir advertencias útiles para los desarrolladores.
-%\guido{creo que hay literalmente cientos de analizadores, me parece raro este
-%párrafo distinguiendo a estos dos cuando aparte tampoco usan IL?}
-
-\changed{Una aplicación del razonamiento sobre incorrectitud es Pulse-X~\citep{bugs},
-un analizador automático de errores de memoria basado en la ISL.}
+Una aplicación del razonamiento sobre incorrectitud es Pulse-X~\citep{bugs},
+un analizador automático de errores de memoria basado en la ISL.
 En su evaluación sobre OpenSSL,
 un proyecto de código abierto que proporciona bibliotecas y herramientas criptográficas para comunicaciones seguras,
 encontró quince errores previamente desconocidos, que fueron reportados a sus mantenedores y corregidos.
 Este resultado muestra que la IL no solo proporciona un marco teórico para razonar sobre errores alcanzables,
 sino que también puede servir como fundamento para diseñar herramientas capaces de detectar errores reales.
-%\guido{esto está mejor, también podés citar que esto corre en cada parche
-%o algo así con lo cual es escalable y etc}
 
-\changed{Además,
+Además,
 los autores evaluaron la escalabilidad de Pulse-X sobre diez programas de gran tamaño,
 midiendo el tiempo de CPU y la cantidad de problemas reportados.
 Los resultados mostraron un rendimiento comparable al de Infer~\citep{infer},
 un analizador utilizado en la industria.
-Esta evaluación aporta evidencia de la viabilidad del enfoque para analizar bases de código extensas.}
+Esta evaluación aporta evidencia de la viabilidad del enfoque para analizar bases de código extensas.
 
 Sin embargo,
 para aplicar este tipo de razonamiento a programas con memoria dinámica y estructuras enlazadas
@@ -1265,19 +1235,15 @@ también es necesario representar las celdas de memoria asignadas y la informaci
 
 La SL, introducida por \citet{sl},
 extiende la HL para
-\changed{facilitar el razonamiento composicional} sobre este tipo de programas.
-%\guido{En realidad la SL lo hace mucho más composicional. En HL se puede
-%verificar programas con alocación y memoria dinámica, pero te la pasás
-%escribiendo predicados como $p \rightarrow 1 \wedge r \rightarrow 1 \wedge p \ne
-%r$, y cuando tenés estructuras de datos se hace casi imposible.}
-\changed{Aunque la HL permite verificar programas con memoria dinámica,
+facilitar el razonamiento composicional sobre este tipo de programas.
+Aunque la HL permite verificar programas con memoria dinámica,
 exige expresar explícitamente condiciones que indiquen,
 por ejemplo,
 que dos punteros se refieren a celdas distintas.
 Estas condiciones se vuelven difíciles de manejar cuando se trabaja con estructuras de datos enlazadas.
-La SL permite describir}
+La SL permite describir
 el fragmento de memoria relevante para cada comando
-\changed{y combinar ese razonamiento con información sobre otros fragmentos independientes},
+y combinar ese razonamiento con información sobre otros fragmentos independientes,
 sin tener que describir explícitamente toda la memoria del programa~\citep{local}.
 
 Para formalizar este modelo, sean $\mathsf{Var}$ el conjunto de variables del programa,
@@ -1292,72 +1258,61 @@ Denotamos por $\operatorname{dom}(h)$ el conjunto de direcciones para las cuales
 
 Un estado espacial es un par $(s, h)$,
 donde $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
-%\guido{yo diría solamente
-%``Un estado espacial es un par $(s,h)$
-%donde $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$'', sin la formula.}
 Las aserciones de la SL se interpretan sobre estados espaciales.
 Formalmente, una aserción espacial es un predicado
 $$P : \mathsf{Store} \times \mathsf{Heap} \rightarrow \mathsf{Prop}.$$
 Escribimos $P(s, h)$
 cuando el estado formado por el \emph{store} $s$ y el \emph{heap} $h$ satisface la aserción $P$.
-%\guido{Usar $\models$ por ahí confunde, ya que el teorema principal
-%es sobre derivabilidad vs verdad ($\models$). por qué no $P(s,h)$ nomás?
-%es una función}
 
 En la presencia de memoria dinámica y punteros,
 una dificultad central es determinar cuándo dos expresiones del programa
 se refieren a la misma dirección de memoria.
 A esta situación se la denomina \emph{aliasing}.
-Si $e$ es una expresión cuya evaluación produce una dirección de memoria y $s$ un \emph{store},
-denotamos por $[\![e]\!]_s$ la dirección obtenida al evaluar $e$ en $s$.
-
-\begin{definicion}[Aliasing]
-Dos expresiones $e_1$ y $e_2$ presentan \emph{aliasing} en un \emph{store} $s$
-cuando ambas se evalúan a la misma dirección de memoria:
-$$[\![ e_1 ]\!]_s = [\![e_2]\!]_s$$
-\end{definicion}
-
-%\guido{Esta parte me parece un poco confusa sin un ejemplo. Podrías explicar que
-%que $\triple{p \rightarrow 1 \wedge s \rightarrow 1}{*p := 2}{p \rightarrow 2
-%\wedge s \rightarrow 1}$ no vale en general}
-
-Cuando existe \emph{aliasing},
+En este caso,
 una modificación realizada a través de una de las expresiones puede afectar el valor observado a través de la otra.
 
 \begin{ejemplo}
-Supongamos que las variables $x$ e $y$ apuntan a una misma dirección $\ell$,
-cuya celda contiene el valor 1.
-Es decir, si $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$,
-$$s(x) = s(y) = \ell \qquad \text{y} \qquad h(\ell) = 1.$$
+Consideremos el comando $C \equiv [x] := 2$,
+que escribe el valor 2 en la celda cuya dirección está almacenada en $x$.
+Saber que las cedas referenciadas por $x$ e $y$ contienen inicialmente el valor 1
+no basta para garantizar que la segunda conserve su contenido.
+En particular,
+si $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$,
+la siguiente tripleta no es válida:
+$$\triple{h(s(x)) = 1 \land h(s(y)) = 1}{[x] := 2}{h(s(x)) = 2 \land h(s(y)) = 1}.$$
 
-Si se escribe el valor 2 en la celda referenciada por $x$,
-se obtiene un \emph{heap} $h'$ tal que $h'(\ell) = 2$.
-Como $y$ apunta a esa misma celda,
-también se cumple
-$$h'(s(y)) = 2.$$
-
+Para observar por qué falla,
+supongamos que ambas varaiables apuntan a una misma dirección $\ell$:
+$$s(x) = s(y) = \ell, \qquad h(\ell) = 1.$$
+Este estado satisface la precondición de la tripleta.
+Sin embargo,
+después de la escritura se obtiene un \emph{heap} $h'$ tal que
+$$h'(\ell) = h'(s(x)) = h'(s(y)) = 2,$$
+por lo que la postcondición no se cumple.
 Aunque la escritura se realiza mediante $x$,
-también cambia el valor que se obtiene al leer mediante $y$,
-ya que ambas variables apuntan a la misma celda.
+también cambia el valor que se obtiene al leer mediante $y$.
+
+Si se agrega a la precondición que ambas direcciónes son distintas,
+se obtiene una tripleta válida:
+$$\triple{h(s(x)) = 1 \land h(s(y)) = 1 \land s(x) \neq s(y)}{[x] := 2}{h(s(x)) = 2 \land h(s(y)) = 1}.$$
+En este caso,
+la escritura modifica únicamente la celda referenciada por $x$,
+por lo que la celda referenciada por $y$ conserva su contenido.
 \end{ejemplo}
 
-\changed{Para garantizar que esa escritura preserve el contenido de la celda referenciada por $y$,
-es necesario establecer que $s(x) \neq s(y)$.}
-Estas condiciones de verificación pueden ser difíciles de construir y de demostrar automáticamente,
-lo que también puede limitar la escalabilidad del análisis,
-especialmente en estructuras de datos enlazadas~\citep{bttf}.
+\changed{El ejemplo muestra la necesidad de establecer qué referencias corresponden a celdas distintas.
+En programas que manipulan estructuras de datos enlazadas,}
+estas condiciones pueden ser difíciles de construir y de demostrar automáticamente,
+lo que también puede limitar la escalabilidad del análisis~\citep{bttf}.
 
 \subsection*{La conjunción separadora y aserciones espaciales}
-\changed{Una contribución central de la SL es la conjunción separadora,
+Una contribución central de la SL es la conjunción separadora,
 un conectivo que permite combinar aserciones sobre fragmantos disjuntos de memoria.
 De este modo,
 la separación se expresa madiante la estructura de las aserciones,
 sin enumerar individualmente las desigualdades entre las direcciones involucradas.
 Para definir este conectivo,
-primero introducimos}
-%\guido{Lo anterior puede hacerse con predicados, e.g. $p \ne r$, pero no escala.
-%Yo empezaría esta sección diciendo que la contribución principal de la SL
-%es un conectivo, la conj sep, que da una forma más elegante de manejar esto.}
+primero introducimos
 cuándo dos \emph{heaps} son disjuntos y cómo pueden combinarse.
 
 \begin{definicion}[\emph{Heaps} disjuntos]
@@ -1419,9 +1374,8 @@ $$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \;
 \end{definicion}
 
 Por ejemplo,
-\changed{para una variable $x$ y un \emph{store} $s$,}
-la aserción $x \mapsto 3$ describe un \emph{heap} formado exactamente por una celda ubicada en la dirección \changed{$s(x)$,}
-%\guido{$x$ es una variable del store?},
+para una variable $x$ y un \emph{store} $s$,
+la aserción $x \mapsto 3$ describe un \emph{heap} formado exactamente por una celda ubicada en la dirección $s(x)$,
 cuyo contenido es 3.
 Esta aserción no describe un \emph{heap} arbitrariamente grande que contiene esa celda,
 sino un fragmento compuesto únicamente por ella,
@@ -1447,8 +1401,8 @@ por lo que funciona como un entorno común para evaluar las expresiones de ambas
 Por lo tanto, la separación se aplica solo al \emph{heap},
 cuyas celdas se distribuyen entre fragmentos disjuntos.
 
-\changed{La conjunción separadora satisface las siguientes propiedades algebraicas,
-que permite reorganizar las aserciones sin cambiar su significado.}
+La conjunción separadora satisface las siguientes propiedades algebraicas,
+que permite reorganizar las aserciones sin cambiar su significado.
 
 \begin{lema}[Propiedades de la conjunción separadora]
 Para todas las aserciones espaciales $P$, $Q$ y $R$:
@@ -1458,19 +1412,30 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
   \item $P * \mathsf{emp} \iff P$
 \end{enumerate}
 \end{lema}
-%\guido{esto puede estar antes, es un non sequitur del ejemplo a esto}
 
-La diferencia entre la conjunción clásica ($\land$) y la separadora ($*$)
-determina cómo se combinan los fragmentos de \emph{heap} descritos por las aserciones.
-\changed{Utilizamos la abreviatura 
-$$x \mapsto 3, y \equiv (x \mapsto 3) * (x + 1 \mapsto y),$$
-que describe dos celdas consecutivas:}
+\changed{La conjunción separadora también permite definir una variante de \emph{points-to} que admite memoria adicional.
+Para ello,
+utilizamos la aserción $\mathsf{true}$,
+que se satisface en cualquier estado espacial,
+sin imponer restricciones sobre el \emph{store} ni sobre el \emph{heap}.}
+
+\changed{A partir de esta aserción y la conjunción separadora,
+definimos la siguiente variante de \emph{points-to}:
+$$e_1 \hookrightarrow e_2 \equiv (e_1 \mapsto e_2) * \mathsf{true}.$$
+Esta aserción indica el \emph{heap} contiene una celda cuya dirección es
+el resultado de evaluar $e_1$ y cuyo contenido es el resultado de evaluar $e_2$,
+pero permite que existan otras celdas.}
+
+\changed{Las dos variantes de \emph{points-to} permiten ilustrar cómo la conjunción clásica ($\land$) y la separadora ($*$)
+expresan distintas formas de compartir o separar memoria.
+Para presentar los ejemplos,}
+utilizamos la abreviatura 
+$$x \mapsto [3, y] \equiv (x \mapsto 3) * (x + 1 \mapsto y),$$
+que describe dos celdas consecutivas:
 la primera contiene el valor 3 y la segunda contiene el valor almacenado en $y$.
-\changed{Para este ejemplo,
-suponemos que $x + 1$ denota la dirección siguiente a la almacenada en $x$.}
-%\guido{usualmente esto se define como $x \mapsto 3 * (x+1) \mapsto y$, donde $x+1$ es
-%la ``siguiente'' celda en la memoria}
-De manera análoga, consideramos la aserción $y \mapsto 3, x$.
+Para este ejemplo,
+suponemos que $x + 1$ denota la dirección siguiente a la almacenada en $x$.
+De manera análoga, consideramos la aserción $y \mapsto [3, x]$.
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
 \begin{figure}[h]
@@ -1500,18 +1465,17 @@ Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
       \draw[ptr] (y) -- (c1.west);
     \end{tikzpicture}
   \end{minipage}
-\caption{Representación individual de las aserciones espaciales $x \mapsto 3, y$ e $y \mapsto 3, x$.}
+\caption{Representación individual de las aserciones espaciales $x \mapsto [3, y]$ e $y \mapsto [3, x]$.}
 \label{fig:aserciones}
 \end{figure}
 
-Si analizamos la aserción $(x \mapsto 3,y) \land (y \mapsto 3,x)$,
-la conjunción clásica exige que ambas se evalúen sobre el mismo \emph{heap}.
-Por lo tanto, la aserción completa solo se satisface si existe un único \emph{heap}
-sobre el cual se cumplen simultáneamente ambos predicados.
-La conjunción clásica no impone, sin embargo,
-que los fragmentos descritos sean disjuntos.
-En este ejemplo, ambas aserciones podrían satisfacerse si $x$ e $y$ almacenaran la misma dirección de memoria,
-de modo que describen el mismo bloque,
+Consideremos primero la aserción $(x \mapsto [3, y]) \land (y \mapsto [3, x])$.
+La conjunción clásica exige comprobar ambas aserciones sobre el mismo \emph{heap},
+sin dividirlo.
+La primera exige que ese \emph{heap} contenga exactamente el bloque que comienza en la dirección almacenada en $x$;
+la segunda exige que contenga exactamente el bloque que comienza en la dirección almacenada en $y$.
+Por ello,
+ambas solo pueden cumplirse si las dos variables apuntan al mismo bloque,
 como se muestra en la \autoref{fig:conjuncion-clasica}.
 
 \begin{figure}[h]
@@ -1528,13 +1492,16 @@ como se muestra en la \autoref{fig:conjuncion-clasica}.
     \draw[ptr] (y) -- ([yshift=-0.03cm]c1.west);
     \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=0, looseness=2] (c1.east);
   \end{tikzpicture}
-\caption{Conjunción clásica.\guido{aclará que esto es solamente una \emph{posibilidad}}}
+\caption{Conjunción clásica.}
 \label{fig:conjuncion-clasica}
 \end{figure}
 
-Por el contrario, si utilizamos la conjunción separadora $(x \mapsto 3, y) * (y \mapsto 3, x)$, estamos forzando lógicamente a que las memorias descritas sean disjuntas.
-Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estructura en la que existen dos bloques de memoria separados, donde cada uno guarda un puntero hacia el otro.
-\guido{esto también es posible con conj clasica, pero el caso anterior ahora es imposible}
+En cambio,
+la aserción $(x \mapsto [3, y]) * (y \mapsto [3, x])$ exige dividir el \emph{heap} en dos fragmentos disjuntos.
+Sobre uno se comprueba $x \mapsto [3, y]$ y sobre el otro, $y \mapsto [3, x]$.
+Cada fragmento contiene exactamente las dos celdas del bloque correspondiente.
+Así se obtienen los dos bloques separados de la \autoref{fig:conjuncion-separadora},
+cada uno de los cuales almacena un puntero hacia el otro.
 
 \begin{figure}[h]
   \centering
@@ -1557,40 +1524,56 @@ Como muestra la \autoref{fig:conjuncion-separadora}, el resultado es una estruct
 \label{fig:conjuncion-separadora}
 \end{figure}
 
-El ejemplo muestra que la conjunción separadora impone, por defecto,
-la ausencia de \emph{aliasing} entre los fragmentos de memoria que combina.
+\changed{Por último,
+consideremos qué ocurre al utilizar la variante que permite memoria adicional.
+Para los bloques definimos
+$$x \hookrightarrow [3, y] \equiv (x \mapsto [3, y]) * \mathsf{true}.$$
+Con esta notación,
+la aserción $(x \hookrightarrow [3, y]) \land (y \hookrightarrow [3, x])$
+también comprueba ambos predicados sobre el mismo \emph{heap}.
+Sin embargo,
+ahora cada uno exige únicamente que el \emph{heap} contenga el bloque correspondiente.
+Si ambos bloques coinciden,
+se obtiene la configuración de la \autoref{fig:conjuncion-clasica}.
+Si son disjuntos,
+se obtiene la de la \autoref{fig:conjuncion-separadora}:
+al comprobar cada predicado,
+el otro bloque forma parte de la memoria adicional admitida por $\mathsf{true}$.
+En ambos casos,
+el \emph{heap} puede contener además otras celdas.}
+
+\changed{Estos ejemplos muestran que la conjunción separadora exige que los fragmentos de memoria que combina no compartan celdas.}
 De este modo, una prueba no necesita expresar por separado que
 una modificación realizada sobre uno de esos fragmentos no afectará al otro.
-%\guido{este es un buen momento para mencionar la frame rule?}
 
-\changed{Esta separación permite razonar sobre las modificaciones de un fragmento del \emph{heap}
+Esta separación permite razonar sobre las modificaciones de un fragmento del \emph{heap}
 y conservar la información sobre otros fragmentos disjuntos.
 La Regla del Marco, presentada más adelante,
-formaliza este razonamiento bajo las condiciones necesarias para que la información conservada no resulte afectada por el comando.}
+formaliza este razonamiento bajo las condiciones necesarias para que la información conservada no resulte afectada por el comando.
 
 \subsection*{El lenguaje imperativo extendido}
 Las aserciones anteriores permiten describir fragmentos del \emph{heap},
 pero todavía es necesario extender el lenguaje de comandos para poder operar sobre esa memoria.
 Para ello, la SL incorpora cuatro comandos fundamentales para la manipulación de estructuras de datos mutables.
-\changed{En estos comandos,
+En estos comandos,
 $x$ es una variable del programa,
 mientras que $e$, $e_1$ y $e_2$ son expresiones.
-Las expresiones utilizadas para acceder al \emph{heap} se evalúan en el \emph{store} para obtener la dirección de memoria correspondiente.}
+Las expresiones utilizadas para acceder al \emph{heap} se evalúan en el \emph{store} para obtener la dirección de memoria correspondiente.
 \begin{enumerate}
   \item \textbf{Alocación (allocation):}
   $$x := \texttt{alloc()}$$
   reserva una nueva celda y almacena su dirección en $x$.
   \item \textbf{Lectura (lookup):}
   $$x := [e]$$
-  \changed{evalúa la expresión $e$ para obtener una dirección de memoria,
-  lee el contenido de la celda ubicada en esa dirección y lo asigna a $x$.}
+  evalúa la expresión $e$ para obtener una dirección de memoria,
+  lee el contenido de la celda ubicada en esa dirección y lo asigna a $x$.
   \item \textbf{Mutación (mutation):}
   $$[e_1] := e_2$$
-  \changed{evalúa la expresión $e_1$ para obtener una dirección de memoria y
-  sobrescribe el contenido de esa celda con el resultado de evaluar $e_2$.}
+  evalúa la expresión $e_1$ para obtener una dirección de memoria y
+  sobrescribe el contenido de esa celda con el resultado de evaluar $e_2$.
   \item \textbf{Liberación (deallocation):}
   $$\texttt{free(}e\texttt{)}$$
-  libera la celda ubicada en la dirección \changed{que se obtiene de evaluar $e$}.
+  libera la celda ubicada en la dirección que se obtiene de evaluar $e$.
 \end{enumerate}
 
 \subsection*{Reglas de inferencia de la SL}
@@ -1612,11 +1595,10 @@ cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de
 Las reglas correspondientes a comandos como \texttt{skip}, asignación y composición secuencial se heredan de la HL.
 La extensión propia de la SL está dada por las reglas asociadas a las operaciones de alocación,
 lectura, escritura y liberación de memoria en la \autoref{fig:reglas-sl}.
-En estas reglas se \changed{utiliza la abreviatura $e \mapsto -$,
-equivalente a $\exists v. e \mapsto v$,}
+En estas reglas se utiliza la abreviatura $e \mapsto -$,
+equivalente a $\exists v. e \mapsto v$,
 que representa una celda ubicada en la dirección obtenida al evaluar $e$,
 cuyo contenido no es relevante para el razonamiento.
-%\guido{esto es solamente una abreviación para $\exists v. x \mapsto v$}
 
 \begin{figure}[htbp]
 \centering
@@ -1643,24 +1625,22 @@ cuyo contenido no es relevante para el razonamiento.
 \end{figure}
 
 La regla \textsc{Alloc} expresa que la alocación reserva una nueva celda y almacena su dirección en $x$.
-\changed{Por su parte,
+Por su parte,
 \textsc{Free} elimina del fragmento de \emph{heap} descrito la celda ubicada en la dirección obtenida al evaluar $e$
-y produce la aserción $\mathsf{emp}$.}
+y produce la aserción $\mathsf{emp}$.
 
 La regla \textsc{Load}
-\changed{lee el contenido de la celda indicada por $e$ y lo asigna a $x$,
+lee el contenido de la celda indicada por $e$ y lo asigna a $x$,
 sin modificar el \emph{heap}.
 La variable auxiliar $x'$ conserva el valor inicial de $x$,
 mientras que $v$ representa el contenido leído.
 Como la asignación puede cambiar el valor de la expresión $e$ si esta contiene a $x$,
-la postcondición utiliza $e[x'/x]$ para seguir describiendo la dirección original.}
+la postcondición utiliza $e[x'/x]$ para seguir describiendo la dirección original.
 
-%\guido{$x$ es siempre variable local? pero $y$ es una expresión? hay que explicar
-%lo de $x \ne y$, es medio un tecnicismo}
 La regla \textsc{Store} modifica el contenido de la celda
-\changed{indicada por $e_1$ con el resultado de evaluar $e_2$.
+indicada por $e_1$ con el resultado de evaluar $e_2$.
 Esta operación modifica el \emph{heap},
-pero conserva el \emph{store}.}
+pero conserva el \emph{store}.
 
 Estas reglas describen el comportamiento de cada operación sobre el fragmento de memoria que aparece explícitamente en la precondición.
 Para extender este razonamiento a estados que contienen memoria adicional e independiente,
@@ -1708,9 +1688,8 @@ el conjunto de variables del \emph{store} que pueden ser modificadas por $C$,
 y $\operatorname{fv}(R)$, el conjunto de variables libres de la aserción $R$.
 Esta condición garantiza que $C$ no modifique ninguna variable de las que depende $R$,
 de modo que $R$ siga describiendo el mismo fragmento de memoria después de ejecutar $C$.
-%\guido{no romper parrafo acá}
 Por ejemplo,
-\changed{sean $R \equiv x \mapsto 1$ y $C \equiv x := 3$,
+sean $R \equiv x \mapsto 1$ y $C \equiv x := 3$,
 donde $x$ es una variable del \emph{store}.
 La aserción $R$ describe una celda del \emph{heap} ubicada en la dirección almacenada en $x$,
 mientra que el comando modifica el valor de la propia variable.
@@ -1718,14 +1697,7 @@ Por lo tanto,
 aunque el \emph{heap} premanezca intacto,
 $R$ puede dejar de cumplirse porque $x$ ya no tiene la dirección de la celda descrita.
 La condición lateral impide esta aplicación de la Regla del Marco,
-ya que $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.}
-%entonces $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
-%\guido{me parece que esta mal el ejemplo, $x$ es variable local?
-%en ese caso no puede cumplir $x \mapsto 1$? y si no, no puedo tener
-%el permiso a $x$ en el marco porque lo necesito para el comando base}
-%Por lo tanto, la condición lateral no se cumple y la Regla del Marco no puede aplicarse.
-%Esto es necesario porque modificar $x$ puede cambiar la dirección de memoria descrita por $R$,
-%aunque el comando no modifique directamente el \emph{heap}.
+ya que $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
 
 El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica relacional del lenguaje.
 
@@ -1740,7 +1712,7 @@ $$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp 
 entonces
 $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
 \end{lema}
-\guido{esto también vale en HL, por cierto}
+%\guido{esto también vale en HL, por cierto}
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
@@ -1751,12 +1723,8 @@ el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
 mientras que $h_f$ permanece sin modificaciones.
 
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
-%\guido{esto no se entiende acá, estás adelantando un problema que se resuelve
-%después pero el lector no tiene claro que ese problema existe. reemplazaria este
-%parráfo por ``ahora tornamos nuestra atención a una pregunta natural: si pueden
-%combinarse la subaproximación de la IL con el razonamiento local de la SL''}
-\changed{A continuación,
-consideramos cómo combinar este razonamiento con la interpretación subaprximada de la IL.}
+A continuación,
+consideramos cómo combinar este razonamiento con la interpretación subaprximada de la IL.
 
 \section{Lógica de Incorrectitud de Separación (ISL)}
 \label{sec:logincsep}

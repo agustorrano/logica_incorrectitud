@@ -75,10 +75,10 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
     
   | R_Assign : s : state { s._2 == Ok } ->
     #x : var -> #e : expr ->
-    runsto (Assign x e) s (override s._1 x (eval_expr s e), s._2)
+    runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
 
   | R_Nondet : s : state { s._2 == Ok } -> #x : var -> v : value ->
-    runsto (Nondet x) s (override s._1 x v, s._2)
+    runsto (Nondet x) s (override s._1 x v, Ok)
 
   | R_Skip : s : state { s._2 == Ok } -> runsto Skip s s
 

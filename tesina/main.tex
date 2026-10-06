@@ -2494,7 +2494,7 @@ type state = store & term_mode
 \end{lstlisting}
 
 El modo \texttt{Ok} indica que la ejecución puede continuar, mientras que \texttt{Er} indica que se ha alcanzado un estado de error.
-Esta distinción mecaniza los dos canales de salida \emph{ok} y \emph{er} introducidos en la Definición~\ref{def:trip-inc}.
+Esta distinción mecaniza los dos canales de salida \emph{ok} y \emph{er}.
 En la presentación abstracta del \autoref{cap:conceptos-previos}, la condición de salida $\epsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
 En esta formalización se incorpora directamente en el estado.
 De esta manera, una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
@@ -2538,7 +2538,7 @@ let eval_expr (s : state) (e : expr) : GTot nat =
 \end{lstlisting}
 
 La definición de comandos es similar, pero incluye instrucciones que modifican el estado o controlan el flujo.
-\guido{\sout{Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.}}
+%\guido{\sout{Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.}}
 
 \begin{lstlisting}[style=fstar]
 type stmt =
@@ -2558,38 +2558,28 @@ type stmt =
 \texttt{Assume e} conserva solo los caminos donde \texttt{e} es verdadera.
 \texttt{Seq p q} representa composición secuencial, \texttt{Choice p q} elección no determinista y \texttt{Kleene p} una cantidad finita y no determinista de ejecuciones de \texttt{p}.
 
-La ejecución de los comandos no puede modelarse utilizando una función determinista \mbox{\texttt{state -> \, state}}.
-Existen dos impedimentos teóricos para construir un intérprete funcional tradicional:
-
-\begin{enumerate}
-    \item Manejo de errores: necesitamos rastrear cuando un programa falla.
-    Una función simple no diferencia entre un resultado exitoso y uno erróneo.
-    \item No determinismo: al incluir instrucciones como \texttt{Nondet} o \texttt{Choice}, un mismo estado inicial de la memoria puede derivar en varios caminos y estados finales válidos distintos.
-\end{enumerate}
-\guido{Esto me parece obvio, ya explicamos arriba que la semántica es una (o
-varias) relaciones. Lo del modo es un detalle de implementacion interesante, lo
-otro no}
-
-Para resolver el primer problema, se incorporó el modo de terminación directamente dentro del \emph{state}, entonces la propagación de errores ocurre de forma natural.
-Por otro lado, para resolver el segundo problema, abandonamos las funciones y modelamos la ejecución como una relación matemática utilizando un tipo inductivo indexado:
-
+\changed{La semántica relacional presentada en la \autoref{sec:loginc} se mecaniza mediante un tipo inductivo indexado
+por el comando y sus estados inicial y final.
+A diferencia de aquella presentación,
+el modo de terminación se incorpora al estado final,
+en lugar de aparecer como un índice separado de la relación:}
+%\guido{Esto me parece obvio, ya explicamos arriba que la semántica es una (o
+%varias) relaciones. Lo del modo es un detalle de implementacion interesante, lo
+%otro no}
 \begin{lstlisting}[style=fstar]
 noeq
 type runsto : stmt -> state -> state -> Type0
 \end{lstlisting}
-\guido{para después, por ahí en la seccion intro de F* podes mostrar un ejemplo
-de relacion inductiva, por ejemplo una relacion que demuestra que dos vectores
-tienen la misma longitud.}
+%\guido{para después, por ahí en la seccion intro de F* podes mostrar un ejemplo
+%de relacion inductiva, por ejemplo una relacion que demuestra que dos vectores
+%tienen la misma longitud.}
 
-En la \autoref{sec:loginc}, la semántica de un comando se representó mediante una relación binaria sobre estados.
-El tipo \texttt{runsto} constituye la mecanización de dicha relación.
-Un habitante del tipo \texttt{runsto c s0 s1} constituye una derivación de ejecución de \texttt{c} desde el estado \texttt{s0} hasta \texttt{s1}.
-En consecuencia, constituye la contraparte mecanizada de
-$$(s_0, s_1) \in [\![C]\!]_\epsilon$$
-donde el canal $\epsilon$ queda determinado por el modo de terminación contenido en $s_1$.
-
-Como se explicó en la \autoref{sec:fstar}, el uso del tipo inductivo indexado permite registrar en el propio tipo, el comando y los estados inicial y final de la ejecución.
-Cada constructor de \texttt{runsto} corresponde a una regla de la semántica operacional.
+\changed{Un valor de tipo \texttt{runsto c s0 s1} representa una derivación
+de la ejecución del comando \texttt{c} desde \texttt{s0} hasta \texttt{s1}.
+Sus constructores codifican las reglas de la semántica operacional,
+siguiendo la representación de relaciones mediante tipos indctivos indexados introducida en la \autoref{sec:fstar}.
+Las ejecuciones comienzan en un estado con modo \texttt{Ok} y pueden finalizar con modo \texttt{Ok} o \texttt{Er},
+según terminen normalmente o con error.}
 
 Como los \emph{stores} son funciones, dos expresiones funcionales diferentes pueden representar el mismo \emph{store} si coinciden en todas las variables.
 Para tratar estas diferencias conviene definir la equivalencia de estados:
@@ -2620,19 +2610,23 @@ Esta se formaliza mediante:
 \begin{lstlisting}[style=fstar]
 | R_Assign : s : state { s._2 == Ok } ->
   #x : var -> #e : expr ->
-  runsto (Assign x e) s (override s._1 x (eval_expr s e), s._2)
+  runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
 \end{lstlisting}
 
 Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
-Toma un estado de éxito arbitrario $s$, evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e}, y garantiza que el estado final es idéntico a $s$, pero con el valor de la variable $x$ actualizado mediante \texttt{override}.
-Por último, como \texttt{Assign} es una operación segura en nuestro lenguaje, el modo de terminación siempre es el canal de éxito.
-\guido{reemplaza el ultimo \lstinline{s._2} por \lstinline{Ok}}
+Toma un estado de éxito arbitrario $s$,
+evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e},
+y garantiza que el estado final es idéntico a $s$,
+pero con el valor de la variable $x$ actualizado mediante \texttt{override}.
+Por último, como \texttt{Assign} es una operación segura en nuestro lenguaje,
+el modo de terminación siempre es el canal de éxito.
+%\guido{reemplaza el ultimo \lstinline{s._2} por \lstinline{Ok}}
 
 La asignación no determinista se representa mediante:
 
 \begin{lstlisting}[style=fstar]
 | R_Nondet : s : state { s._2 == Ok } -> #x : var -> v : value ->
-  runsto (Nondet x) s (override s._1 x v, s._2)
+  runsto (Nondet x) s (override s._1 x v, Ok)
 \end{lstlisting}
 
 Si estuviéramos programando un intérprete tradicional, implementar el no determinismo requeriría un generador de números pseudoaleatorios, lo cual ensuciaría el razonamiento matemático.
@@ -2648,15 +2642,19 @@ Representamos la terminación normal, de error y filtrado de caminos de la sigui
   squash (eval_expr s e =!= 0) ->
   runsto (Assume e) s s
 \end{lstlisting}
-\guido{podriamos aclarar que s siempre tiene que estar en OK?}
-\guido{Error seria Abort?}
+%\guido{podriamos aclarar que s siempre tiene que estar en OK?}
+%\guido{Error seria Abort?}
 
-\texttt{R\_Skip} conserva el estado.
-La regla \texttt{R\_Error} conserva el \emph{store}, pero cambia el modo de terminación.
-Por su parte, \texttt{R\_Assume} actúa como un filtro lógico que descarta los caminos de ejecución inviables.
-Esta regla no produce un estado de error cuando la condición es falsa.
-En ese caso, no existe una derivación de \texttt{runsto}.
-De esta manera, los caminos que no satisfacen la condición son eliminados de la relación semántica.
+La regla \texttt{R\_Skip} conserva el estado inicial.
+\changed{Por su parte,}
+\texttt{R\_Error} \changed{representa el comando \texttt{error}}:
+conserva el \emph{store} y cambia el modo de \texttt{Ok} a \texttt{Er}.
+Finalmente,
+\texttt{R\_Assume} \changed{permite una ejecución que conserva el estado únicamente
+cuando la expresión se evalúa a un valor distinto de cero.
+Cuando la condición es falsa,
+no existe una derivación de ejecución para ese comando desde ese estado;
+esto no constituye una terminación con error.}
 
 La composición secuencial se divide según el modo de terminación del primer comando:
 
@@ -2670,12 +2668,18 @@ La composición secuencial se divide según el modo de terminación del primer c
   runsto p s t -> runsto (Seq p q) s t
 \end{lstlisting}
 
-La regla \texttt{R\_Seq} establece que si la primera instrucción \texttt{p} termina con éxito en un estado intermedio \texttt{t}, la ejecución normal continúa evaluando \texttt{q} a partir de \texttt{t} hasta llegar al estado final \texttt{u}.
-Sin embargo, el comportamiento cambia en la regla \texttt{R\_SeqEr}.
-Si la semántica garantiza que el comando \texttt{p} abortó dejando un estado de error \texttt{t}, la regla corta la ejecución.
-El comando secundario \texttt{q} nunca se menciona en las premisas, lo que significa matemáticamente que no se evalúa.
-\guido{no entiendo la oracion previa}
-El estado de error \texttt{t} se propaga hacia la superficie de la secuencia, garantizando la interrupción que la subaproximación requiere para capturar \emph{bugs} tempranos.
+
+La regla \texttt{R\_Seq} \changed{describe el caso en que} \texttt{p} termina \changed{normalmente} en un estado intermedio \texttt{t}
+y la ejecución continúa con \texttt{q} \changed{desde ese estado.
+El estado final \texttt{u} es el resultado de esta segunda ejecución,
+que puede terminar normalmente o con error.}
+\changed{En cambio,
+\texttt{R\_SeqEr} establece que,
+si \texttt{p} termina con error en \texttt{t},
+la secuencia completa termina en ese mismo estado.
+No se requiere una derivación de la ejecución de \texttt{q},
+ya que el segundo comando no llega a ejecutarse.}
+%\guido{no entiendo la oracion previa}
 
 La elección no determinista posee una regla para cada rama:
 
@@ -2720,7 +2724,8 @@ noeq type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 \end{lstlisting}
 
 Un valor de tipo \texttt{il\_triple pre p post} es un árbol de derivación construido mediante las reglas del sistema.
-Por lo tanto, \texttt{il\_triple} mecaniza la noción sintáctica de derivabilidad de la Definición~\ref{def:derivabilidad}, no la validez semántica de la Definición~\ref{def:trip-inc}.
+Por lo tanto, \texttt{il\_triple} mecaniza la noción sintáctica de derivabilidad de la Definición~\ref{def:derivabilidad},
+no la validez semántica.
 La relación entre ambas nociones será establecida en la \autoref{sec:il-soundness} mediante la función \texttt{soundness}.
 
 Cada constructor de \texttt{il\_triple} corresponde a una de las reglas de inferencia presentadas en la \autoref{fig:reglas-il}.

@@ -1738,13 +1738,12 @@ Las tripletas de la ISL conservan la forma presentada para la IL:
 $$\itriple{p}{C}{\varepsilon : q},$$
 pero ahora $p$ y $q$ son aserciones espaciales que describen conjuntos de estados compuestos por un \emph{store} y un \emph{heap}.
 Su interpretación semántica sigue siendo subaproximada:
-todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$.
-Para formalizar esta interpretación,
-primero es necesario introducir el modelo de \emph{heaps} negativos.
-\guido{de nuevo, no adelantes esto}
+todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$,
+con el modo de terminación $\varepsilon$.
+%\guido{de nuevo, no adelantes esto}
 
-Para expresar formalmente la derivación que motiva la introducción de los \emph{heaps} negativos,
-necesitamos fijar previamente la noción de derivabilidad en la ISL.
+\changed{Al igual que en las lógicas anteriores,
+distinguimos esta interpretación semántica de la derivabilidad de una tripleta mediante reglas de inferencia.}
 
 \begin{definicion}(Derivabilidad en la ISL)
 \label{def:derivabilidad-isl}
@@ -1753,50 +1752,53 @@ $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}$$
 cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de las reglas de inferencia de la ISL.
 \end{definicion}
 
-Las reglas completas se presentan más adelante,
-luego de definir la semántica relacional.
-Por ahora,
-esta noción permite anticipar el problema que surge al combinar la regla de liberación con la Regla del Marco.
-\guido{esto es lo interesante, que aplicar ingenuamente la regla del marco
-te da algo unsound}
+\changed{La construcción de este sistema deductivo requiere revisar cómo se combinan las reglas de memoria con la interpretación subaproximada.
+En particular,
+utilizar directamente la regla de liberación de la SL y aplicar la Regla del Marco puede producir una tripleta inválida.
+El siguiente ejemplo muestra por qué esta combinación no es válida.}
+%\guido{esto es lo interesante, que aplicar ingenuamente la regla del marco
+%te da algo unsound}
 
 \subsection*{Heaps negativos}
-Intentar construir la ISL combinando directamente la semántica de la SL tradicional
-con la subaproximación de la IL produce un sistema inválido.
 En la semántica de la SL,
 liberar una celda elimina del \emph{heap} la dirección que ocupaba.
-De este modo, el \emph{heap} deja de tener información sobre el hecho de que esa dirección fue liberada.
+De este modo,
+el \emph{heap} deja de tener información sobre el hecho de que esa dirección fue liberada.
 Esta pérdida de información resulta problemática para la interpretación subaproximada,
 porque puede permitir derivar una postcondición satisfacible a partir de una precondición que ningún estado satisface.
 
-En la SL,
-la regla local de liberación se expresa mediante la tripleta de Hoare:
-$$\vdash_\mathrm{SL} \triple{x \mapsto -}{\texttt{free(}x\texttt{)}}{\mathsf{emp}}.$$
-Para ilustrar el problema,
-anticipamos la aplicación de la regla local de liberación y de la Regla del Marco para la ISL,
-cuya formulación formal se presenta más adelante.
+\changed{Para estudiar cómo se combina la operación de liberación con la interpretación subaproximada,
+consideremos la siguiente tripleta sobre el modelo clásico de memoria:
+$$\itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} \land \mathsf{loc}(x)}.$$
+En este caso,
+$\mathsf{loc}(x)$ expresa que $x$ contiene una dirección de memoria,
+donde $x$ no puede ser \texttt{null}.
+Esta aserción solo depende del \emph{store} y no exige que la dirección pertenezca al dominio del \emph{heap}.}
 
 Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda descrita por $x \mapsto -$:
 \begin{mathpar}
 \inferrule []
-  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp}}}
-  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} * x \mapsto -}}
+  {\itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} \land \mathsf{loc}(x)}}
+  {\itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : (\mathsf{emp} \land \mathsf{loc}(x)) * x \mapsto -}}
 \end{mathpar}
 
 La precondición $x \mapsto - * x \mapsto -$ es insatisfacible porque exige que dos fragmentos disjuntos posean la misma dirección.
 No existe ningún estado que la satisfaga.
-Sin embargo, la postcondición $\mathsf{emp} * x \mapsto -$ es satisfacible.
+Sin embargo, la postcondición $(\mathsf{emp} \land \mathsf{loc}(x)) * x \mapsto -$ es satisfacible.
 Esto produciría una tripleta con una precondición inconsistente y una postcondición satisfacible.
-Por lo tanto, parecería existir un estado final alcanzable aunque no hubiera ningún estado inicial desde el cual ejecutar el comando.
-\guido{``parecería'' es raro, por qué no ``recordando la semántica de una tripleta
-de subaproximación, y dado que la postcondicion es no-vacia,
-esto indicaría que existe un estado que satisface la precondicion, lo cual es absurdo''}
+\changed{Recordando la semántica de una tripleta de subaproximación,
+y dado que la postcondición no es vacía,
+esto indicaría que existe un estado que satisface la precondición,
+lo cual es absurdo.}
+%\guido{``parecería'' es raro, por qué no ``recordando la semántica de una tripleta
+%de subaproximación, y dado que la postcondicion es no-vacia,
+%esto indicaría que existe un estado que satisface la precondicion, lo cual es absurdo''}
 
 El problema no pertenece a la IL en sí misma,
 sino a la combinación directa de la subaproximación,
 la semántica clásica de liberación y la Regla del Marco.
 El modelo clásico no permite distinguir entre una dirección sobre la cual no se posee información y una dirección que se sabe que fue liberada.
-Esta distinción es la que introducen los \emph{heaps} negativos.
+Esta distinción es la que introducen los \emph{heaps negativos}.
 
 \begin{definicion}[\emph{Heap} extendido]
 \label{def:heap_ext}
@@ -1828,23 +1830,17 @@ $$(s,h) \models e \nmapsto \iff \exists \ell \in \mathsf{Loc}. \;
 [\![e]\!]_s = \ell \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = \bot$$
 \end{definicion}
 
+\changed{La dirección obtenida al evaluar $e$ permanece en el dominio del \emph{heap},
+aunque la celda esté liberada.
 Por lo tanto,
-$e \nmapsto$ expresa que la dirección almacenada en $e$:
-\begin{enumerate}
-  \item es una dirección conocida\guido{?};
-  \item fue liberada;
-  \item todavía no fue reasignada.
-\end{enumerate}
-
-A diferencia del modelo clásico,
-la representación mediante \emph{heaps} negativos conserva en el \emph{heap} la información de que una celda fue liberada.
-Por lo tanto, al extender nuevamente la precondición con el mismo marco,
-esa información también se conserva en la postcondición.
-En este modelo, la regla local de liberación se expresa como:
+la conjunción separadora impide combinar $e \nmapsto$ con otro fragmento que contenga esa misma dirección.
+Esta propiedad permite conservar en la postcondición la información espacial que se perdía en el modelo clásico.
+Con esta representación,}
+la regla local de liberación se expresa como:
 $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto}$$
 
 Al aplicar otra vez el marco $x \mapsto -$ obtenemos:
-$$\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto * x \mapsto -}$$
+$$\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto * \; x \mapsto -}$$
 La precondición sigue siendo inconsistente,
 pero ahora la postcondición también lo es,
 ya que la misma dirección pertenece a dos \emph{heaps} disjuntos,
@@ -1936,14 +1932,20 @@ Asimismo,
 una alocación puede reservar una dirección que no estaba previamente en el dominio
 o reutilizar una dirección que se encontraba representada mediante un \emph{heap} negativo.
 
-\guido{Leyendo esto me pregunté qué pasa en el caso concurrente.
-En general la SL es directamente extendible a CSL (concurrent SL) porque
-todo es muy local. Pero algo raro con esto es que al liberar un puntero
-tengo una prueba de que no está alocado, pero otro hilo en paralelo puede
-alocar y conseguir el mismo puntero de casualidad. O sea que creo que la ``CISL''
-presentaría más dificultades también.}
+\changed{Esta posibilidad de reutilización requiere especial atención en un contexto concurrente,
+donde otro hilo podría alocar una celda en una dirección liberada.
+El razonamiento en ese contexto debe considerar la interferencia entre hilos.
+La semántica presentada se limita a programas secuenciales,
+por lo que esta extensión queda fuera del alcance del trabajo.}
+%\guido{Leyendo esto me pregunté qué pasa en el caso concurrente.
+%En general la SL es directamente extendible a CSL (concurrent SL) porque
+%todo es muy local. Pero algo raro con esto es que al liberar un puntero
+%tengo una prueba de que no está alocado, pero otro hilo en paralelo puede
+%alocar y conseguir el mismo puntero de casualidad. O sea que creo que la ``CISL''
+%presentaría más dificultades también.}
 
-La formalización de la validez semántica de las tripletas de la ISL se define mediante la interpretación subaproximada:
+\changed{Sobre esta semántica secuencial,}
+la validez de las tripletas de la ISL se define mediante la interpretación subaproximada:
 $$\models_\mathrm{ISL} \itriple{p}{C}{\varepsilon : q} \iff
 \forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 Con esta definición,
@@ -1989,8 +1991,8 @@ y en la aplicación de la Regla del Marco dentro de la interpretación subaproxi
 La noción de derivabilidad utilizada en esta sección fue introducida en la Definición~\ref{def:derivabilidad-isl}.
 A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:reglas-isl}.
 
-\guido{de qué sirve $x = x'$ en la pre de alloc1/alloc2? si $x$ es una variable local,
-esto es siempre cierto}
+%\guido{de qué sirve $x = x'$ en la pre de alloc1/alloc2? si $x$ es una variable local,
+%esto es siempre cierto}
 
 \begin{figure}[htbp]
 \centering
@@ -2051,6 +2053,14 @@ La segunda permite reutilizar una dirección que estaba representada mediante un
 En este caso,
 la dirección ya pertenecía al dominio conocido y solo cambia su estado,
 de liberado a activo.
+
+\changed{En ambas reglas,
+$x'$ es una variable auxiliar distinta de $x$ que el comando no modifica.
+La precondición $x = x'$ permite usar $x'$ para referirse al valor inicial de $x$,
+que la alocación sobrescribe.
+Aunque $x'$ no aparece en la postcondición de las reglas,
+puede aparecer en las aserciones incorporadas mediante la Regla del Marco,
+permitiendo conservar información sobre ese valor inicial.}
 
 La regla \textsc{Free} representa la liberación exitosa.
 Requiere que $x$ describa una celda activa,
@@ -2136,17 +2146,10 @@ $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{er : q}$$
 y $q \neq \varnothing$, entonces existen estados espaciales $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
 $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
 \end{corolario}
-\emph{Demostración.} Por el Teorema de Soundness~\ref{teo:sound-isl},
-la tripleta es semánticamente válida.
-Como $q \neq \varnothing$,
-existe un estado $\sigma_q \in q$.
-Por la definición de validez de la ISL,
-existe un estado $\sigma_p \in p$ tal que
-$$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
-Por lo tanto,
-existe una ejecución de $C$ que comienza en un estado que satisface $p$ y termina con el modo $er$.
+\emph{Demostración.} \changed{Análoga a la demostración del Corolario~\ref{cor:errores},
+utilizando el Teorema de Soundness de la ISL~\ref{teo:sound-isl} y su definición de validez semántica.}
 $\ensuremath{\blacksquare}$
-\guido{si esto es idéntico al caso anterior solamente diría eso}
+%\guido{si esto es idéntico al caso anterior solamente diría eso}
 
 El Teorema de Soundness garantiza que los estados descritos por una tripleta derivable están respaldados por ejecuciones reales.
 Para entender por qué este respaldo se conserva al aplicar la Regla del Marco,
@@ -2210,18 +2213,20 @@ $$\operatorname{foot}(C)_\varepsilon$$
 está formada por las transiciones de $[\![C]\!]_\varepsilon$ que son mínimas respecto del orden $\preceq$.
 \end{definicion}
 
-Una transición es mínima cuando no puede quitarse de sus estados inicial y final un mismo fragmento de memoria
+Una transición es mínima cuando no puede quitarse de sus estados inicial y final un mismo fragmento de memoria no vacío
 y seguir obteniendo una transición válida de $[\![C]\!]_\varepsilon$
 
 Una transición perteneciente a $\operatorname{foot}(C)_\varepsilon$
 describe los recursos de memoria necesarios para una ejecución particular del comando.
-No necesariamente existe una única huella para cada comando.
-Un comando con distintas ramas puede tener varias ejecuciones mínimas con requerimientos de memoria distintos.
 Por ejemplo,
 una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una celda activa en la dirección almacenada en $x$,
 pero no necesita describir las demás celdas de \emph{heap}.
-\guido{no entiendo, eso no tiene ramas, y empieza con ``por ejemplo''}
 El resto de la memoria puede incorporarse con un marco.
+\agustina{Separé en dos parrafos y subi el "Por ejemplo".}
+
+No necesariamente existe una única huella para cada comando.
+Un comando con distintas ramas puede tener varias ejecuciones mínimas con requerimientos de memoria distintos.
+%\guido{no entiendo, eso no tiene ramas, y empieza con ``por ejemplo''}
 
 \begin{teorema}[Teorema de la Huella]
 \label{teo:huella}
@@ -2241,9 +2246,9 @@ $[\![C]\!]_\varepsilon \subseteq \operatorname{frame}(\operatorname{foot}(C)_\va
 expresa la dirección global a local.
 Establece que toda ejecución global puede descomponerse en una transición mínima y un marco agregado a sus estados inicial y final.
 
-En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del desarrollo formal en \fstar{}.
-\guido{no se si aclararía esto acá porque me hace dudar de si todo
-el resto de los lemas están formalizados también (y entiendo que sí!)}
+%En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del desarrollo formal en \fstar{}.
+%\guido{no se si aclararía esto acá porque me hace dudar de si todo
+%el resto de los lemas están formalizados también (y entiendo que sí!)}
 
 \section{El lenguaje \fstar{}}
 \label{sec:fstar}
@@ -2254,22 +2259,15 @@ Este lenguaje está integrado con el solucionador SMT Z3
 y adopta un enfoque de programación orientada a pruebas (\emph{proof-oriented programming}),
 en el que los programas, sus especificaciones y sus demostraciones se desarrollan dentro de un mismo lenguaje.
 
-Además de utilizarse como asistente de pruebas,
-\fstar{} permite desarrollar programas ejecutables y extraerlos a otros lenguajes.
-Esta capacidad no se utiliza directamente en esta tesina,
-cuyo contenido es principalmente lógico y fantasma\guido{no usaría este término
-sin definirlo, pone lógico y listo},
-pero forma parte del carácter híbrido de \fstar{} como lenguaje de programación y verificación.
-\guido{y podés ser más breve: ``si bien \fstar{} es un lenguaje de programación
-ejecutable, aquí lo usamos solamente como demostrador de teoremas''}
-
-En esta tesina,
-\fstar{} no se utiliza para implementar un analizador automático ni para producir código ejecutable.
-Su función es mecanizar la semántica operacional de los lenguajes considerados,
+\changed{Si bien \fstar{} permite desarrollar programas ejecutables,
+en esta tesina se utiliza como demostrador de teoremas.
+Su función es mecanizar la semántica de los lenguajes considerados,
 representar los sistemas deductivos de la IL y la ISL,
-y comprobar sus propiedades metateóricas.
-En particular,
-permite expresar las reglas de inferencia como tipos inductivos y demostrar \emph{soundness} mediante funciones recursivas sobre las derivaciones.
+y verificar sus propiedades metateóricas.}
+%\guido{no usaría este término
+%sin definirlo, pone lógico y listo},
+%\guido{y podés ser más breve: ``si bien \fstar{} es un lenguaje de programación
+%ejecutable, aquí lo usamos solamente como demostrador de teoremas''}
 
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
@@ -2329,13 +2327,16 @@ donde la prueba recibe un estado final que satisface el resultado de una triplet
 Una de las características más potentes del lenguaje es la capacidad de crear tipos inductivos indexados,
 los cuales permiten capturar invariantes complejos directamente en la forma de la estructura.
 
-La formalización se apoya en la correspondencia Curry-Howard \citep{howard},
-donde las proposiciones se interpretan como tipos y las demostraciones como valores que habitan esos tipos.
-La ventaja de esto es que \fstar{} obliga a considerar todos los constructores al demostrar una metapropiedad por inducción estructural.
-En particular, la función de \emph{soundness} analiza la forma de una derivación y construye,
-para cada regla, el estado inicial y la traza operacional que justifican el estado final.
-\guido{esta ultima oración es confusa, podés limitarte a hablar de F* nomás, los
-teoremas tuyos vienen después}
+La correspondencia Curry-Howard \citep{howard}
+\changed{permite interpretar}
+las proposiciones como tipos y las demostraciones como valores que habitan esos tipos.
+\changed{Cuando una proposición se representa mediante un tipo inductivo,
+sus constructores describen las formas de construir una demostración.
+A su vez,
+las pruebas por inducción pueden expresarse mediante funciones recursivas que analizan esos constructores
+y cuya terminación es verificada por \fstar{}.}
+%\guido{esta ultima oración es confusa, podés limitarte a hablar de F* nomás, los
+%teoremas tuyos vienen después}
 
 Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores,
 donde la longitud forma parte del propio tipo:
@@ -2351,17 +2352,25 @@ sino un invariante impuesto por el sistema de tipos.
 Esta información permite definir funciones de acceso cuyos índices estén refinados por la longitud del vector,
 excluyendo estáticamente los accesos fuera de rango.
 
-Esta característica se utiliza en la tesina para representar tanto la semántica operacional como los sistemas deductivos.
-La relación \texttt{runsto : stmt -> \, state -> \, state -> \, Type0} es un tipo indexado por un comando y dos estados.
-Un habitante de \texttt{runsto c s0 s1} constituye una derivación que certifica
-que el comando \texttt{c} puede ejecutarse desde un estado \texttt{s0} hasta otro estado \texttt{s1}.
-Cada constructor de \texttt{runsto} corresponde a una regla de la semántica operacional.
-
-De manera similar,
-el tipo \texttt{il\_triple : cond -> \, stmt -> \, cond -> \, Type} representa las derivaciones admitidas por el sistema deductivo de la IL.
-Las admitidas por la ISL tienen una estructura similar.
-Un valor de tipo \texttt{il\_triple pre c post} representa la derivación de la tripleta de incorrectitud correspondiente.
-Cada regla lógica se codifica como un constructor del tipo.
+\changed{Los tipos inductivos indexados también permiten representar relaciones.
+Por ejemplo,
+podemos definir una relación entre dos listas de enteros que tienen la misma longitud:}
+\begin{lstlisting}[style=fstar]
+type same_length : list int -> list int -> Type =
+  | SLNil : same_length [] []
+  | SLCons : x : int -> y : int ->
+    xs : list int -> ys : list int ->
+    same_length xs ys ->
+    same_length (x :: xs) (y :: ys)
+\end{lstlisting}
+\changed{El constructor \texttt{SLNil} establece que dos listas vacías tienen la misma longitud.
+El constructor \texttt{SLCons} establece que,
+si dos listas tienen la misma longitud,
+agregar un elemento al comienzo de cada una conserva esa propiedad.
+Por lo tanto,
+un valor de tipo \texttt{same\_length xs ys} representa una demostración
+de que ambas listas tienen la misma longitud.
+Este mecanismo permite codificar relaciones mediante tipos y sus reglas de construcción mediante constructores.}
 
 \subsection*{Código fantasma y automatización}
 La mayor parte de la formalización tiene contenido lógico y no está destinada a ejecutarse.
@@ -2371,7 +2380,7 @@ que son comprobados por el verificador pero eliminados durante la extracción de
 El efecto \texttt{GTot} describe una función total y fantasma.
 Por ejemplo:
 \begin{lstlisting}[style=fstar]
-let eval_expr (s : state) (e : expr) : GTot int =
+let eval_expr : state -> expr -> GTot int
 \end{lstlisting}
 indica que la función siempre termina y que su resultado se utiliza solo dentro de especificaciones o demostraciones.
 

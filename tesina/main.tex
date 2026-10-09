@@ -659,7 +659,7 @@ y aquellas que terminan con un error antes de ejecutar el segundo.
 En este último caso,
 el error se propaga directamente al resultado de la secuencia.
 
-\changed{En el caso de la estrella de Kleene,
+En el caso de la estrella de Kleene,
 la interpretación depende del modo de terminación.
 Una ejecución de $C^\star$ termina normalmente si realiza cero o más iteraciones de $C$,
 todas con terminación normal.
@@ -672,9 +672,9 @@ una iteración termina con error e impide continuar.
 Por lo tanto,
 $[\![C^\star]\!]_{er}$ no se define como la clausura reflexiva transitiva de $[\![C]\!]_{er}$.
 Las ejecuciones divergentes no quedan representadas en ninguna de estas relaciones,
-ya que no alcanzan una terminación normal ni errónea.}
+ya que no alcanzan una terminación normal ni errónea.
 
-\changed{Las definiciones anteriores también permiten interpretar las construcciones derivadas}
+Las definiciones anteriores también permiten interpretar las construcciones derivadas
 \texttt{if}, \texttt{while} y \texttt{assert},
 cuya semántica se obtiene expandiéndolas en términos de los comandos primitivos anteriores.
 
@@ -735,10 +735,10 @@ $$\itriple{x > 0}{C}{ok : x > 2}.$$
 
 El caso anterior muestra que ambas lógicas pueden validar sus respectivas tripletas
 cuando la postcondición coincide con la postimagen.
-\changed{Los siguientes ejemplos muestran cómo,
+Los siguientes ejemplos muestran cómo,
 al modificar la postcondición,
 puede obtenerse una tripleta válida en una de las lógicas,
-pero no en la otra.}
+pero no en la otra.
 
 \begin{ejemplo}
 \label{eje:comp-HL-IL}
@@ -1300,8 +1300,8 @@ la escritura modifica únicamente la celda referenciada por $x$,
 por lo que la celda referenciada por $y$ conserva su contenido.
 \end{ejemplo}
 
-\changed{El ejemplo muestra la necesidad de establecer qué referencias corresponden a celdas distintas.
-En programas que manipulan estructuras de datos enlazadas,}
+El ejemplo muestra la necesidad de establecer qué referencias corresponden a celdas distintas.
+En programas que manipulan estructuras de datos enlazadas,
 estas condiciones pueden ser difíciles de construir y de demostrar automáticamente,
 lo que también puede limitar la escalabilidad del análisis~\citep{bttf}.
 
@@ -1352,7 +1352,7 @@ Entre las más importantes se encuentran $\mathsf{emp}$, \emph{points-to} y la c
 \label{def:heap_vacio}
 Sean $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
 La aserción $\mathsf{emp}$ se satisface cuando $h$ no contiene ninguna celda:
-$$(s,h) \models \mathsf{emp} \iff \operatorname{dom}(h) = \varnothing$$
+$$\mathsf{emp}(s,h) \iff \operatorname{dom}(h) = \varnothing$$
 \end{definicion}
 
 La aserción $\mathsf{emp}$ no afirma que toda la memoria física del programa se encuentra vacía,
@@ -1369,7 +1369,7 @@ $$e_1 \mapsto e_2$$
 se satisface cuando $h \in \mathsf{Heap}$ contiene exactamente una celda,
 cuya dirección es el resultado de evaluar $e_1$ en $s$ y cuyo contenido es el resultado de evaluar $e_2$ en $s$.
 Formalmente:
-$$(s, h) \models e_1 \mapsto e_2 \iff \exists \ell \in \mathsf{Loc}. \;
+$$(e_1 \mapsto e_2)(s, h) \iff \exists \ell \in \mathsf{Loc}. \;
 \ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s$$
 \end{definicion}
 
@@ -1389,7 +1389,7 @@ El estado $(s, h)$ satisface la conjunción separadora
 $$P * Q$$
 si $h$ puede dividirse en dos fragmentos disjuntos $h_1$ y $h_2$, de modo que $P$ se satisface sobre $h_1$ y $Q$ se satisface sobre $h_2$.
 Formalmente:
-$$(s, h) \models P * Q \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land (s, h_1) \models P \land (s, h_2) \models Q$$
+$$(P * Q)(s, h) \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land P(s, h_1) \land Q(s, h_2)$$
 \end{definicion}
 
 En la fórmula anterior,
@@ -1413,29 +1413,28 @@ Para todas las aserciones espaciales $P$, $Q$ y $R$:
 \end{enumerate}
 \end{lema}
 
-\changed{La conjunción separadora también permite definir una variante de \emph{points-to} que admite memoria adicional.
+La conjunción separadora también permite definir una variante de \emph{points-to} que admite memoria adicional.
 Para ello,
 utilizamos la aserción $\mathsf{true}$,
 que se satisface en cualquier estado espacial,
-sin imponer restricciones sobre el \emph{store} ni sobre el \emph{heap}.}
+sin imponer restricciones sobre el \emph{store} ni sobre el \emph{heap}.
 
-\changed{A partir de esta aserción y la conjunción separadora,
+A partir de esta aserción y la conjunción separadora,
 definimos la siguiente variante de \emph{points-to}:
 $$e_1 \hookrightarrow e_2 \equiv (e_1 \mapsto e_2) * \mathsf{true}.$$
 Esta aserción indica el \emph{heap} contiene una celda cuya dirección es
 el resultado de evaluar $e_1$ y cuyo contenido es el resultado de evaluar $e_2$,
-pero permite que existan otras celdas.}
+pero permite que existan otras celdas.
 
-\changed{Las dos variantes de \emph{points-to} permiten ilustrar cómo la conjunción clásica ($\land$) y la separadora ($*$)
+Las dos variantes de \emph{points-to} permiten ilustrar cómo la conjunción clásica ($\land$) y la separadora ($*$)
 expresan distintas formas de compartir o separar memoria.
-Para presentar los ejemplos,}
+Para presentar los ejemplos,
 utilizamos la abreviatura 
-$$x \mapsto [3, y] \equiv (x \mapsto 3) * (x + 1 \mapsto y),$$
-que describe dos celdas consecutivas:
-la primera contiene el valor 3 y la segunda contiene el valor almacenado en $y$.
-Para este ejemplo,
-suponemos que $x + 1$ denota la dirección siguiente a la almacenada en $x$.
-De manera análoga, consideramos la aserción $y \mapsto [3, x]$.
+$$x \mapsto [e_1, e_2] \equiv (x \mapsto e_1) * (x + 1 \mapsto e_2),$$
+que describe dos celdas consecutivas cuyos contenidos son los valores de las expresiones $e_1$ y $e_2$,
+respectivamente.
+En los ejemplos siguientes,
+consideramos las aserciones $x \mapsto [3, y]$ y $y \mapsto [3, x]$.
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
 \begin{figure}[h]
@@ -1492,7 +1491,7 @@ como se muestra en la \autoref{fig:conjuncion-clasica}.
     \draw[ptr] (y) -- ([yshift=-0.03cm]c1.west);
     \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=0, looseness=2] (c1.east);
   \end{tikzpicture}
-\caption{Conjunción clásica.}
+\caption{Interpretación con aliasing: $x$ e $y$ apuntan al mismo bloque.}
 \label{fig:conjuncion-clasica}
 \end{figure}
 
@@ -1520,14 +1519,14 @@ cada uno de los cuales almacena un puntero hacia el otro.
     \draw[ptr] ([xshift=0.1cm]c2.center) to[out=0, in=180, looseness=1.2] (c3.west);
     \draw[ptr] ([xshift=-0.1cm]c4.center) to[out=180, in=0, looseness=1.2] (c1.east);
   \end{tikzpicture}
-\caption{Conjunción separadora.}
+\caption{Interpretación con bloques disjuntos: $x$ e $y$ apuntan a bloques separados.}
 \label{fig:conjuncion-separadora}
 \end{figure}
 
-\changed{Por último,
+Por último,
 consideremos qué ocurre al utilizar la variante que permite memoria adicional.
-Para los bloques definimos
-$$x \hookrightarrow [3, y] \equiv (x \mapsto [3, y]) * \mathsf{true}.$$
+Extendemos la notación,
+$$x \hookrightarrow [e_1, e_2] \equiv (x \mapsto [e_1, e_2]) * \mathsf{true}.$$
 Con esta notación,
 la aserción $(x \hookrightarrow [3, y]) \land (y \hookrightarrow [3, x])$
 también comprueba ambos predicados sobre el mismo \emph{heap}.
@@ -1540,14 +1539,63 @@ se obtiene la de la \autoref{fig:conjuncion-separadora}:
 al comprobar cada predicado,
 el otro bloque forma parte de la memoria adicional admitida por $\mathsf{true}$.
 En ambos casos,
-el \emph{heap} puede contener además otras celdas.}
+el \emph{heap} puede contener además otras celdas.
 
-\changed{Estos ejemplos muestran que la conjunción separadora exige que los fragmentos de memoria que combina no compartan celdas.}
-De este modo, una prueba no necesita expresar por separado que
-una modificación realizada sobre uno de esos fragmentos no afectará al otro.
+Si combinamos estas aserciones mediante la conjunción separadora,
+$(x \hookrightarrow [3, y]) * (y \hookrightarrow [3, x])$,
+los bloques deben pertenecer a fragmentos disjuntos del \emph{heap}.
+Por lo tanto,
+se obtiene la configuración de la \autoref{fig:conjuncion-separadora},
+aunque pueden existir otras celdas además de las representadas.
+La \autoref{tab:comparacion-sl} resume las diferencias entre las cuatro combinaciones.
 
-Esta separación permite razonar sobre las modificaciones de un fragmento del \emph{heap}
-y conservar la información sobre otros fragmentos disjuntos.
+\begin{table}[ht]
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}cccc@{}}
+    \toprule
+    Aserción
+    & Relación entre bloques
+    & \begin{tabular}[c]{@{}c@{}}
+        ¿Admite memoria\\
+        adicional?
+      \end{tabular}
+    & \begin{tabular}[c]{@{}c@{}}
+        Figuras\\
+        ilustrativas
+      \end{tabular} \\
+    \midrule
+
+    $(x \mapsto [3, y]) \land (y \mapsto [3, x])$
+    & Deben coincidir
+    & \xmark
+    & \ref{fig:conjuncion-clasica} \\
+
+    $(x \mapsto [3, y]) * (y \mapsto [3, x])$
+    & Deben ser disjuntos
+    & \xmark
+    & \ref{fig:conjuncion-separadora} \\
+
+    $(x \hookrightarrow [3, y]) \land (y \hookrightarrow [3, x])$
+    & Pueden compartir celdas o ser disjuntos
+    & \cmark
+    & \ref{fig:conjuncion-clasica} y \ref{fig:conjuncion-separadora} \\
+
+    $(x \hookrightarrow [3, y]) * (y \hookrightarrow [3, x])$
+    & Deben ser disjuntos
+    & \cmark
+    & \ref{fig:conjuncion-separadora} \\
+
+    \bottomrule
+  \end{tabular}
+  \caption{Comparación de las variantes de \emph{points-to} y las conjunciones.}
+  \label{tab:comparacion-sl}
+\end{table}
+
+La separación de los fragmentos del \emph{heap} impuesta por la conjunción separadora
+permite razonar sobre las modificaciones de uno de ellos
+y conservar la información sobre los demás.
 La Regla del Marco, presentada más adelante,
 formaliza este razonamiento bajo las condiciones necesarias para que la información conservada no resulte afectada por el comando.
 

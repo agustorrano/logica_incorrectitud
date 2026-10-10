@@ -1624,6 +1624,56 @@ Las expresiones utilizadas para acceder al \emph{heap} se evalúan en el \emph{s
   libera la celda ubicada en la dirección que se obtiene de evaluar $e$.
 \end{enumerate}
 
+\subsection*{Semántica relacional del lenguaje extendido}
+La semántica del lenguaje extendido se interpreta sobre estados espaciales de la forma $(s,h)$,
+con $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
+Los comandos básicos presentados para la IL conservan su comportamiento y dejan el \emph{heap} sin modificaciones.
+Asimismo,
+las definiciones de composición secuencial,
+elección no determinista e iteración mantienen la estructura vista en la \autoref{fig:semantica-il},
+interpretadas ahora sobre estos estados.
+La \autoref{fig:semantica-sl} presenta la semántica de los comandos que manipulan la memoria.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{0.98\textwidth}
+\small
+$$
+\begin{aligned}
+\relax[\![x := \texttt{alloc()}]\!]_{ok} &= \{((s, h), (s[x \mapsto \ell], h[\ell \mapsto v]))
+  \mid v \in \mathsf{Val} \land \ell \in \mathsf{Loc} \setminus \operatorname{dom}(h)\}, \\[4pt]
+[\![x := \texttt{alloc()}]\!]_{er} &= \varnothing, \\[4pt]
+[\![\texttt{free(}e\texttt{)}]\!]_{ok} &= \{((s, h), (s, h \setminus \{\ell\}))
+  \mid \ell = [\![e]\!]_s \land \ell \in \operatorname{dom}(h)\}, \\[4pt]
+[\![\texttt{free(}e\texttt{)}]\!]_{er} &= \{(\sigma, \sigma)
+  \mid \sigma = (s, h) \land [\![e]\!]_s \notin \operatorname{dom}(h)\}, \\[4pt]
+[\![x := [e]]\!]_{ok} &= \{((s, h), (s[x \mapsto h(\ell)], h))
+  \mid \ell = [\![e]\!]_s \land \ell \in \operatorname{dom}(h)\}, \\[4pt]
+[\![x := [e]]\!]_{er} &= \{(\sigma, \sigma) \mid \sigma = (s, h) \land [\![e]\!]_s \notin \operatorname{dom}(h)\}, \\[4pt]
+[\![[e_1] := e_2]\!]_{ok} &= \{((s, h), (s, h[\ell \mapsto [\![e_2]\!]_s]))
+  \mid \ell = [\![e_1]\!]_s \land \ell \in \operatorname{dom}(h)\}, \\[4pt]
+[\![[e_1] := e_2]\!]_{er} &= \{(\sigma, \sigma)
+  \mid \sigma = (s, h) \land [\![e_1]\!]_s \notin \operatorname{dom}(h)\}.
+\end{aligned}
+$$
+\vspace{0.1em}
+\end{minipage}
+\rule{\linewidth}{0.4pt}
+\caption{Semántica relacional del lenguaje extendido.}
+\label{fig:semantica-sl}
+\end{figure}
+
+Como vimos antes,
+en el \emph{heap},
+el dominio contiene las direcciones de las celdas actualmente asignadas.
+Por ello,
+las operaciones de lectura,
+escritura y liberación requieren que la dirección obtenida al evaluar la expresión pertenezca a dicho dominio;
+en caso contrario,
+termina con un error.
+Una liberación exitosa elimina la celda del \emph{heap},
+por lo que este modelo no distingue una dirección previamente liberada de otra que tampoco pertenece al dominio.
+
 \subsection*{Reglas de inferencia de la SL}
 Una vez extendido el lenguaje con comandos para manipular la memoria,
 es necesario introducir las reglas de inferencia que describen sus efectos sobre las aserciones espaciales.
@@ -1760,7 +1810,6 @@ $$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp 
 entonces
 $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
 \end{lema}
-%\guido{esto también vale en HL, por cierto}
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
@@ -1788,10 +1837,9 @@ pero ahora $p$ y $q$ son aserciones espaciales que describen conjuntos de estado
 Su interpretación semántica sigue siendo subaproximada:
 todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$,
 con el modo de terminación $\varepsilon$.
-%\guido{de nuevo, no adelantes esto}
 
-\changed{Al igual que en las lógicas anteriores,
-distinguimos esta interpretación semántica de la derivabilidad de una tripleta mediante reglas de inferencia.}
+Al igual que en las lógicas anteriores,
+distinguimos esta interpretación semántica de la derivabilidad de una tripleta mediante reglas de inferencia.
 
 \begin{definicion}(Derivabilidad en la ISL)
 \label{def:derivabilidad-isl}
@@ -1800,12 +1848,10 @@ $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}$$
 cuando la tripleta puede obtenerse mediante un número finito de aplicaciones de las reglas de inferencia de la ISL.
 \end{definicion}
 
-\changed{La construcción de este sistema deductivo requiere revisar cómo se combinan las reglas de memoria con la interpretación subaproximada.
+La construcción de este sistema deductivo requiere revisar cómo se combinan las reglas de memoria con la interpretación subaproximada.
 En particular,
 utilizar directamente la regla de liberación de la SL y aplicar la Regla del Marco puede producir una tripleta inválida.
-El siguiente ejemplo muestra por qué esta combinación no es válida.}
-%\guido{esto es lo interesante, que aplicar ingenuamente la regla del marco
-%te da algo unsound}
+El siguiente ejemplo muestra por qué esta combinación no es válida.
 
 \subsection*{Heaps negativos}
 En la semántica de la SL,
@@ -1815,13 +1861,13 @@ el \emph{heap} deja de tener información sobre el hecho de que esa dirección f
 Esta pérdida de información resulta problemática para la interpretación subaproximada,
 porque puede permitir derivar una postcondición satisfacible a partir de una precondición que ningún estado satisface.
 
-\changed{Para estudiar cómo se combina la operación de liberación con la interpretación subaproximada,
+Para estudiar cómo se combina la operación de liberación con la interpretación subaproximada,
 consideremos la siguiente tripleta sobre el modelo clásico de memoria:
 $$\itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} \land \mathsf{loc}(x)}.$$
 En este caso,
 $\mathsf{loc}(x)$ expresa que $x$ contiene una dirección de memoria,
 donde $x$ no puede ser \texttt{null}.
-Esta aserción solo depende del \emph{store} y no exige que la dirección pertenezca al dominio del \emph{heap}.}
+Esta aserción solo depende del \emph{store} y no exige que la dirección pertenezca al dominio del \emph{heap}.
 
 Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda descrita por $x \mapsto -$:
 \begin{mathpar}
@@ -1834,13 +1880,10 @@ La precondición $x \mapsto - * x \mapsto -$ es insatisfacible porque exige que 
 No existe ningún estado que la satisfaga.
 Sin embargo, la postcondición $(\mathsf{emp} \land \mathsf{loc}(x)) * x \mapsto -$ es satisfacible.
 Esto produciría una tripleta con una precondición inconsistente y una postcondición satisfacible.
-\changed{Recordando la semántica de una tripleta de subaproximación,
+Recordando la semántica de una tripleta de subaproximación,
 y dado que la postcondición no es vacía,
 esto indicaría que existe un estado que satisface la precondición,
-lo cual es absurdo.}
-%\guido{``parecería'' es raro, por qué no ``recordando la semántica de una tripleta
-%de subaproximación, y dado que la postcondicion es no-vacia,
-%esto indicaría que existe un estado que satisface la precondicion, lo cual es absurdo''}
+lo cual es absurdo.
 
 El problema no pertenece a la IL en sí misma,
 sino a la combinación directa de la subaproximación,
@@ -1874,16 +1917,16 @@ La aserción:
 $$e \nmapsto$$
 se satisface cuando el \emph{heap} está formado por una celda liberada ubicada en la dirección indicada por $e$.
 Formalmente, sean $s \in \mathsf{Store}$ y $h \in \mathsf{HeapExt}$:
-$$(s,h) \models e \nmapsto \iff \exists \ell \in \mathsf{Loc}. \;
+$$(e \nmapsto)(s,h) \iff \exists \ell \in \mathsf{Loc}. \;
 [\![e]\!]_s = \ell \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = \bot$$
 \end{definicion}
 
-\changed{La dirección obtenida al evaluar $e$ permanece en el dominio del \emph{heap},
+La dirección obtenida al evaluar $e$ permanece en el dominio del \emph{heap},
 aunque la celda esté liberada.
 Por lo tanto,
 la conjunción separadora impide combinar $e \nmapsto$ con otro fragmento que contenga esa misma dirección.
 Esta propiedad permite conservar en la postcondición la información espacial que se perdía en el modelo clásico.
-Con esta representación,}
+Con esta representación,
 la regla local de liberación se expresa como:
 $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto}$$
 
@@ -1903,22 +1946,22 @@ Para continuar,
 es necesario describir formalmente la semántica relacional sobre el espacio de estados extendido.
 
 \subsection*{Semántica relacional de la ISL}
-Una vez definido el \emph{heap} extendido y la aserción que representa una celda liberada,
-podemos formalizar la semántica relacional de la ISL.
-Para cada comando $C$ y modo de terminación $\varepsilon \in \{ok, er\}$,
-se define una relación entre estados espaciales $[\![C]\!]_\varepsilon \subseteq \Sigma_\mathrm{ISL} \times \Sigma_\mathrm{ISL}$.
-
+La semántica presentada en la SL se adapta al espacio de estados extendido
+$\Sigma_{\mathrm{ISL}} = \mathsf{Store} \times \mathsf{HeapExt}$
 Los comandos que no manipulan directamente el \emph{heap} conservan la semántica presentada para la IL,
-interpretada ahora sobre estados espaciales.
+interpretada ahora sobre estos estados.
 En cambio,
 las operaciones de memoria deben distinguir entre celdas activas,
-celdas liberadas y la dirección nula.
-En particular,
-una celda liberada no se elimina del \emph{heap} extendido,
-sino que conserva su dirección y se representa mediante el valor $\bot$.
-La dirección \texttt{null}, en cambio, no corresponde a una celda válida de memoria.
+celdas liberadas y la direcciones sobre las cuales el \emph{heap} no tiene información.
 
-La semántica relacional de los comandos de la ISL se presenta en la \autoref{fig:semantica-isl}.
+La \autoref{fig:semantica-isl} presenta las definiciones correspondientes a las operaciones de memoria sobre el \emph{heap} extendido.
+En ellas,
+la condición $h(\ell) \in \mathrm{Val}$ indica que la celda está activa,
+mientras que $h(\ell) = \bot$ indica que fue liberada y todavía no fue reasignada.
+Además,
+utilizamos el valor distinguido \texttt{null} para representar un puntero nulo,
+que no corresponde a una dirección válida en memoria.
+Las operaciones de lectura, escritura y liberación sobre este valor terminan con un error.
 
 \begin{figure}[htbp]
 \centering
@@ -1926,73 +1969,53 @@ La semántica relacional de los comandos de la ISL se presenta en la \autoref{fi
 \small
 $$
 \begin{aligned}
-\relax[\![\texttt{skip}]\!]_{ok} &= \{(\sigma,\sigma) \mid \sigma \in \Sigma_\mathrm{ISL}\},
-& [\![\texttt{skip}]\!]_{er} &= \varnothing, \\[4pt]
-[\![\texttt{error}]\!]_{ok} &= \varnothing,
-& [\![\texttt{error}]\!]_{er} &= \{(\sigma,\sigma) \mid \sigma \in \Sigma_\mathrm{ISL}\}, \\[4pt]
-[\![\texttt{assume}(B)]\!]_{ok} &= \{(\sigma,\sigma) \mid \sigma = (s, h) \land [\![B]\!]_s = \texttt{true}\},
-& [\![\texttt{assume}(B)]\!]_{er} &= \varnothing, \\[4pt]
-[\![x := e]\!]_{ok} &= \{((s, h), (s[x \mapsto [\![e]\!]_s], h))\},
-& [\![x := e]\!]_{er} &= \varnothing, \\[4pt]
-[\![x := \texttt{nondet}]\!]_{ok} &= \{((s, h), (s[x \mapsto v], h)) \mid v \in \mathsf{Val}\},
-& [\![x := \texttt{nondet}]\!]_{er} &= \varnothing.
-\end{aligned}
-$$
-$$
-\begin{aligned}
-\relax[\![C_1 + C_2]\!]_{\varepsilon} &= [\![C_1]\!]_{\varepsilon} \cup [\![C_2]\!]_{\varepsilon}, \\[4pt]
-[\![C_1;C_2]\!]_{\varepsilon} &= \{(\sigma_1,\sigma_3) \mid
-  \exists \sigma_2. \, (\sigma_1,\sigma_2) \in [\![C_1]\!]_{ok} \land (\sigma_2,\sigma_3) \in [\![C_2]\!]_{\varepsilon}\} \\
-  &\quad \cup
-  \begin{cases}
-    [\![C_1]\!]_{er}, & \text{si } \varepsilon = er,\\
-    \varnothing, & \text{si } \varepsilon = ok,
-  \end{cases} \\[4pt]
-[\![C^\star]\!]_{\varepsilon} &= \displaystyle \bigcup_{n \in \mathbb{N}} [\![C^n]\!]_{\varepsilon}, \\[4pt]
-[\![x := \texttt{alloc()}]\!]_{ok} &= \{(\sigma, (s[x \mapsto l], h[l \mapsto v]))
-  \mid \sigma = (s, h) \land v \in \mathsf{Val} \land (l \notin \operatorname{dom}(h) \lor h(l) = \bot)\}, \\[4pt]
-[\![x := \texttt{alloc()}]\!]_{er} &= \varnothing, \\[4pt]
-[\![\texttt{free(}x\texttt{)}]\!]_{ok} &= \{(\sigma, (s, h[s(x) \mapsto \bot]))
-  \mid \sigma = (s, h) \land h(s(x)) \in \mathsf{Val}\}, \\[4pt]
-[\![\texttt{free(}x\texttt{)}]\!]_{er} &= \{(\sigma, \sigma)
-  \mid \sigma = (s, h) \land (s(x) = \texttt{null} \lor h(s(x)) = \bot)\}, \\[4pt]
-[\![x := [y]]\!]_{ok} &= \{(\sigma, (s[x \mapsto v], h))
-  \mid \sigma = (s, h) \land h(s(y)) = v \in \mathsf{Val}\}, \\[4pt]
-[\![x := [y]]\!]_{er} &= \{(\sigma, \sigma) \mid \sigma = (s, h) \land (s(y) = \texttt{null} \lor h(s(y)) = \bot)\}, \\[4pt]
-[\![[x] := y]\!]_{ok} &= \{(\sigma, (s, h[s(x) \mapsto s(y)]))
-  \mid \sigma = (s, h) \land h(s(x)) \in \mathsf{Val}\}, \\[4pt]
-[\![[x] := y]\!]_{er} &= \{(\sigma, \sigma)
-  \mid \sigma = (s, h) \land (s(x) = \texttt{null} \lor h(s(x)) = \bot)\}.
+\relax[\![x := \texttt{alloc()}]\!]_{ok} &= \{((s, h), (s[x \mapsto \ell], h[\ell \mapsto v]))
+  \mid v \in \mathsf{Val} \land (\ell \notin \operatorname{dom}(h) \lor h(\ell) = \bot)\}, \\[4pt]
+[\![\texttt{free(}e\texttt{)}]\!]_{ok} &= \{((s,h), (s, h[\ell \mapsto \bot]))
+  \mid \ell = [\![e]\!]_s \land h(\ell) \in \mathsf{Val}\}, \\[4pt]
+[\![\texttt{free(}e\texttt{)}]\!]_{er} &= \{(\sigma, \sigma)
+  \mid \sigma = (s, h) \land ([\![e]\!]_s = \texttt{null} \lor h([\![e]\!]_s) = \bot)\}, \\[4pt]
+[\![x := [e]]\!]_{ok} &= \{((s, h), (s[x \mapsto v], h))
+  \mid h([\![e]\!]_s) = v \in \mathsf{Val}\}, \\[4pt]
+[\![x := [e]]\!]_{er} &= \{(\sigma, \sigma) \mid \sigma = (s, h) \land ([\![e]\!]_s = \texttt{null} \lor h([\![e]\!]_s) = \bot)\}, \\[4pt]
+[\![[e_1] := e_2]\!]_{ok} &= \{((s, h), (s, h[\ell \mapsto [\![e_2]\!]_s]))
+  \mid \ell = [\![e_1]\!]_s \land h(\ell) \in \mathsf{Val}\}, \\[4pt]
+[\![[e_1] := e_2]\!]_{er} &= \{(\sigma, \sigma)
+  \mid \sigma = (s, h) \land ([\![e_1]\!]_s = \texttt{null} \lor h([\![e_1]\!]_s) = \bot)\}.
 \end{aligned}
 $$
 \vspace{0.1em}
 \end{minipage}
 \rule{\linewidth}{0.4pt}
-\caption{Semántica relacional del lenguaje de la ISL.}
+\caption{Semántica de las operaciones de memoria sobre el \emph{heap} extendido.}
 \label{fig:semantica-isl}
 \end{figure}
 
-Las definiciones de la figura permiten representar tanto las ejecuciones normales como las ejecuciones erróneas.
-En particular,
-una liberación exitosa transforma una celda activa en una celda liberada,
-sin eliminar su dirección del dominio del \emph{heap}.
-Asimismo,
-una alocación puede reservar una dirección que no estaba previamente en el dominio
-o reutilizar una dirección que se encontraba representada mediante un \emph{heap} negativo.
+A diferencia del modelo clásico,
+una liberación exitosa conserva la dirección en el dominio del \emph{heap} y la marca con $\bot$.
+La alocación puede reutilizar esa dirección o reservar una que no pertenezca al dominio.
+Por su parte,
+las terminaciones erróneas de lectura,
+escritura y liberación se justifican mediante un puntero nulo o una celda marcada como liberada.
 
-\changed{Esta posibilidad de reutilización requiere especial atención en un contexto concurrente,
-donde otro hilo podría alocar una celda en una dirección liberada.
-El razonamiento en ese contexto debe considerar la interferencia entre hilos.
-La semántica presentada se limita a programas secuenciales,
-por lo que esta extensión queda fuera del alcance del trabajo.}
-%\guido{Leyendo esto me pregunté qué pasa en el caso concurrente.
-%En general la SL es directamente extendible a CSL (concurrent SL) porque
-%todo es muy local. Pero algo raro con esto es que al liberar un puntero
-%tengo una prueba de que no está alocado, pero otro hilo en paralelo puede
-%alocar y conseguir el mismo puntero de casualidad. O sea que creo que la ``CISL''
-%presentaría más dificultades también.}
+En el razonamiento subaproximado,
+los resultados erróneos descritos por una postcondición deben estar respaldados por ejecuciones reales.
+Para justificar estos errores localmente,
+la ausencia de una dirección en el dominio del \emph{heap} no es suficient,
+ya que esa dirección podría corresponder a una celda activa de un fragmento de memoria adicional.
+En cambio,
+un puntero nulo no representa una dirección válida,
+y una celda marcada con $\bot$ no puede combinarse mediante la conjunción separadora con otra celda en la misma dirección.
+Por ello,
+ambas condiciones permiten justificar errores que se conservan al agregar un fragmento disjunto de memoria.
 
-\changed{Sobre esta semántica secuencial,}
+Esta semántica considera programas secuenciales.
+En un contexto concurrente,
+donde otro hilo podría alocar una celda en una dirección liberada,
+se debe considerar la interferencia entre hilos.
+Esta extensión queda fuera del alcance del trabajo.
+
+Sobre esta semántica secuencial,
 la validez de las tripletas de la ISL se define mediante la interpretación subaproximada:
 $$\models_\mathrm{ISL} \itriple{p}{C}{\varepsilon : q} \iff
 \forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
@@ -2038,9 +2061,6 @@ Las diferencias se encuentran en las reglas de alocación, lectura, escritura y 
 y en la aplicación de la Regla del Marco dentro de la interpretación subaproximada.
 La noción de derivabilidad utilizada en esta sección fue introducida en la Definición~\ref{def:derivabilidad-isl}.
 A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:reglas-isl}.
-
-%\guido{de qué sirve $x = x'$ en la pre de alloc1/alloc2? si $x$ es una variable local,
-%esto es siempre cierto}
 
 \begin{figure}[htbp]
 \centering
@@ -2194,10 +2214,9 @@ $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{er : q}$$
 y $q \neq \varnothing$, entonces existen estados espaciales $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
 $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
 \end{corolario}
-\emph{Demostración.} \changed{Análoga a la demostración del Corolario~\ref{cor:errores},
-utilizando el Teorema de Soundness de la ISL~\ref{teo:sound-isl} y su definición de validez semántica.}
+\emph{Demostración.} Análoga a la demostración del Corolario~\ref{cor:errores},
+utilizando el Teorema de Soundness de la ISL~\ref{teo:sound-isl} y su definición de validez semántica.
 $\ensuremath{\blacksquare}$
-%\guido{si esto es idéntico al caso anterior solamente diría eso}
 
 El Teorema de Soundness garantiza que los estados descritos por una tripleta derivable están respaldados por ejecuciones reales.
 Para entender por qué este respaldo se conserva al aplicar la Regla del Marco,
@@ -2270,11 +2289,9 @@ Por ejemplo,
 una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una celda activa en la dirección almacenada en $x$,
 pero no necesita describir las demás celdas de \emph{heap}.
 El resto de la memoria puede incorporarse con un marco.
-\agustina{Separé en dos parrafos y subi el "Por ejemplo".}
 
 No necesariamente existe una única huella para cada comando.
 Un comando con distintas ramas puede tener varias ejecuciones mínimas con requerimientos de memoria distintos.
-%\guido{no entiendo, eso no tiene ramas, y empieza con ``por ejemplo''}
 
 \begin{teorema}[Teorema de la Huella]
 \label{teo:huella}
@@ -2293,10 +2310,6 @@ La segunda inclusión,
 $[\![C]\!]_\varepsilon \subseteq \operatorname{frame}(\operatorname{foot}(C)_\varepsilon)$,
 expresa la dirección global a local.
 Establece que toda ejecución global puede descomponerse en una transición mínima y un marco agregado a sus estados inicial y final.
-
-%En el \autoref{cap:formalizacion-isl} se mecanizan ambas inclusiones dentro del desarrollo formal en \fstar{}.
-%\guido{no se si aclararía esto acá porque me hace dudar de si todo
-%el resto de los lemas están formalizados también (y entiendo que sí!)}
 
 \section{El lenguaje \fstar{}}
 \label{sec:fstar}

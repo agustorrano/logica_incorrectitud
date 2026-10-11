@@ -2075,39 +2075,39 @@ A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:regl
 
 \inferrule [Free]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto e}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto}}
+  {\vdash_{\mathrm{ISL}} \itriple{e \mapsto e'}{\texttt{free(}e\texttt{)}}{ok : e \nmapsto}}
 
 \inferrule [FreeEr]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x \nmapsto}{\texttt{free(}x\texttt{)}}{er : x \nmapsto}}
+  {\vdash_{\mathrm{ISL}} \itriple{e \nmapsto}{\texttt{free(}e\texttt{)}}{er : e \nmapsto}}
 
 \inferrule [FreeNull]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x = \texttt{null}}{\texttt{free(}x\texttt{)}}{er : x = \texttt{null}}}
+  {\vdash_{\mathrm{ISL}} \itriple{e = \texttt{null}}{\texttt{free(}e\texttt{)}}{er : e = \texttt{null}}}
 
 \inferrule [Load]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \mapsto e}{x := [y]}{ok : x = e[x' / x] * y \mapsto e[x' / x]}}
+  {\vdash_{\mathrm{ISL}} \itriple{x = x' * e \mapsto v}{x := [e]}{ok : x = v * e[x' / x] \mapsto v}}
 
 \inferrule [LoadEr]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{y \nmapsto}{x := [y]}{er : y \nmapsto}}
+  {\vdash_{\mathrm{ISL}} \itriple{e \nmapsto}{x := [e]}{er : e \nmapsto}}
 
 \inferrule [LoadNull]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{y = \texttt{null}}{x := [y]}{er : y = \texttt{null}}}
+  {\vdash_{\mathrm{ISL}} \itriple{e = \texttt{null}}{x := [e]}{er : e = \texttt{null}}}
 
 \inferrule [Store]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x \mapsto e}{[x] := y}{ok : x \mapsto y}}
+  {\vdash_{\mathrm{ISL}} \itriple{e_1 \mapsto e}{[e_1] := e_2}{ok : e_1 \mapsto e_2}}
 
 \inferrule [StoreEr]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x \nmapsto}{[x] := y}{er : x \nmapsto}}
+  {\vdash_{\mathrm{ISL}} \itriple{e_1 \nmapsto}{[e_1] := e_2}{er : e_1 \nmapsto}}
 
 \inferrule [StoreNull]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x = \texttt{null}}{[x] := y}{er : x = \texttt{null}}}
+  {\vdash_{\mathrm{ISL}} \itriple{e_1 = \texttt{null}}{[e_1] := e_2}{er : e_1 = \texttt{null}}}
 
 \end{mathpar}
 \caption{Reglas de inferencia de la ISL. Adaptadas de~\citep{isl}.}
@@ -2122,42 +2122,63 @@ En este caso,
 la dirección ya pertenecía al dominio conocido y solo cambia su estado,
 de liberado a activo.
 
-\changed{En ambas reglas,
-$x'$ es una variable auxiliar distinta de $x$ que el comando no modifica.
-La precondición $x = x'$ permite usar $x'$ para referirse al valor inicial de $x$,
-que la alocación sobrescribe.
-Aunque $x'$ no aparece en la postcondición de las reglas,
+En ambas reglas,
+$x$ y $x'$ son variables distintas,
+y la precondición $x = x'$ establece que almacenan el mismo valor antes de ejecutar el comando.
+La alocación modifica solo $x$,
+que pasa a contener la dirección reservada,
+mientras que $x'$ conserva el valor inicial de $x$.
+Aunque $x'$ no aparece en la postcondición de estas reglas,
 puede aparecer en las aserciones incorporadas mediante la Regla del Marco,
-permitiendo conservar información sobre ese valor inicial.}
+permitiendo conservar información sobre ese valor inicial.
 
 La regla \textsc{Free} representa la liberación exitosa.
-Requiere que $x$ describa una celda activa,
-representada por $x \mapsto e$,
-y transforma esa celda en un \emph{heap} negativo $x \nmapsto$.
-Por otro lado, \textsc{FreeEr} y \textsc{FreeNull} representan el caso de error.
-El primero intercepta la violación de tipo \emph{double free};
-si se intenta liberar una dirección que ya está representada como liberada,
-la ejecución termina con el modo de error.
-El segundo caso intercepta el fallo provocado por el puntero nulo.
+Requiere que la expresión $e$ evalúe a la dirección de una celda activa cuyo contenido está descrito por $e'$,
+y transforma esa celda en un \emph{heap} negativo $e \nmapsto$.
+Por otro lado,
+\textsc{FreeEr} y \textsc{FreeNull} representan los casos de error.
+La primera contempla el intento de liberar una celda ya marcada como liberada,
+como ocurre en un error de tipo \emph{double free}.
+La segunda contempla la liberación mediante un puntero nulo.
 
 La regla \textsc{Load} representa una lectura exitosa.
-Requiere que $y$ apunte a una celda activa y conserva sin modificaciones el fragmento del \emph{heap}.
-El valor almacenado en esa celda se asigna a $x$.
-La variable $x'$ representa el valor que tenía $x$ antes de la lectura.
-Como la asignación modifica $x$,
-esta variable permite conservar la información necesaria para interpretar la expresión $e$.
-Por esta razón, la postcondición utiliza la sustitución $e[x' / x]$.
+Requiere que $e$ evalúe a la dirección de una celda activa cuyo contenido es $v$.
+Este valor se asigna a $x$,
+sin modificar el \emph{heap}.
+Como en las reglas de alocación,
+$x'$ conserva el valor inicial de $x$.
+Por esta razón,
+la postcondición utiliza $e[x' / x]$ para seguir describiendo la dirección original de la celda cuando $e$ contiene a $x$.
 Las reglas \textsc{LoadEr} y \textsc{LoadNull} representan,
-respectivamente, la lectura de una celda liberada y la lectura de un puntero nulo.
+respectivamente, la lectura de una celda liberada y la lectura mediante un puntero nulo.
 
-Finalmente, las reglas \textsc{Store} controlan las escrituras sobre el \emph{heap}.
+Finalmente, las reglas \textsc{Store} describen las escrituras sobre el \emph{heap}.
 En el caso de éxito,
-la celda apuntada por $x$ conserva su dirección,
-pero su contenido se reemplaza por el valor de $y$.
+la celda cuya dirección se obtiene al evaluar $e_1$ contiene inicalmente el valor de $e$.
+La escritura reemplaza ese contenido por el resultado de evaluar $e_2$,
+sin modificar el \emph{store}.
 Las reglas \textsc{StoreEr} y \textsc{StoreNull} representan,
 respectivamente, una escritura sobre una celda liberada y una escritura mediante un puntero nulo.
 
-Las reglas anteriores describen el efecto de cada operación sobre el fragmento local de memoria que utiliza.
+\textbf{Observación.}
+A diferencia de las reglas de la SL presentadas anteriormente,
+las reglas \textsc{Free} y \textsc{Store} permiten especificar el contenido inical de la celda mediante una expresión.
+Reemplazar ese contenido por - produce tripletas válidas,
+pero reglas más débiles para la deducción en ISL.
+Por ejemplo,
+la regla
+$$\itriple{e_1 \mapsto -}{[e_1] := 5}{ok : e_1 \mapsto 5}$$
+no permite obtener mediante la Regla de Consecuencia la tripleta
+$$\itriple{e_1 \mapsto 7}{[e_1] := 5}{ok : e_1 \mapsto 5}.$$
+Esto se debe a que,
+en ISL,
+dicha regla permite debilitar la precondición,
+pero no fortalecerla.
+En cambio,
+una regla que admite una expresión arbitraria para el contenido inicial permite obtener esta última tripleta directamente,
+eligiendo $e = 7$.
+
+Las reglas de la \autoref{fig:semantica-isl} describen el efecto de cada operación sobre el fragmento local de memoria que utiliza.
 Para extender estos razonamientos a estados que también contienen memoria adicional,
 la ISL utiliza la Regla del Marco heredada de la SL:
 \begin{equation}
@@ -2320,26 +2341,18 @@ Este lenguaje está integrado con el solucionador SMT Z3
 y adopta un enfoque de programación orientada a pruebas (\emph{proof-oriented programming}),
 en el que los programas, sus especificaciones y sus demostraciones se desarrollan dentro de un mismo lenguaje.
 
-\changed{Si bien \fstar{} permite desarrollar programas ejecutables,
+Si bien \fstar{} permite desarrollar programas ejecutables,
 en esta tesina se utiliza como demostrador de teoremas.
 Su función es mecanizar la semántica de los lenguajes considerados,
 representar los sistemas deductivos de la IL y la ISL,
-y verificar sus propiedades metateóricas.}
-%\guido{no usaría este término
-%sin definirlo, pone lógico y listo},
-%\guido{y podés ser más breve: ``si bien \fstar{} es un lenguaje de programación
-%ejecutable, aquí lo usamos solamente como demostrador de teoremas''}
+y verificar sus propiedades metateóricas.
 
 A continuación se introducen las características del lenguaje necesarias para comprender la formalización desarrollada en los siguientes capítulos.
 
 \subsection*{Tipos dependientes y refinados}
-
-%\guido{los llamaria ``tipos refinados'' en vez de ``tipos de refinamiento'',
-%pero también está bien}
-
 En \fstar{}, los tipos pueden depender de valores.
 La manifestación más práctica de esto son los tipos refinados.
-Un tipo refinados permite expresar propiedades de los datos directamente en sus tipos,
+Un tipo refinado permite expresar propiedades de los datos directamente en sus tipos,
 de modo que su cumplimiento sea comprobado estáticamente.
 
 Dado un tipo \texttt{t} y un predicado \texttt{P},
@@ -2367,6 +2380,7 @@ val incr : x : int -> y : int { y = x + 1 }
 let incr x = x + 1
 \end{lstlisting}
 
+Los refinamientos también permiten expresar propiedades de los estados de un programa.
 En la formalización desarrollada,
 las aserciones lógicas se representan como predicados sobre estados:
 
@@ -2388,16 +2402,13 @@ donde la prueba recibe un estado final que satisface el resultado de una triplet
 Una de las características más potentes del lenguaje es la capacidad de crear tipos inductivos indexados,
 los cuales permiten capturar invariantes complejos directamente en la forma de la estructura.
 
-La correspondencia Curry-Howard \citep{howard}
-\changed{permite interpretar}
+La correspondencia Curry-Howard \citep{howard} permite interpretar
 las proposiciones como tipos y las demostraciones como valores que habitan esos tipos.
-\changed{Cuando una proposición se representa mediante un tipo inductivo,
+Cuando una proposición se representa mediante un tipo inductivo,
 sus constructores describen las formas de construir una demostración.
 A su vez,
 las pruebas por inducción pueden expresarse mediante funciones recursivas que analizan esos constructores
-y cuya terminación es verificada por \fstar{}.}
-%\guido{esta ultima oración es confusa, podés limitarte a hablar de F* nomás, los
-%teoremas tuyos vienen después}
+y cuya terminación es verificada por \fstar{}.
 
 Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores,
 donde la longitud forma parte del propio tipo:
@@ -2413,9 +2424,16 @@ sino un invariante impuesto por el sistema de tipos.
 Esta información permite definir funciones de acceso cuyos índices estén refinados por la longitud del vector,
 excluyendo estáticamente los accesos fuera de rango.
 
-\changed{Los tipos inductivos indexados también permiten representar relaciones.
+En el constructor \texttt{Cons},
+el símbolo \texttt{\#} indica que \texttt{n} es un parámetro implícito:
+puede omitirse al aplicar el constructor,
+ya que \fstar{} intenta inferirlo a partir de los demás argumentos y del contexto.
+En este caso,
+la longitud se obtiene del tipo del vector recibido.
+
+Los tipos inductivos indexados también permiten representar relaciones.
 Por ejemplo,
-podemos definir una relación entre dos listas de enteros que tienen la misma longitud:}
+podemos definir una relación entre dos listas de enteros que tienen la misma longitud:
 \begin{lstlisting}[style=fstar]
 type same_length : list int -> list int -> Type =
   | SLNil : same_length [] []
@@ -2424,28 +2442,24 @@ type same_length : list int -> list int -> Type =
     same_length xs ys ->
     same_length (x :: xs) (y :: ys)
 \end{lstlisting}
-\changed{El constructor \texttt{SLNil} establece que dos listas vacías tienen la misma longitud.
+El constructor \texttt{SLNil} establece que dos listas vacías tienen la misma longitud.
 El constructor \texttt{SLCons} establece que,
 si dos listas tienen la misma longitud,
 agregar un elemento al comienzo de cada una conserva esa propiedad.
 Por lo tanto,
 un valor de tipo \texttt{same\_length xs ys} representa una demostración
 de que ambas listas tienen la misma longitud.
-Este mecanismo permite codificar relaciones mediante tipos y sus reglas de construcción mediante constructores.}
+Este mecanismo permite codificar relaciones mediante tipos y sus reglas de construcción mediante constructores.
 
 \subsection*{Código fantasma y automatización}
 La mayor parte de la formalización tiene contenido lógico y no está destinada a ejecutarse.
 \fstar{} permite distinguir este tipo de definiciones mediante cómputos fantasma,
 que son comprobados por el verificador pero eliminados durante la extracción de código.
+El efecto \texttt{GTot},
+utilizado en varias funciones de la formalización,
+indica que un cómputo es total y fantasma.
 
-El efecto \texttt{GTot} describe una función total y fantasma.
-Por ejemplo:
-\begin{lstlisting}[style=fstar]
-let eval_expr : state -> expr -> GTot int
-\end{lstlisting}
-indica que la función siempre termina y que su resultado se utiliza solo dentro de especificaciones o demostraciones.
-
-Para enunciar y demostrar teoremas abstractos,
+Para enunciar y demostrar propiedades,
 \fstar{} proporciona el efecto \texttt{Lemma}.
 Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{requires}
 y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
@@ -2462,11 +2476,49 @@ val lemma :
 establece que, siempre que se cumpla la premisa \texttt{P x},
 el lema garantiza la conclusión \texttt{Q x}.
 
-Otra construcción utilizada en la formalización es \texttt{squash}.
-Dada una proposición \texttt{P},
-el tipo \texttt{squash P} conserva únicamente la información de que \texttt{P} es verdadera,
-sin conservar una estructura computacional de su demostración.
-Por eso se habla de una prueba ``aplastada'' o irrelevante desde el punto de vista computacional.
+Retomando la relación \texttt{same\_length},
+un valor de tipo \texttt{same\_length xs ys} constituye un certificado construido mediante las reglas de la relación.
+Podemos recibir este certificado como argumento de un lema que demuestre que las longitudes de ambas listas,
+calculadas mediante la función \texttt{length},
+son iguales.
+En este caso,
+la hipótesis está representada por el tipo del argumento \texttt{pf},
+por lo que no necesitamos una cláusula \texttt{requires}.
+\begin{lstlisting}[style=fstar]
+let rec same_length_sound
+  (#xs : list int) (#ys : list int)
+  (pf : same_length xs ys) :
+  Lemma
+    (ensures
+      (FStar.List.Tot.length xs == FStar.List.Tot.length ys))
+    (decreases pf)
+= match pf with
+  | SLNil -> ()
+  | SLCons _ _ _ _ tl ->
+    same_length_sound tl
+\end{lstlisting}
+
+La demostración se hace por inducción sobre el certificado \texttt{pf}.
+En el caso \texttt{SLNil},
+ambas listas son vacías y sus longitudes son cero.
+En el caso \texttt{SLCons},
+la llamada recursiva establece que las colas tienen la misma longitud.
+Como ambas listas agregan un elemento,
+sus longitudes también coinciden.
+La cláusula \texttt{decreases pf} permite justificar la terminación,
+ya que la llamada recursiva recibe el certificado \texttt{tl},
+que es una parte estructuralmente menor de \texttt{pf}.
+
+De este modo,
+el tipo inductivo proporciona una estructura explícita que la demostración puede analizar,
+mientras que la postcondición del lema expresa la propiedad obtenida a partir de ella.
+
+En otras partes de la formalización basta con establecer que una proposición es válida,
+sin analizar la estructura de su demostración.
+Para estos casos se utiliza \texttt{squash}:
+dada una proposición \texttt{P},
+el tipo \texttt{squash P} conserva únicamente la información de que \texttt{P} se cumple,
+haciendo irrelevante el contenido computacional de su prueba.
 Esta construcción resulta adecuada para condiciones laterales como:
 \begin{lstlisting}[style=fstar]
 squash (forall s. pre s ==> pre' s)
@@ -2485,13 +2537,6 @@ especialmente cuando requieren inducción o la construcción de testigos existen
 Cuando el \emph{solver} no puede resolver una obligación automáticamente,
 es necesario agregar lemas auxiliares,
 revelar definiciones o proporcionar pasos intermedios que orienten la prueba.
-
-Además, las funciones recursivas tienen que demostrar su terminación.
-Cuando esto no resulta evidente de manera automática,
-\fstar{} permite indicar una medida decreciente mediante la cláusula \texttt{decreases}.
-En las demostraciones de \emph{soundness},
-la medida utilizada es la propia derivación,
-ya que cada llamada recursiva se realiza sobre una subderivación estrictamente menor.
 
 Estas características determinan la estrategia de mecanización utilizada en los capítulos siguientes.
 Las aserciones se representan como predicados sobre estados;
@@ -2553,6 +2598,12 @@ type term_mode =
   | Er
 type state = store & term_mode
 \end{lstlisting}
+
+El símbolo \texttt{\&} denota el tipo producto,
+por lo que cada estado es un par formado por un \emph{store} y un modo de terminación.
+Para un estado \texttt{s},
+las proyecciones \texttt{s.\_1} y \texttt{s.\_2} permiten acceder a estos componentes,
+respectivamente.
 
 El modo \texttt{Ok} indica que la ejecución puede continuar, mientras que \texttt{Er} indica que se ha alcanzado un estado de error.
 Esta distinción mecaniza los dos canales de salida \emph{ok} y \emph{er}.

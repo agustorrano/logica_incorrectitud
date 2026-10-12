@@ -1,5 +1,8 @@
 module IncLogic
 
+open FStar.FunctionalExtensionality
+module FE = FStar.FunctionalExtensionality
+
 // ============================================================
 // 1. Sintaxis y estados
 // ============================================================
@@ -31,7 +34,7 @@ type term_mode =
   | Ok
   | Er
 
-type store = var -> value
+type store = var ^-> value
 type state = store & term_mode
 type cond = state -> prop
 
@@ -54,12 +57,17 @@ let rec eval_expr' (s : store) (e : expr) : GTot nat =
 let eval_expr (s : state) (e : expr)
   : GTot nat = eval_expr' s._1 e
 
-let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
-  fun z -> if z = x then y else f z
+let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : (a ^-> b) =
+  FE.on a (fun z -> if z = x then y else f z)
 
 unfold let state_equiv (s1 s2 : state) : prop =
   (forall x. s1._1 x == s2._1 x) /\
   s1._2 == s2._2
+
+let state_equiv_eq (s1 s2 : state)
+  : Lemma (requires (state_equiv s1 s2))
+          (ensures s1 == s2) =
+  FE.extensionality var (fun _ -> value) s1._1 s2._1
 
 // ============================================================
 // 2. Semántica operacional
@@ -67,12 +75,6 @@ unfold let state_equiv (s1 s2 : state) : prop =
 
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
-  | R_Ext : #p : stmt -> #s0 : state -> #s1 : state ->
-    runsto p s0 s1 -> s0' : state -> s1' : state ->
-    (#_ : squash (state_equiv s0 s0')) ->
-    (#_ : squash (state_equiv s1 s1')) ->
-    runsto p s0' s1'
-    
   | R_Assign : s : state { s._2 == Ok } ->
     #x : var -> #e : expr ->
     runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
@@ -116,7 +118,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
 // 3. Lógica de Incorrectitud
 // ============================================================
 
-let init : state = ((fun _ -> 0), Ok)
+let init : state = (FE.on var #value (fun _ -> 0), Ok)
 
 unfold let is_ok (c : cond) : cond = fun s -> c s /\ s._2 == Ok
 
@@ -224,8 +226,8 @@ let rec soundness
     assert (pre s0);
     let pf0 = R_Assign s0 #x #e in
     assert (forall y. override st0 x (eval_expr s0 e) y == st1 y);
-    let pf1 = R_Ext pf0 s0 s1 in
-    (|s0, pf1|)
+    state_equiv_eq (override st0 x (eval_expr s0 e), Ok) s1;
+    (|s0, pf0|)
 
   | I_Nondet #x #pre ->
     let (st1, m) = s1 in
@@ -240,10 +242,8 @@ let rec soundness
     let pf0 : runsto (Nondet x) s0 ((override st0 x (st1 x)), Ok) =
       R_Nondet s0 #x (st1 x)
     in
-    let pf1 : runsto (Nondet x) s0 s1 =
-      R_Ext pf0 _ _
-    in
-    (|s0, pf1|)
+    state_equiv_eq (override st0 x (st1 x), Ok) s1;
+    (|s0, pf0|)
 
   | I_Skip _ -> 
     let s0 = s1 in

@@ -140,6 +140,7 @@ let post_error (start_ptr : loc) : cond =
   fun s -> s._3 == Er /\ pre_error start_ptr (s._1, s._2, Ok)
 
 // Lemas auxiliares
+#push-options "--split_queries always"
 let lemma_prove_load_v (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (post_load_v start_ptr k s))
           (ensures (is_ok (fun s0 -> exists (l : loc) (v : value) (x_old : value).
@@ -162,7 +163,6 @@ let lemma_prove_load_v (start_ptr : loc) (k : nat) (s : state)
   let l = curr_ptr in
   let v = Nat 1 in
   let s0 = (override st "v" x_old, hp, Ok) in
-  assert (variant start_ptr k s0);
   Classical.exists_intro (fun l -> exists (v : value) (x_old : value).
     eval_expr (override s._1 "v" x_old, s._2, Ok) (Var "ptr") == l /\
     points_to l v s /\
@@ -181,34 +181,37 @@ let lemma_prove_load_v (start_ptr : loc) (k : nat) (s : state)
 
 let lemma_prove_sum_step (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr k s))
-          (ensures (is_ok (fun s0 -> exists (st_init : var -> value).
+          (ensures (is_ok (fun s0 -> exists (st_init : store).
                     post_load_v start_ptr k (st_init, s0._2, s0._3) /\
                     s._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v"))) /\
                     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) s)) =
   let st, hp, m = s in
   let st_init = override st "sum" (Nat k) in
-  let p_exist (st_i : var -> value) : prop =
+  let p_exist (st_i : store) : prop =
     post_load_v start_ptr k (st_i, hp, m) /\
     st "sum" == Nat (eval_expr (st_i, hp, m) (Plus (Var "sum") (Var "v"))) /\
     (forall (y : var). y <> "sum" ==> st y == st_i y)
   in
   Classical.exists_intro p_exist st_init
 
+#pop-options
+
 let lemma_prove_len_step (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (post_len start_ptr k s))
-          (ensures (is_ok (fun s0 -> exists (st_init : var -> value).
+          (ensures (is_ok (fun s0 -> exists (st_init : store).
                     post_sum start_ptr k (st_init, s0._2, s0._3) /\
                     s._1 "len" == Nat (eval_expr (st_init, s0._2, s0._3) (Plus (Var "len") (Const 1))) /\
                     (forall (y : var). y <> "len" ==> s._1 y == st_init y)) s)) =
   let st, hp, m = s in
   let st_init = override st "len" (Nat k) in
-  let p_exist (st_i : var -> value) : prop =
+  let p_exist (st_i : store) : prop =
     post_sum start_ptr k (st_i, hp, m) /\
     st "len" == Nat (eval_expr (st_i, hp, m) (Plus (Var "len") (Const 1))) /\
     (forall (y : var). y <> "len" ==> st y == st_i y)
   in
   Classical.exists_intro p_exist st_init
 
+#push-options "--split_queries always"
 let lemma_prove_load_ptr (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (variant start_ptr (k + 1) s))
           (ensures (is_ok (fun s0 -> exists (l : loc) (v : value) (x_old : value).
@@ -251,6 +254,8 @@ let lemma_prove_load_ptr (start_ptr : loc) (k : nat) (s : state)
     points_to l v s /\
     st "ptr" == v /\
     post_len start_ptr k (override st "ptr" x0, hp, Ok)) x_old
+
+#pop-options
 
 let lemma_empty_lseg (n : nat) (s : state)
   : Lemma (requires (list_seg 0 0 (ones n) s))

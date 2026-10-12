@@ -61,14 +61,14 @@ let pre_assert : cond =
 let lemma_p_i_consequence (k : nat) (s : state) : Lemma 
   (requires mid_i k s)
   (ensures (is_ok (fun s ->
-      exists (st_init : var -> value). 
+      exists (st_init : store). 
         pre_assign k (st_init, s._2, s._3) /\ 
         s._1 "i" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "i") (Const 1))) /\
         (forall y. y <> "i" ==> s._1 y == st_init y)) s)) =
   let st, hp, m = s in
   let st_init = override st "i" (Nat k) in
   let s_init = (st_init, hp, m) in
-  let p_exist (st_i : var -> value) : prop =
+  let p_exist (st_i : store) : prop =
     pre_assign k (st_i, hp, m) /\ 
     st "i" == Nat (eval_expr (st_i, hp, m) (Plus (Var "i") (Const 1))) /\
     (forall y. y <> "i" ==> st y == st_i y)
@@ -78,14 +78,14 @@ let lemma_p_i_consequence (k : nat) (s : state) : Lemma
 let lemma_p_j_consequence (k:nat) (s:state) : Lemma 
   (requires variant (k + 1) s)
   (ensures (is_ok (fun s ->
-      exists (st_init : var -> value). 
+      exists (st_init : store). 
         mid_i k (st_init, s._2, s._3) /\ 
         s._1 "j" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "j") (Const 1))) /\
         (forall y. y <> "j" ==> s._1 y == st_init y)) s)) =
   let st, hp, m = s in
   let st_init = override st "j" (Nat k) in
   let s_init = (st_init, hp, m) in
-  let p_exist (st_i : var -> value) : prop =
+  let p_exist (st_i : store) : prop =
     mid_i k (st_i, hp, m) /\ 
     st "j" == Nat (eval_expr (st_i, hp, m) (Plus (Var "j") (Const 1))) /\
     (forall y. y <> "j" ==> st y == st_i y)

@@ -2355,17 +2355,17 @@ La manifestación más práctica de esto son los tipos refinados.
 Un tipo refinado permite expresar propiedades de los datos directamente en sus tipos,
 de modo que su cumplimiento sea comprobado estáticamente.
 
-Dado un tipo \texttt{t} y un predicado \texttt{P},
-la expresión \texttt{x : t \{ P x \}} representa los valores \texttt{x} de tipo \texttt{t} que además satisfacen la propiedad \texttt{P x}.
+Dado un tipo \lstinline{t} y un predicado \lstinline{P},
+la expresión \lstinline|x : t { P x }| representa los valores \lstinline{x} de tipo \lstinline{t} que además satisfacen la propiedad \lstinline{P x}.
 Por ejemplo, en la biblioteca estándar de \fstar{},
 el tipo de los números naturales no es un tipo primitivo aislado,
 sino el tipo de los enteros refinado por una condición booleana:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let nat = x : int { x >= 0 }
 \end{lstlisting}
 
-Cualquier función que requiera un argumento del tipo \texttt{nat}
+Cualquier función que requiera un argumento del tipo \lstinline{nat}
 fuerza al verificador estático a demostrar matemáticamente que el valor provisto satisface la restricción $x \geq 0$ antes de compilar.
 De este modo,
 propiedades que en otros lenguajes se verificarían durante la ejecución se convierten en obligaciones estáticas.
@@ -2373,9 +2373,9 @@ propiedades que en otros lenguajes se verificarían durante la ejecución se con
 Esta dependencia entre valores y tipos permite que la firma de una función actúe como su propia especificación matemática.
 Por ejemplo,
 la función de incremento puede definirse garantizando estáticamente
-que el valor de retorno \texttt{y} será exactamente igual al argumento \texttt{x} más uno:
+que el valor de retorno \lstinline{y} será exactamente igual al argumento \lstinline{x} más uno:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 val incr : x : int -> y : int { y = x + 1 }
 let incr x = x + 1
 \end{lstlisting}
@@ -2384,16 +2384,16 @@ Los refinamientos también permiten expresar propiedades de los estados de un pr
 En la formalización desarrollada,
 las aserciones lógicas se representan como predicados sobre estados:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type cond = state -> prop
 \end{lstlisting}
 A su vez, los refinamientos permiten exigir que los estados recibidos o producidos por una función satisfagan una aserción determinada.
 Por ejemplo, el siguiente parámetro:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 s : state { post s }
 \end{lstlisting}
-representa un estado \texttt{s} cuya tipificación exige demostrar estáticamente que satisface la postcondición \texttt{post}.
+representa un estado \lstinline{s} cuya tipificación exige demostrar estáticamente que satisface la postcondición \lstinline{post}.
 Esta forma aparece en el enunciado mecanizado del Teorema de Soundness,
 donde la prueba recibe un estado final que satisface el resultado de una tripleta y debe construir un estado inicial que satisfaga su presunción.
 
@@ -2412,20 +2412,20 @@ y cuya terminación es verificada por \fstar{}.
 
 Un ejemplo clásico en la programación de tipos dependientes es el tipo de los vectores,
 donde la longitud forma parte del propio tipo:
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type vec (a : Type) : nat -> Type =
   | Nil : vec a 0
   | Cons : #n : nat -> hd : a -> tl : vec a n -> vec a (n + 1)
 \end{lstlisting}
-El constructor \texttt{Nil} solo produce vectores de longitud cero,
-mientras que \texttt{Cons} recibe un vector de longitud \texttt{n} y produce uno de longitud \texttt{n + 1}.
+El constructor \lstinline{Nil} solo produce vectores de longitud cero,
+mientras que \lstinline{Cons} recibe un vector de longitud \lstinline{n} y produce uno de longitud \lstinline{n + 1}.
 Por lo tanto, la longitud no es una propiedad externa que deba verificarse luego,
 sino un invariante impuesto por el sistema de tipos.
 Esta información permite definir funciones de acceso cuyos índices estén refinados por la longitud del vector,
 excluyendo estáticamente los accesos fuera de rango.
 
-En el constructor \texttt{Cons},
-el símbolo \texttt{\#} indica que \texttt{n} es un parámetro implícito:
+En el constructor \lstinline{Cons},
+el símbolo \lstinline{#} indica que \lstinline{n} es un parámetro implícito:
 puede omitirse al aplicar el constructor,
 ya que \fstar{} intenta inferirlo a partir de los demás argumentos y del contexto.
 En este caso,
@@ -2434,7 +2434,7 @@ la longitud se obtiene del tipo del vector recibido.
 Los tipos inductivos indexados también permiten representar relaciones.
 Por ejemplo,
 podemos definir una relación entre dos listas de enteros que tienen la misma longitud:
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type same_length : list int -> list int -> Type =
   | SLNil : same_length [] []
   | SLCons : x : int -> y : int ->
@@ -2442,12 +2442,12 @@ type same_length : list int -> list int -> Type =
     same_length xs ys ->
     same_length (x :: xs) (y :: ys)
 \end{lstlisting}
-El constructor \texttt{SLNil} establece que dos listas vacías tienen la misma longitud.
-El constructor \texttt{SLCons} establece que,
+El constructor \lstinline{SLNil} establece que dos listas vacías tienen la misma longitud.
+El constructor \lstinline{SLCons} establece que,
 si dos listas tienen la misma longitud,
 agregar un elemento al comienzo de cada una conserva esa propiedad.
 Por lo tanto,
-un valor de tipo \texttt{same\_length xs ys} representa una demostración
+un valor de tipo \lstinline{same_length xs ys} representa una demostración
 de que ambas listas tienen la misma longitud.
 Este mecanismo permite codificar relaciones mediante tipos y sus reglas de construcción mediante constructores.
 
@@ -2455,36 +2455,36 @@ Este mecanismo permite codificar relaciones mediante tipos y sus reglas de const
 La mayor parte de la formalización tiene contenido lógico y no está destinada a ejecutarse.
 \fstar{} permite distinguir este tipo de definiciones mediante cómputos fantasma,
 que son comprobados por el verificador pero eliminados durante la extracción de código.
-El efecto \texttt{GTot},
+El efecto \lstinline{GTot},
 utilizado en varias funciones de la formalización,
 indica que un cómputo es total y fantasma.
 
 Para enunciar y demostrar propiedades,
-\fstar{} proporciona el efecto \texttt{Lemma}.
-Un lema toma ciertas premisas como argumentos mediante una cláusula \texttt{requires}
-y garantiza lógicamente una conclusión mediante la cláusula \texttt{ensures}.
+\fstar{} proporciona el efecto \lstinline{Lemma}.
+Un lema toma ciertas premisas como argumentos mediante una cláusula \lstinline{requires}
+y garantiza lógicamente una conclusión mediante la cláusula \lstinline{ensures}.
 Su resultado computacional es irrelevante,
 lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
 Por ejemplo, una signatura de la forma:
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 val lemma :
   x : t ->
   Lemma
     (requires P x)
     (ensures Q x)
 \end{lstlisting}
-establece que, siempre que se cumpla la premisa \texttt{P x},
-el lema garantiza la conclusión \texttt{Q x}.
+establece que, siempre que se cumpla la premisa \lstinline{P x},
+el lema garantiza la conclusión \lstinline{Q x}.
 
-Retomando la relación \texttt{same\_length},
-un valor de tipo \texttt{same\_length xs ys} constituye un certificado construido mediante las reglas de la relación.
+Retomando la relación \lstinline{same_length},
+un valor de tipo \lstinline{same_length xs ys} constituye un certificado construido mediante las reglas de la relación.
 Podemos recibir este certificado como argumento de un lema que demuestre que las longitudes de ambas listas,
-calculadas mediante la función \texttt{length},
+calculadas mediante la función \lstinline{length},
 son iguales.
 En este caso,
-la hipótesis está representada por el tipo del argumento \texttt{pf},
-por lo que no necesitamos una cláusula \texttt{requires}.
-\begin{lstlisting}[style=fstar]
+la hipótesis está representada por el tipo del argumento \lstinline{pf},
+por lo que no necesitamos una cláusula \lstinline{requires}.
+\begin{lstlisting}
 let rec same_length_sound
   (#xs : list int) (#ys : list int)
   (pf : same_length xs ys) :
@@ -2498,16 +2498,16 @@ let rec same_length_sound
     same_length_sound tl
 \end{lstlisting}
 
-La demostración se hace por inducción sobre el certificado \texttt{pf}.
-En el caso \texttt{SLNil},
+La demostración se hace por inducción sobre el certificado \lstinline{pf}.
+En el caso \lstinline{SLNil},
 ambas listas son vacías y sus longitudes son cero.
-En el caso \texttt{SLCons},
+En el caso \lstinline{SLCons},
 la llamada recursiva establece que las colas tienen la misma longitud.
 Como ambas listas agregan un elemento,
 sus longitudes también coinciden.
-La cláusula \texttt{decreases pf} permite justificar la terminación,
-ya que la llamada recursiva recibe el certificado \texttt{tl},
-que es una parte estructuralmente menor de \texttt{pf}.
+La cláusula \lstinline{decreases pf} permite justificar la terminación,
+ya que la llamada recursiva recibe el certificado \lstinline{tl},
+que es una parte estructuralmente menor de \lstinline{pf}.
 
 De este modo,
 el tipo inductivo proporciona una estructura explícita que la demostración puede analizar,
@@ -2515,19 +2515,19 @@ mientras que la postcondición del lema expresa la propiedad obtenida a partir d
 
 En otras partes de la formalización basta con establecer que una proposición es válida,
 sin analizar la estructura de su demostración.
-Para estos casos se utiliza \texttt{squash}:
-dada una proposición \texttt{P},
-el tipo \texttt{squash P} conserva únicamente la información de que \texttt{P} se cumple,
+Para estos casos se utiliza \lstinline{squash}:
+dada una proposición \lstinline{P},
+el tipo \lstinline{squash P} conserva únicamente la información de que \lstinline{P} se cumple,
 haciendo irrelevante el contenido computacional de su prueba.
 Esta construcción resulta adecuada para condiciones laterales como:
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 squash (forall s. pre s ==> pre' s)
 \end{lstlisting}
 que es una condición lateral de la Regla de Consecuencia.
 
 En este caso, la formalización solo necesita establecer que la implicación es válida.
 No necesita inspeccionar posteriormente cómo fue demostrada.
-El uso de \texttt{squash} también facilita que estas obligaciones sean tratadas por el \emph{solver} SMT Z3.
+El uso de \lstinline{squash} también facilita que estas obligaciones sean tratadas por el \emph{solver} SMT Z3.
 El \emph{solver} puede resolver automáticamente muchas obligaciones de primer orden,
 como implicaciones, igualdades, restricciones aritméticas e inclusiones entre predicados.
 
@@ -2563,57 +2563,64 @@ En este capítulo se presenta la mecanización de este sistema deductivo utiliza
 Para lograrlo, se aplica el paradigma de programación orientada a pruebas.
 En primer lugar, se modela la sintaxis y semántica del lenguaje imperativo subyacente.
 Luego, se codifican los axiomas de la IL a través del isomorfismo de Curry-Howard.
-Por último, se demuestra su solidez (\textit{soundness}) respecto a la semántica operacional.
+Por último, se demuestra su solidez (\emph{soundness}) respecto a la semántica operacional.
 
 \section{Lenguaje y semántica operacional}
 \label{sec:il-sintaxis}
-Para poder razonar sobre el comportamiento de un programa, el primer paso es definir formalmente su sintaxis y semántica.
+Para poder razonar sobre el comportamiento de un programa,
+el primer paso es definir formalmente su sintaxis y semántica.
 En esta formalización inicial de la IL trabajaremos sobre un lenguaje imperativo simplificado.
 
-El conjunto abstracto de estados $\Sigma$, utilizado en la \autoref{sec:loginc}, se instancia en esta primera formalización mediante un \emph{store} y un modo de terminación.
+El conjunto abstracto de estados $\Sigma$,
+utilizado en la \autoref{sec:loginc},
+se instancia en esta primera formalización mediante un \emph{store} y un modo de terminación.
 Las variables se representan mediante cadenas y sus valores mediante números naturales:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type var = string
 type value = nat
 type store = var -> value
 \end{lstlisting}
 
-Un \texttt{store} es una función total que asigna un valor a cada variable.
+Un \lstinline{store} es una función total que asigna un valor a cada variable.
 La actualización de una variable se expresa funcionalmente mediante la siguiente función:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let override (#a : eqtype) (#b : Type)
   (f : a -> b) (x : a) (y : b) : a -> b =
   fun z -> if z = x then y else f z
 \end{lstlisting}
-La expresión \texttt{override f x y} produce una nueva función que devuelve \texttt{y} para el argumento \texttt{x} y conserva el comportamiento de \texttt{f} para todos los demás argumentos.
+La expresión \lstinline{override f x y} produce una nueva función que devuelve \lstinline{y} para el argumento \lstinline{x}
+y conserva el comportamiento de \lstinline{f} para todos los demás argumentos.
 
 El lenguaje considerado distingue entre ejecuciones que continúan normalmente y ejecuciones que han alcanzado un error.
 Para representar esta información se definen los siguientes tipos:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type term_mode =
   | Ok
   | Er
 type state = store & term_mode
 \end{lstlisting}
 
-El símbolo \texttt{\&} denota el tipo producto,
+El símbolo \lstinline{&} denota el tipo producto,
 por lo que cada estado es un par formado por un \emph{store} y un modo de terminación.
-Para un estado \texttt{s},
-las proyecciones \texttt{s.\_1} y \texttt{s.\_2} permiten acceder a estos componentes,
+Para un estado \lstinline{s},
+las proyecciones \lstinline{s._1} y \lstinline{s._2} permiten acceder a estos componentes,
 respectivamente.
 
-El modo \texttt{Ok} indica que la ejecución puede continuar, mientras que \texttt{Er} indica que se ha alcanzado un estado de error.
+El modo \lstinline{Ok} indica que la ejecución puede continuar,
+mientras que \lstinline{Er} indica que se ha alcanzado un estado de error.
 Esta distinción mecaniza los dos canales de salida \emph{ok} y \emph{er}.
-En la presentación abstracta del \autoref{cap:conceptos-previos}, la condición de salida $\epsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
+En la presentación abstracta del \autoref{cap:conceptos-previos},
+la condición de salida $\epsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
 En esta formalización se incorpora directamente en el estado.
-De esta manera, una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
+De esta manera,
+una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
 
 Las expresiones del lenguaje se definen mediante un tipo inductivo:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type expr =
   | Var : var -> expr
   | Const : nat -> expr
@@ -2625,10 +2632,14 @@ type expr =
   | Gt : expr -> expr -> expr
 \end{lstlisting}
 
-Las expresiones en nuestro lenguaje son puras, es decir, calcular $2 + 2$ no modifica la memoria ni puede fallar o arrojar múltiples resultados distintos.
-Por lo tanto, su semántica se modela mediante una función recursiva pura, y una función adaptadora que toma el \emph{store} de la tupla del estado actual y la expresión y devuelve un natural:
+Las expresiones en nuestro lenguaje son puras,
+es decir,
+calcular $2 + 2$ no modifica la memoria ni puede fallar o arrojar múltiples resultados distintos.
+Por lo tanto,
+su semántica se modela mediante una función recursiva pura,
+y una función adaptadora que toma el \emph{store} de la tupla del estado actual y la expresión y devuelve un natural:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec eval_expr' (s : store) (e : expr) : GTot nat =
   match e with
     | Var x -> s x
@@ -2649,10 +2660,10 @@ let eval_expr (s : state) (e : expr) : GTot nat =
   eval_expr' s._1 e
 \end{lstlisting}
 
-La definición de comandos es similar, pero incluye instrucciones que modifican el estado o controlan el flujo.
-%\guido{\sout{Al definir la sintaxis mediante un tipo inductivo, le otorgamos a \fstar{} la garantía matemática de que es imposible que exista un comando fuera de esta lista.}}
+La definición de comandos es similar,
+pero incluye instrucciones que modifican el estado o controlan el flujo.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type stmt =
   | Assign : var -> expr -> stmt
   | Nondet : var -> stmt
@@ -2664,49 +2675,46 @@ type stmt =
   | Kleene : stmt -> stmt
 \end{lstlisting}
 
-\texttt{Assign x e} evalúa la expresión \texttt{e} y almacena su resultado en \texttt{x}.
-\texttt{Nondet x} asigna un valor arbitrario a la variable.
-\texttt{Skip} no modifica el estado, mientras que \texttt{Error} fuerza la terminación errónea.
-\texttt{Assume e} conserva solo los caminos donde \texttt{e} es verdadera.
-\texttt{Seq p q} representa composición secuencial, \texttt{Choice p q} elección no determinista y \texttt{Kleene p} una cantidad finita y no determinista de ejecuciones de \texttt{p}.
+\lstinline{Assign x e} evalúa la expresión \lstinline{e} y almacena su resultado en \lstinline{x}.
+\lstinline{Nondet x} asigna un valor arbitrario a la variable.
+\lstinline{Skip} no modifica el estado, mientras que \lstinline{Error} fuerza la terminación errónea.
+\lstinline{Assume e} conserva solo los caminos donde \lstinline{e} es verdadera.
+\lstinline{Seq p q} representa composición secuencial,
+\lstinline{Choice p q} elección no determinista y \lstinline{Kleene p} una cantidad finita y no determinista de ejecuciones de \lstinline{p}.
 
-\changed{La semántica relacional presentada en la \autoref{sec:loginc} se mecaniza mediante un tipo inductivo indexado
+La semántica relacional presentada en la \autoref{sec:loginc} se mecaniza mediante un tipo inductivo indexado
 por el comando y sus estados inicial y final.
 A diferencia de aquella presentación,
 el modo de terminación se incorpora al estado final,
-en lugar de aparecer como un índice separado de la relación:}
-%\guido{Esto me parece obvio, ya explicamos arriba que la semántica es una (o
-%varias) relaciones. Lo del modo es un detalle de implementacion interesante, lo
-%otro no}
-\begin{lstlisting}[style=fstar]
+en lugar de aparecer como un índice separado de la relación:
+\begin{lstlisting}
 noeq
 type runsto : stmt -> state -> state -> Type0
 \end{lstlisting}
-%\guido{para después, por ahí en la seccion intro de F* podes mostrar un ejemplo
-%de relacion inductiva, por ejemplo una relacion que demuestra que dos vectores
-%tienen la misma longitud.}
 
-\changed{Un valor de tipo \texttt{runsto c s0 s1} representa una derivación
-de la ejecución del comando \texttt{c} desde \texttt{s0} hasta \texttt{s1}.
+Un valor de tipo \lstinline{runsto c s0 s1} representa una derivación
+de la ejecución del comando \lstinline{c} desde \lstinline{s0} hasta \lstinline{s1}.
 Sus constructores codifican las reglas de la semántica operacional,
 siguiendo la representación de relaciones mediante tipos indctivos indexados introducida en la \autoref{sec:fstar}.
-Las ejecuciones comienzan en un estado con modo \texttt{Ok} y pueden finalizar con modo \texttt{Ok} o \texttt{Er},
-según terminen normalmente o con error.}
+Las ejecuciones comienzan en un estado con modo \lstinline{Ok} y pueden finalizar con modo \lstinline{Ok} o \lstinline{Er},
+según terminen normalmente o con error.
 
-Como los \emph{stores} son funciones, dos expresiones funcionales diferentes pueden representar el mismo \emph{store} si coinciden en todas las variables.
+Como los \emph{stores} son funciones,
+dos expresiones funcionales diferentes pueden representar el mismo \emph{store} si coinciden en todas las variables.
 Para tratar estas diferencias conviene definir la equivalencia de estados:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 unfold let state_equiv (s1 s2 : state) : prop =
   (forall x. s1._1 x == s2._1 x) /\
   s1._2 == s2._2
 \end{lstlisting}
 
-El constructor \texttt{R\_Ext} de \texttt{runsto} transporta una derivación entre estados extensionalmente equivalentes.
+El constructor \lstinline{R_Ext} de \lstinline{runsto} transporta una derivación entre estados extensionalmente equivalentes.
 Esta regla no agrega nuevos comportamientos al lenguaje.
-Su función es permitir que \fstar{} identifique como equivalentes estados cuyos \emph{stores} coinciden, aunque hayan sido construidos mediante expresiones funcionales sintácticamente diferentes.
+Su función es permitir que \fstar{} identifique como equivalentes estados cuyos \emph{stores} coinciden,
+aunque hayan sido construidos mediante expresiones funcionales sintácticamente diferentes.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Ext : #p : stmt -> #s0 : state -> #s1 : state ->
   runsto p s0 s1 -> s0' : state -> s1' : state ->
   (#_ : squash (state_equiv s0 s0')) ->
@@ -2719,7 +2727,7 @@ functionalextensionality? se puede borrar y demostrar que es admisible?}
 La instrucción más elemental que modifica el estado es la asignación.
 Esta se formaliza mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Assign : s : state { s._2 == Ok } ->
   #x : var -> #e : expr ->
   runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
@@ -2727,50 +2735,51 @@ Esta se formaliza mediante:
 
 Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
 Toma un estado de éxito arbitrario $s$,
-evalúa matemáticamente la expresión utilizando la función determinista \texttt{eval\_expr s e},
+evalúa matemáticamente la expresión utilizando la función determinista \lstinline{eval_expr s e},
 y garantiza que el estado final es idéntico a $s$,
-pero con el valor de la variable $x$ actualizado mediante \texttt{override}.
-Por último, como \texttt{Assign} es una operación segura en nuestro lenguaje,
+pero con el valor de la variable $x$ actualizado mediante \lstinline{override}.
+Por último, como \lstinline{Assign} es una operación segura en nuestro lenguaje,
 el modo de terminación siempre es el canal de éxito.
-%\guido{reemplaza el ultimo \lstinline{s._2} por \lstinline{Ok}}
 
 La asignación no determinista se representa mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Nondet : s : state { s._2 == Ok } -> #x : var -> v : value ->
   runsto (Nondet x) s (override s._1 x v, Ok)
 \end{lstlisting}
 
-Si estuviéramos programando un intérprete tradicional, implementar el no determinismo requeriría un generador de números pseudoaleatorios, lo cual ensuciaría el razonamiento matemático.
-En nuestra formalización, el valor $v$ no se calcula computacionalmente, sino que se recibe como un parámetro lógico que el sistema deductivo provee.
-Esto le otorga al verificador la capacidad de instanciar $v$ libremente con cualquier valor necesario para explorar una traza que conduzca a un error.
+Si estuviéramos programando un intérprete tradicional,
+implementar el no determinismo requeriría un generador de números pseudoaleatorios,
+lo cual ensuciaría el razonamiento matemático.
+En nuestra formalización,
+el valor \lstinline{v} no se calcula computacionalmente,
+sino que se recibe como un parámetro lógico que el sistema deductivo provee.
+Esto le otorga al verificador la capacidad de instanciar \lstinline{v} libremente con cualquier valor necesario para explorar una traza que conduzca a un error.
 
 Representamos la terminación normal, de error y filtrado de caminos de la siguiente manera:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Skip : s : state { s._2 == Ok } -> runsto Skip s s
 | R_Error : s : state { s._2 == Ok } -> runsto Error s (s._1, Er)
 | R_Assume : s : state { s._2 == Ok } -> #e : expr ->
   squash (eval_expr s e =!= 0) ->
   runsto (Assume e) s s
 \end{lstlisting}
-%\guido{podriamos aclarar que s siempre tiene que estar en OK?}
-%\guido{Error seria Abort?}
 
-La regla \texttt{R\_Skip} conserva el estado inicial.
-\changed{Por su parte,}
-\texttt{R\_Error} \changed{representa el comando \texttt{error}}:
-conserva el \emph{store} y cambia el modo de \texttt{Ok} a \texttt{Er}.
+La regla \lstinline{R_Skip} conserva el estado inicial.
+Por su parte,
+\lstinline{R_Error} representa el comando \lstinline{error}:
+conserva el \emph{store} y cambia el modo de \lstinline{Ok} a \lstinline{Er}.
 Finalmente,
-\texttt{R\_Assume} \changed{permite una ejecución que conserva el estado únicamente
+\lstinline{R_Assume} permite una ejecución que conserva el estado únicamente
 cuando la expresión se evalúa a un valor distinto de cero.
 Cuando la condición es falsa,
 no existe una derivación de ejecución para ese comando desde ese estado;
-esto no constituye una terminación con error.}
+esto no constituye una terminación con error.
 
 La composición secuencial se divide según el modo de terminación del primer comando:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Seq : #p : stmt -> #q : stmt ->
   #s : state { s._2 == Ok } -> #t : state { t._2 == Ok } -> #u : state ->
   runsto p s t -> runsto q t u ->
@@ -2781,21 +2790,20 @@ La composición secuencial se divide según el modo de terminación del primer c
 \end{lstlisting}
 
 
-La regla \texttt{R\_Seq} \changed{describe el caso en que} \texttt{p} termina \changed{normalmente} en un estado intermedio \texttt{t}
-y la ejecución continúa con \texttt{q} \changed{desde ese estado.
-El estado final \texttt{u} es el resultado de esta segunda ejecución,
-que puede terminar normalmente o con error.}
-\changed{En cambio,
-\texttt{R\_SeqEr} establece que,
-si \texttt{p} termina con error en \texttt{t},
+La regla \lstinline{R_Seq} describe el caso en que \lstinline{p} termina normalmente en un estado intermedio \lstinline{t}
+y la ejecución continúa con \lstinline{q} desde ese estado.
+El estado final \lstinline{u} es el resultado de esta segunda ejecución,
+que puede terminar normalmente o con error.
+En cambio,
+\lstinline{R_SeqEr} establece que,
+si \lstinline{p} termina con error en \lstinline{t},
 la secuencia completa termina en ese mismo estado.
-No se requiere una derivación de la ejecución de \texttt{q},
-ya que el segundo comando no llega a ejecutarse.}
-%\guido{no entiendo la oracion previa}
+No se requiere una derivación de la ejecución de \lstinline{q},
+ya que el segundo comando no llega a ejecutarse.
 
 La elección no determinista posee una regla para cada rama:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_ChoiceL : #p : stmt -> #q : stmt ->
   #s : state { s._2 == Ok } -> #t : state ->
   runsto p s t -> runsto (Choice p q) s t
@@ -2804,12 +2812,14 @@ La elección no determinista posee una regla para cada rama:
   runsto q s t -> runsto (Choice p q) s t
 \end{lstlisting}
 
-Para justificar una transición de \texttt{Choice p q} alcanza con proporcionar una derivación de una de sus ramas.
+Para justificar una transición de \lstinline{Choice p q} alcanza con proporcionar una derivación de una de sus ramas.
 
-Por último, la estrella de Kleene representa una cantidad finita y no determinista de ejecuciones.
-El caso base realiza cero iteraciones, mientras que el caso inductivo agrega una nueva ejecución \texttt{p} a una repetición previa:
+Por último,
+la estrella de Kleene representa una cantidad finita y no determinista de ejecuciones.
+El caso base realiza cero iteraciones,
+mientras que el caso inductivo agrega una nueva ejecución \lstinline{p} a una repetición previa:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Kleene0 : #p : stmt -> #s : state { s._2 == Ok } ->
   runsto (Kleene p) s s
 | R_KleeneS : #p : stmt -> #s : state { s._2 == Ok } -> #t : state ->

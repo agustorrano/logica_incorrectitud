@@ -1,6 +1,8 @@
 module IncSepLogic
 
 open FStar.Classical
+open FStar.FunctionalExtensionality
+module FE = FStar.FunctionalExtensionality
 
 // ============================================================
 // 1. Sintaxis y estados
@@ -17,8 +19,8 @@ type cell =
   | Empty
   | Unknown
 
-type store = var -> value
-type heap = loc -> cell
+type store = var ^-> value
+type heap = loc ^-> cell
 
 let heap_is_complete (h : heap) : prop =
   forall l. ~(Unknown? (h l))
@@ -26,7 +28,7 @@ let heap_is_complete (h : heap) : prop =
 let complete_heap : Type = h : heap { heap_is_complete h }
 
 let initial_heap : complete_heap =
-  fun _ -> Empty
+  FE.on loc (fun _ -> Empty)
 
 type expr =
   | Var : var -> expr
@@ -82,13 +84,19 @@ let rec eval_expr' (s : store) (e : expr) : GTot nat =
 let eval_expr (s : state) (e : expr) 
   : GTot nat = eval_expr' s._1 e
 
-let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : a -> b =
-  fun z -> if z = x then y else f z
+let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : (a ^-> b) =
+  FE.on a (fun z -> if z = x then y else f z)
 
 unfold let state_equiv (s1 s2 : state) : prop =
   (forall x. s1._1 x == s2._1 x) /\
   (forall l. s1._2 l == s2._2 l) /\
   s1._3 == s2._3
+
+let state_equiv_eq (s1 s2 : state)
+  : Lemma (requires (state_equiv s1 s2))
+          (ensures s1 == s2) =
+  FE.extensionality var (fun _ -> value) s1._1 s2._1;
+  FE.extensionality loc (fun _ -> cell) s1._2 s2._2
 
 // ============================================================
 // 2. Modelo y álgebra del heap
@@ -106,20 +114,21 @@ let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
 
 let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
-  fun l -> cell_union (h1 l) (h2 l)
+  FE.on loc (fun l -> cell_union (h1 l) (h2 l))
 
-let empty_heap : heap = fun _ -> Unknown
+let empty_heap : heap =
+  FE.on loc (fun _ -> Unknown)
 
 let singleton_empty_heap (l : loc) : heap =
-  fun l' -> if l' = l then Empty else Unknown
+  FE.on loc (fun l' -> if l' = l then Empty else Unknown)
 
 let singleton_full_heap (l : loc) (v : value) : heap =
-  fun l' -> if l' = l then Full v else Unknown
+  FE.on loc (fun l' -> if l' = l then Full v else Unknown)
 
 let heap_without (h : heap) (l : loc) : heap =
-  fun l' ->
+  FE.on loc (fun l' ->
     if l' = l then Unknown
-    else h l'
+    else h l')
 
 // ============================================================
 // 3. Semántica operacional
@@ -127,12 +136,6 @@ let heap_without (h : heap) (l : loc) : heap =
 
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
-  | R_Ext : #p : stmt -> #s0 : state -> #s1 : state ->
-    runsto p s0 s1 -> s0' : state -> s1' : state ->
-    (squash (state_equiv s0 s0')) ->
-    (squash (state_equiv s1 s1')) ->
-    runsto p s0' s1'
-
   | R_Skip : s : state { s._3 == Ok } -> 
     runsto Skip s s
   
@@ -247,8 +250,6 @@ let rec lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : Lemma (ensures match_except_vars (modifies p) s0._1 s1._1)
           (decreases r)=
   match r with
-  | R_Ext r' _ _ _ _ ->
-    lemma_runsto_modifies r'
   | R_Seq r_p r_q ->
     lemma_runsto_modifies r_p;
     lemma_runsto_modifies r_q
@@ -270,8 +271,6 @@ let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
                   heaps_disjoint hp0 h_fr))
         (decreases r) 
   = match r with
-  | R_Ext r' _ _ _ _ ->
-    lemma_runsto_disjoint h_fr r'
   | R_SeqEr r_p ->
     lemma_runsto_disjoint h_fr r_p
   | R_Seq r_p r_q ->
@@ -298,23 +297,20 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   let s0_fr = (st0, heap_union hp0 h_fr, m0) in
   let s1_fr = (st1, heap_union hp1 h_fr, m1) in
   match r with
-  | R_Ext r' _ _ _ _ ->
-    let r_fr = r_frame r' h_fr #() #() in
-    R_Ext r_fr s0_fr s1_fr () ()
   | R_Skip _ ->
-    R_Ext (R_Skip s0_fr) s0_fr s1_fr () ()
+    R_Skip s0_fr
   | R_Error _ ->
-    R_Ext (R_Error s0_fr) s0_fr s1_fr () ()
+    R_Error s0_fr
   | R_Assign x e s ->
-    R_Ext (R_Assign x e s0_fr) s0_fr s1_fr () ()
+    R_Assign x e s0_fr
   | R_Nondet _ #x v ->
-    R_Ext (R_Nondet s0_fr #x v) s0_fr s1_fr () ()
+    R_Nondet s0_fr #x v
   | R_Assume _ #e _ ->
-    R_Ext (R_Assume s0_fr #e ()) s0_fr s1_fr () ()
+    R_Assume s0_fr #e ()
   | R_SeqEr #p #q r_p ->
     let r_p_fr = r_frame r_p h_fr #() #() in
     let r_seq_er = R_SeqEr #p #q #s0_fr #s1_fr r_p_fr in
-    R_Ext r_seq_er s0_fr s1_fr () ()
+    r_seq_er
   | R_Seq #p #q #s #t r_p r_q ->
     lemma_runsto_disjoint h_fr r_q;
     let r_p_fr = r_frame r_p h_fr #() #() in
@@ -322,41 +318,49 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
     let (st_t, hp_t, m_t) = t in
     let s_mid_fr = (st_t, heap_union hp_t h_fr, m_t) in
     let r_seq = R_Seq #p #q #s0_fr #s_mid_fr #s1_fr r_p_fr r_q_fr in
-    R_Ext r_seq s0_fr s1_fr () ()
+    r_seq
   | R_ChoiceL #p #q r_p ->
     let r_p_fr = r_frame r_p h_fr #() #() in
     let r_choice_l = R_ChoiceL #p #q #s0_fr #s1_fr r_p_fr in
-    R_Ext r_choice_l s0_fr s1_fr () ()
+    r_choice_l
   | R_ChoiceR #p #q r_q ->
     let r_q_fr = r_frame r_q h_fr #() #() in
     let r_choice_r = R_ChoiceR #p #q #s0_fr #s1_fr r_q_fr in
-    R_Ext r_choice_r s0_fr s1_fr () ()
+    r_choice_r
   | R_Kleene0 #p ->
-    R_Ext (R_Kleene0 #p #s0_fr) s0_fr s1_fr () ()
+    R_Kleene0 #p #s0_fr
   | R_KleeneS #p r_seq ->
     let r_seq_fr = r_frame r_seq h_fr #() #() in
     let r_kleene = R_KleeneS #p #s0_fr #s1_fr r_seq_fr in
-    R_Ext r_kleene s0_fr s1_fr () ()
+    r_kleene
   | R_Alloc _ #x l v ->
-    R_Ext (R_Alloc s0_fr #x l v) s0_fr s1_fr () ()
+    state_equiv_eq
+      (override s0_fr._1 x (Loc l), override s0_fr._2 l (Full v), s0_fr._3)
+      s1_fr;
+    R_Alloc s0_fr #x l v
   | R_Free s e l v ->
-    R_Ext (R_Free s0_fr e l v) s0_fr s1_fr () ()
+    state_equiv_eq
+      (s0_fr._1, override s0_fr._2 l Empty, s0_fr._3) s1_fr;
+    R_Free s0_fr e l v
   | R_FreeEr s e l ->
-    R_Ext (R_FreeEr s0_fr e l) s0_fr s1_fr () ()
+    R_FreeEr s0_fr e l
   | R_FreeNull s e ->
-    R_Ext (R_FreeNull s0_fr e) s0_fr s1_fr () ()
+    R_FreeNull s0_fr e
   | R_Load s x e l v ->
-    R_Ext (R_Load s0_fr x e l v) s0_fr s1_fr () ()
+    R_Load s0_fr x e l v
   | R_LoadEr s x e l ->
-    R_Ext (R_LoadEr s0_fr x e l) s0_fr s1_fr () ()
+    R_LoadEr s0_fr x e l
   | R_LoadNull s x e ->
-    R_Ext (R_LoadNull s0_fr x e) s0_fr s1_fr () ()
+    R_LoadNull s0_fr x e
   | R_Store s e1 e2 l v ->
-    R_Ext (R_Store s0_fr e1 e2 l v) s0_fr s1_fr () ()
+    state_equiv_eq
+      (s0_fr._1, override s0_fr._2 l (Full (Nat (eval_expr s0_fr e2))), s0_fr._3)
+      s1_fr;
+    R_Store s0_fr e1 e2 l v
   | R_StoreEr s e1 e2 l ->
-    R_Ext (R_StoreEr s0_fr e1 e2 l) s0_fr s1_fr () ()
+    R_StoreEr s0_fr e1 e2 l
   | R_StoreNull s e1 e2 ->
-    R_Ext (R_StoreNull s0_fr e1 e2) s0_fr s1_fr () ()
+    R_StoreNull s0_fr e1 e2
 
 // ============================================================
 // 5. Lógica de Incorrectitud de Separación
@@ -407,7 +411,7 @@ noeq
 type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
     isl_triple (is_ok pre) (Assign x e) 
-      (is_ok (fun s -> exists x_init. 
+      (is_ok (fun s -> exists (x_init : store). 
         pre (x_init, s._2, s._3) /\ (s._1 x == Nat (eval_expr (x_init, s._2, s._3) e) /\
         (forall y. (y <> x) ==> s._1 y == x_init y))))
   
@@ -584,6 +588,7 @@ let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
+#push-options "--split_queries always"
 let rec soundness
   (p : stmt) (pre : cond) (post : cond)
   (pf : isl_triple pre p post)
@@ -605,8 +610,8 @@ let rec soundness
     assert (pre s0);
     let pf0 = R_Assign x e s0 in
     assert (forall y. override st_init x (Nat (eval_expr s0 e)) y == s1._1 y);
-    let pf1 : runsto (Assign x e) s0 s1 = R_Ext pf0 s0 s1 () () in
-    (|s0, pf1|)
+    state_equiv_eq (override st_init x (Nat (eval_expr s0 e)), hp1, Ok) s1;
+    (|s0, pf0|)
   
   | ISL_Nondet #pre #x -> 
     let (st1, hp1, m) = s1 in
@@ -618,10 +623,8 @@ let rec soundness
     let s0 = (override st1 x v, hp1, Ok) in
     assert (pre s0);
     let pf0 = R_Nondet s0 #x (st1 x) in
-    let pf1 : runsto (Nondet x) s0 s1 =
-      R_Ext pf0 s0 s1 () ()
-    in
-    (|s0, pf1|)
+    state_equiv_eq (override s0._1 x (st1 x), hp1, Ok) s1;
+    (|s0, pf0|)
 
   | ISL_Frame #p_pre #p_cmd #p_post fr pf_p _ ->
     let (st1, hp1, m) = s1 in
@@ -720,11 +723,8 @@ let rec soundness
         let (|s_mid, r_p|) = 
           soundness p (is_ok (variant m')) (variant (m' + 1)) pf_p t in
         let (|s0, r_kleene|) = aux m' s_mid in
-        let s_mid_ok : state = (s_mid._1, s_mid._2, Ok) in
-        let r_kl_ok = R_Ext r_kleene s0 s_mid () () in
-        let r_p_ok = R_Ext r_p s_mid t () () in
         let r_seq = 
-          R_Seq #(Kleene p) #p #s0 #s_mid_ok #t r_kl_ok r_p_ok in
+          R_Seq #(Kleene p) #p #s0 #s_mid #t r_kleene r_p in
         let r = R_KleeneS #p #s0 #t r_seq in
         (|s0, r|)
     in
@@ -763,8 +763,8 @@ let rec soundness
     let st0 = override st1 x x_old in
     let hp0 = override hp1 l Unknown in
     let s0 : state = (st0, hp0, Ok) in
-    let r_alloc = R_Alloc s0 #x l v #() in
-    let r = R_Ext r_alloc s0 s1 () () in
+    let r = R_Alloc s0 #x l v #() in
+    state_equiv_eq (override st0 x (Loc l), override hp0 l (Full v), Ok) s1;
     assert pre s0;
     (|s0, r|)
 
@@ -787,8 +787,8 @@ let rec soundness
     let st0 = override st1 x x_old in
     let hp0 = override hp1 l Empty in
     let s0 : state = (st0, hp0, Ok) in
-    let r_alloc = R_Alloc s0 #x l v in
-    let r = R_Ext r_alloc s0 s1 () () in
+    let r = R_Alloc s0 #x l v in
+    state_equiv_eq (override st0 x (Loc l), override hp0 l (Full v), Ok) s1;
     (|s0, r|)
 
   | ISL_Free #pre e -> 
@@ -801,8 +801,8 @@ let rec soundness
     let st0 = st1 in
     let hp0 = override hp1 l (Full v) in
     let s0 : state = (st0, hp0, Ok) in
-    let r_free = R_Free s0 e l v in
-    let r = R_Ext r_free s0 s1 () () in
+    let r = R_Free s0 e l v in
+    state_equiv_eq (st0, override hp0 l Empty, Ok) s1;
     (|s0, r|)
 
   | ISL_FreeEr #pre #e ->
@@ -841,9 +841,9 @@ let rec soundness
     let hp0 = hp1 in
     let s0 : state = (st0, hp0, Ok) in
     Classical.exists_intro (fun v_i -> points_to l v_i s0) v;
-    let r_load = R_Load s0 x e l v in
+    let r = R_Load s0 x e l v in
     let st1' = override st0 x v in
-    let r = R_Ext r_load s0 s1 () () in
+    state_equiv_eq (st1', hp0, Ok) s1;
     (|s0, r|)
 
   | ISL_LoadEr #pre #x #e ->
@@ -874,9 +874,9 @@ let rec soundness
     let s0 = (st0, hp0, Ok) in
     Classical.exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
     Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
-    let r_store = R_Store s0 e1 e2 l v_old in
+    let r = R_Store s0 e1 e2 l v_old in
     let hp1' = override hp0 l (Full (Nat (eval_expr s0 e2))) in
-    let r = R_Ext r_store s0 s1 () () in
+    state_equiv_eq (st0, hp1', Ok) s1;
     (|s0, r|)
 
   | ISL_StoreEr #pre e1 e2 ->
@@ -891,6 +891,8 @@ let rec soundness
     let s0 = (st, hp, Ok) in
     let r = R_StoreNull s0 e1 e2 in
     (|s0, r|)
+
+#pop-options
 
 // ============================================================
 // 7. Footprints
@@ -995,12 +997,6 @@ type footprint : stmt -> state -> state -> Type0 =
   | F_StoreNull : st : store -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr' st e1 == 0)) ->
     footprint (Store e1 e2) (st, empty_heap, Ok) (st, empty_heap, Er)
-  
-  | F_Ext : p : stmt -> s0 : state -> s1 : state -> footprint p s0 s1 ->
-    s0' : state -> s1' : state -> 
-    squash (state_equiv s0 s0') ->
-    squash (state_equiv s1 s1') ->
-    footprint p s0' s1'
 
 // ============================================================
 // 8. Soundness de footprints
@@ -1038,8 +1034,8 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     let s_mid_q = (stm, heap_union (heap_union h_common h_q) h_p, Ok) in
     let s_final = (st1, heap_union h1 h_p, m1) in
 
-    let r_q_aligned = R_Ext r_q_framed s_mid_p s_final () () in
-    R_Seq #p #q #(st0, heap_union h0 h_q, Ok) #s_mid_p #s_final r_p_framed r_q_aligned
+    state_equiv_eq s_mid_q s_mid_p;
+    R_Seq #p #q #(st0, heap_union h0 h_q, Ok) #s_mid_p #s_final r_p_framed r_q_framed
   
   | F_SeqEr p q s t f_p ->
     let r_p = footprint_sound p s t f_p in
@@ -1064,19 +1060,22 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     let s0 = (st, empty_heap, Ok) in
     let s1 = (override st x (Loc l), singleton_full_heap l v, Ok) in
     let r = R_Alloc s0 #x l v in
-    R_Ext r s0 s1 () ()
+    state_equiv_eq (override st x (Loc l), override s0._2 l (Full v), Ok) s1;
+    r
 
   | F_AllocReuse st x l v ->
     let s0 = (st, singleton_empty_heap l, Ok) in
     let s1 = (override st x (Loc l), singleton_full_heap l v, Ok) in
     let r = R_Alloc s0 #x l v in
-    R_Ext r s0 s1 () ()
+    state_equiv_eq (override st x (Loc l), override s0._2 l (Full v), Ok) s1;
+    r
 
   | F_Free st e l v ->
     let s0 = (st, singleton_full_heap l v, Ok) in
     let s1 = (st, override (singleton_full_heap l v) l Empty, Ok) in
     let r = R_Free s0 e l v in
-    R_Ext r s0 (st, singleton_empty_heap l, Ok) () ()
+    state_equiv_eq s1 (st, singleton_empty_heap l, Ok);
+    r
 
   | F_FreeEr st e l ->
     R_FreeEr (st, singleton_empty_heap l, Ok) e l
@@ -1097,17 +1096,14 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     let s0 = (st, singleton_full_heap l v, Ok) in
     let s1 = (st, override (singleton_full_heap l v) l (Full (Nat (eval_expr' st e2))), Ok) in
     let r = R_Store s0 e1 e2 l v in
-    R_Ext r s0 (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok) () ()
+    state_equiv_eq s1 (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok);
+    r
 
   | F_StoreEr st e1 e2 l ->
     R_StoreEr (st, singleton_empty_heap l, Ok) e1 e2 l
 
   | F_StoreNull st e1 e2 ->
     R_StoreNull (st, empty_heap, Ok) e1 e2
-  
-  | F_Ext p s0 s1 fp s0' s1' e0 e1 ->
-    let r = footprint_sound p s0 s1 fp in
-    R_Ext r s0' s1' e0 e1
 
 // ============================================================
 // 9. Clausura por marcos de footprints
@@ -1120,37 +1116,21 @@ type framed_footprint : stmt -> state -> state -> Type0 =
     d0 : squash (heaps_disjoint s0._2 h_fr) ->
     d1 : squash (heaps_disjoint s1._2 h_fr) ->
     framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3) (s1._1, heap_union s1._2 h_fr, s1._3)
-  
-  | FF_Ext : p : stmt -> s0 : state -> s1 : state ->
-    framed_footprint p s0 s1 ->
-    s0' : state -> s1' : state ->
-    squash (state_equiv s0 s0') -> squash (state_equiv s1 s1') ->
-    framed_footprint p s0' s1'
 
-let rec framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) (ff : framed_footprint p s0 s1)
+let framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases ff) =
   match ff with
   | FF_Frame p s0 s1 h_fr f_p _ _ ->
     let r_p = footprint_sound p s0 s1 f_p in
     r_frame r_p h_fr #() #()
-  
-  | FF_Ext p s0 s1 f_p s0' s1' _ _ ->
-    let r_p = framed_footprint_sound p s0 s1 f_p in
-    R_Ext r_p s0' s1' _ _
 
 // ============================================================
 // 10. Lemas auxiliares para cross-split y descomposición
 // ============================================================
 
-let state_equiv_preserves_mode (s1 s2 : state) (#_ : squash (state_equiv s1 s2))
-  : Lemma (ensures s1._3 == s2._3) = ()
-
-let rec footprint_starts_ok (#p : stmt) (#s0 #s1 : state) (fp : footprint p s0 s1)
-  : Lemma (ensures s0._3 == Ok) (decreases fp) =
+let footprint_starts_ok (#p : stmt) (#s0 #s1 : state) (fp : footprint p s0 s1)
+  : Lemma (ensures s0._3 == Ok) =
   match fp with
-  | F_Ext _ s0 _ fp s0' _ e0 _ ->
-    footprint_starts_ok fp;
-    state_equiv_preserves_mode s0 s0' #e0
   | _ -> ()
 
 let cell_merge (c1 c2 : cell) : cell =
@@ -1159,7 +1139,7 @@ let cell_merge (c1 c2 : cell) : cell =
   | _ -> c1
 
 let heap_merge (h1 h2 : heap) : heap =
-  fun l -> cell_merge (h1 l) (h2 l)
+  FE.on loc (fun l -> cell_merge (h1 l) (h2 l))
 
 let cell_meet (c1 c2 : cell) : cell =
   match c1, c2 with
@@ -1168,7 +1148,7 @@ let cell_meet (c1 c2 : cell) : cell =
   | _, _ -> c1
 
 let cross_heap (h1 h2 : heap) : heap =
-  fun l -> cell_meet (h1 l) (h2 l)
+  FE.on loc (fun l -> cell_meet (h1 l) (h2 l))
 
 let cell_cross_split (c1 c2 c3 c4 : cell)
   : Lemma (requires cell_disjoint c1 c2 /\
@@ -1262,7 +1242,7 @@ type frame_parts (p : stmt) (s0 : state) (s1 : state) = {
     (local_end._1, heap_union local_end._2 frame_heap, local_end._3) s1)
 }
 
-let rec flatten_framed (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
+let flatten_framed (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (frame_parts p s0 s1) (decreases ff) =
   match ff with
   | FF_Frame _ sl0 sl1 h_fr fp d0 d1 ->
@@ -1274,22 +1254,7 @@ let rec flatten_framed (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0
       rebuild_start = (); rebuild_end = ()
     }
 
-  | FF_Ext _ sb0 sb1 ff_base s0' s1' e0 e1 ->
-    let parts = flatten_framed ff_base in
-    let sl0 = parts.local_start in
-    let sl1 = parts.local_end in
-    let h_fr = parts.frame_heap in
-    let sf0 = (sl0._1, heap_union sl0._2 h_fr, sl0._3) in
-    let sf1 = (sl1._1, heap_union sl1._2 h_fr, sl1._3) in
-    {
-      local_start = sl0; local_end = sl1;
-      frame_heap = h_fr; local_footprint = parts.local_footprint;
-      frame_disjoint_start = parts.frame_disjoint_start;
-      frame_disjoint_end = parts.frame_disjoint_end;
-      rebuild_start = (); rebuild_end = ()
-    }
-
-let rec map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
+let map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
   (transform : (#sl0 : state -> #sl1 : state -> footprint p sl0 sl1 -> GTot (footprint q sl0 sl1)))
   (ff : framed_footprint p s0 s1)
   : GTot (framed_footprint q s0 s1) (decreases ff) =
@@ -1298,11 +1263,7 @@ let rec map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
     let fp' = transform fp in
     FF_Frame q s0_local s1_local h_fr fp' d0 d1
 
-  | FF_Ext _ s0_base s1_base ff_base s0' s1' e0 e1 ->
-    let ff_base' = map_framed_footprint transform ff_base in
-    FF_Ext q s0_base s1_base ff_base' s0' s1' e0 e1
-
-let rec framed_seq_er (#p #q : stmt) (#s0 : state) (#s1 : state { s1._3 == Er })
+let framed_seq_er (#p #q : stmt) (#s0 : state) (#s1 : state { s1._3 == Er })
   (ff  : framed_footprint p s0 s1)
   : GTot (framed_footprint (Seq p q) s0 s1) (decreases ff) =
   match ff with
@@ -1311,29 +1272,22 @@ let rec framed_seq_er (#p #q : stmt) (#s0 : state) (#s1 : state { s1._3 == Er })
     let fp_seq = F_SeqEr p q s0_local s1_local fp_p in
     FF_Frame (Seq p q) s0_local s1_local h_fr fp_seq d0 d1
 
-  | FF_Ext _ s0_base s1_base ff_base s0' s1' e0 e1 ->
-    state_equiv_preserves_mode s1_base s1' #e1;
-    let ff_seq_base = framed_seq_er #p #q #s0_base #s1_base ff_base in
-    FF_Ext (Seq p q) s0_base s1_base ff_seq_base s0' s1' e0 e1
-
 // ============================================================
 // 11. Completitud de la descomposición en huellas
 // ============================================================
 
+#push-options "--split_queries always"
 let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) (decreases r) =
   match r with
-  | R_Ext #p #s0 #s1 r_base s0' s1' eq0 eq1 -> 
-    let ff = runsto_decompose r_base in
-    FF_Ext p s0 s1 ff s0' s1' eq0 eq1
-  
   | R_Skip s ->
     let st = s._1 in
     let h = s._2 in
     let s_local = (st, empty_heap, Ok) in
     let s_framed = (st, heap_union empty_heap h, Ok) in
     let ff = FF_Frame Skip s_local s_local h (F_Skip st) () () in
-    FF_Ext Skip s_framed s_framed ff s s () ()
+    state_equiv_eq s_framed s;
+    ff
 
   | R_Error s ->
     let st = s._1 in
@@ -1343,7 +1297,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_framed = (st, heap_union empty_heap h, Ok) in
     let s1_framed = (st, heap_union empty_heap h, Er) in
     let ff = FF_Frame Error s0_local s1_local h (F_Error st) () () in
-    FF_Ext Error s0_framed s1_framed ff s (st, h, Er) () ()
+    state_equiv_eq s0_framed s;
+    state_equiv_eq s1_framed (st, h, Er);
+    ff
   
   | R_Assign x e s ->
     let st = s._1 in
@@ -1354,7 +1310,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_framed = (st, heap_union empty_heap h, Ok) in
     let s1_framed = (st1, heap_union empty_heap h, Ok) in
     let ff = FF_Frame (Assign x e) s0_local s1_local h (F_Assign st x e) () () in
-    FF_Ext (Assign x e) s0_framed s1_framed ff s (st1, h, Ok) () ()
+    state_equiv_eq s0_framed s;
+    state_equiv_eq s1_framed (st1, h, Ok);
+    ff
   
   | R_Nondet s #x v ->
     let st = s._1 in
@@ -1365,7 +1323,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_framed = (st, heap_union empty_heap h, Ok) in
     let s1_framed = (st1, heap_union empty_heap h, Ok) in
     let ff = FF_Frame (Nondet x) s0_local s1_local h (F_Nondet st x v) () () in
-    FF_Ext (Nondet x) s0_framed s1_framed ff s (st1, h, Ok) () ()
+    state_equiv_eq s0_framed s;
+    state_equiv_eq s1_framed (st1, h, Ok);
+    ff
   
   | R_Assume s #e _ ->
     let st = s._1 in
@@ -1373,7 +1333,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s_local = (st, empty_heap, Ok) in
     let s_framed = (st, heap_union empty_heap h, Ok) in
     let ff = FF_Frame (Assume e) s_local s_local h (F_Assume st e) () () in
-    FF_Ext (Assume e) s_framed s_framed ff s s () ()
+    state_equiv_eq s_framed s;
+    ff
   
   | R_SeqEr #p #q #s #t r_p ->
     let ff_p = runsto_decompose r_p in
@@ -1412,17 +1373,21 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
           let p1_aligned = (stm, heap_union h_common h_p, Ok) in
           let q0_aligned = (stm, heap_union h_common h_q, Ok) in
           let q1_aligned = (st1, h1, m1) in
-          let fp_p_aligned = F_Ext p p0 p1 fp_p p0_aligned p1_aligned () () in
-          let fp_q_aligned = F_Ext q q0 q1 fp_q q0_aligned q1_aligned () () in
+          state_equiv_eq p0 p0_aligned;
+          state_equiv_eq p1 p1_aligned;
+          state_equiv_eq q0 q0_aligned;
+          state_equiv_eq q1 q1_aligned;
           let seq0_local = (st0, heap_union h0 h_q, Ok) in
           let seq1_local = (st1, heap_union h1 h_p, m1) in
-          let fp_seq = F_Seq p q st0 stm st1 h_common h_p h_q h0 h1 m1 fp_p_aligned fp_q_aligned in
+          let fp_seq = F_Seq p q st0 stm st1 h_common h_p h_q h0 h1 m1 fp_p fp_q in
           let seq0_framed = (st0, heap_union (heap_union h0 h_q) h_ext, Ok) in
           let seq1_framed = (st1, heap_union (heap_union h1 h_p) h_ext, m1) in
           let ff_seq = FF_Frame (Seq p q) seq0_local seq1_local h_ext fp_seq () () in
           let p0_framed = (st0, heap_union h0 fr_p, Ok) in
           let q1_framed = (st1, heap_union h1 fr_q, m1) in
-          FF_Ext (Seq p q) seq0_framed seq1_framed ff_seq s u () ()
+          state_equiv_eq seq0_framed s;
+          state_equiv_eq seq1_framed u;
+          ff_seq
   
   | R_ChoiceL #p #q r_p ->
     let ff_p = runsto_decompose r_p in
@@ -1442,7 +1407,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s_local = (st, empty_heap, Ok) in
     let s_framed = (st, heap_union empty_heap h, Ok) in
     let ff = FF_Frame (Kleene p) s_local s_local h (F_Kleene0 st p) () () in
-    FF_Ext (Kleene p) s_framed s_framed ff s s () ()
+    state_equiv_eq s_framed s;
+    ff
   
   | R_KleeneS #p #s #t r_seq ->
     let ff_seq = runsto_decompose r_seq in
@@ -1463,7 +1429,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
       let s1_framed = (st1, heap_union (singleton_full_heap l v) h_fr, Ok) in
       let fp_alloc = F_AllocFresh st x l v in
       let ff = FF_Frame (Alloc x) s0_local s1_local h_fr fp_alloc () () in
-      FF_Ext (Alloc x) s0_framed s1_framed ff s0 s1 () ()
+      state_equiv_eq s0_framed s0;
+      state_equiv_eq s1_framed s1;
+      ff
     else (
       let s0_local = (st, singleton_empty_heap l, Ok) in
       let s1_local = (st1, singleton_full_heap l v, Ok) in
@@ -1471,7 +1439,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
       let s1_framed = (st1, heap_union (singleton_full_heap l v) h_fr, Ok) in
       let fp_alloc = F_AllocReuse st x l v in
       let ff = FF_Frame (Alloc x) s0_local s1_local h_fr fp_alloc () () in
-      FF_Ext (Alloc x) s0_framed s1_framed ff s0 s1 () ()
+      state_equiv_eq s0_framed s0;
+      state_equiv_eq s1_framed s1;
+      ff
     )
   
   | R_Free s e l v ->
@@ -1484,7 +1454,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
     let fp_free = F_Free st e l v in
     let ff = FF_Frame (Free e) s0_local s1_local h_fr fp_free () () in
-    FF_Ext (Free e) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_FreeEr s e l ->
     let st = s._1 in
@@ -1496,7 +1468,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Er) in
     let f_free = F_FreeEr st e l #() in
     let ff = FF_Frame (Free e) s0_local s1_local h_fr f_free () () in
-    FF_Ext (Free e) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_FreeNull s e ->
     let st = s._1 in
@@ -1507,7 +1481,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union empty_heap h, Er) in
     let f_free = F_FreeNull st e #() in
     let ff = FF_Frame (Free e) s0_local s1_local h f_free () () in
-    FF_Ext (Free e) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_Load s x e l v ->
     let st = s._1 in
@@ -1520,7 +1496,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st1, heap_union (singleton_full_heap l v) h_fr, Ok) in
     let fp_load = F_Load st x e l v #() in
     let ff = FF_Frame (Load x e) s0_local s1_local h_fr fp_load () () in
-    FF_Ext (Load x e) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_LoadEr s x e l ->
     let st = s._1 in
@@ -1532,7 +1510,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Er) in
     let f_load = F_LoadEr st x e l #() in
     let ff = FF_Frame (Load x e) s0_local s1_local h_fr f_load () () in
-    FF_Ext (Load x e) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_LoadNull s x e ->
     let st = s._1 in
@@ -1543,7 +1523,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union empty_heap h, Er) in
     let f_load = F_LoadNull st x e #() in
     let ff = FF_Frame (Load x e) s0_local s1_local h f_load () () in
-    FF_Ext (Load x e) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_Store s e1 e2 l v ->
     let st = s._1 in
@@ -1556,7 +1538,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union h1 h_fr, Ok) in
     let fp_store = F_Store st e1 e2 l v in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h_fr fp_store () () in
-    FF_Ext (Store e1 e2) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
 
   | R_StoreEr s e1 e2 l ->
     let st = s._1 in
@@ -1568,7 +1552,9 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Er) in
     let f_store = F_StoreEr st e1 e2 l #() in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h_fr f_store () () in
-    FF_Ext (Store e1 e2) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
   
   | R_StoreNull s e1 e2 ->
     let st = s._1 in
@@ -1579,7 +1565,11 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s1_framed = (st, heap_union empty_heap h, Er) in
     let f_store = F_StoreNull st e1 e2 #() in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h f_store () () in
-    FF_Ext (Store e1 e2) s0_framed s1_framed ff s0 s1 () ()
+    state_equiv_eq s0_framed s0;
+    state_equiv_eq s1_framed s1;
+    ff
+
+#pop-options
  
 let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) =

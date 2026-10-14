@@ -366,6 +366,35 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
 // 5. Lógica de Incorrectitud de Separación
 // ============================================================
 
+let rec fv_expr (e : expr) (x : var) : prop =
+  match e with
+  | Var y -> x = y
+  | Const _ -> False
+  | Plus e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | Minus e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | Times e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | Eq e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | Lt e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | Gt e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+
+let rec fv_stmt (p : stmt) (x: var) : prop =
+  match p with
+  | Assign y e -> x = y \/ fv_expr e x
+  | Nondet y -> x = y
+  | Assume e -> fv_expr e x
+  | Seq p1 p2 -> fv_stmt p1 x \/ fv_stmt p2 x
+  | Choice p1 p2 -> fv_stmt p1 x \/ fv_stmt p2 x
+  | Kleene p1 -> fv_stmt p1 x
+  | Alloc y -> x = y
+  | Free e -> fv_expr e x
+  | Load y e -> x = y \/ fv_expr e x
+  | Store e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | _ -> False
+
+let exists_var (x : var) (c : cond) : cond =
+  fun s -> exists v.
+    c (override s._1 x v, s._2, s._3)
+
 let points_to_empty (l : loc) : cond =
   fun (st, hp, m) -> 
     l =!= 0 /\
@@ -459,6 +488,11 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
     step_proof : (n : nat ->
       isl_triple (is_ok (variant n)) p (variant (n + 1))) ->
     isl_triple (kleene_pre variant) (Kleene p) (kleene_post variant)
+  
+  | ISL_Exists : #p : stmt -> #pre : cond -> #post : cond -> x : var ->
+    isl_triple (is_ok pre) p post ->
+    squash(~(fv_stmt p x)) ->
+    isl_triple (is_ok (exists_var x pre)) p (exists_var x post)
 
   | ISL_Consequence : #pre : cond -> #p : stmt ->
     #post : cond -> pre' : cond -> post' : cond ->
@@ -578,6 +612,91 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
 // 6. Soundness de la ISL
 // ============================================================
 
+let set_var (s : state) (x : var) (v : value) : state =
+  (override s._1 x v, s._2, s._3)
+
+let rec eval_expr_fresh (s : state) (e : expr) (x : var) (v : value)
+  : Lemma (requires (~(fv_expr e x)))
+          (ensures (eval_expr (set_var s x v) e == eval_expr s e))
+          (decreases e) =
+  match e with
+  | Var _ -> ()
+  | Const _ -> ()
+  | Plus e1 e2 | Minus e1 e2 | Times e1 e2
+  | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 ->
+    eval_expr_fresh s e1 x v;
+    eval_expr_fresh s e2 x v
+
+let rec r_fresh (#p : stmt) (#s0 #s1 : state)
+  (r : runsto p s0 s1) (x : var) (v : value)
+  (#_ : squash (~(fv_stmt p x)))
+  : GTot (runsto p (set_var s0 x v) (set_var s1 x v))
+  (decreases r) =
+  let s0_f = set_var s0 x v in
+  let s1_f = set_var s1 x v in
+  match r with
+  | R_Skip _ -> R_Skip s0_f
+  | R_Error _ -> R_Error s0_f
+  | R_Assign y e s ->
+    eval_expr_fresh s e x v;
+    state_equiv_eq (override s0_f._1 y (Nat (eval_expr s0_f e)), s0_f._2, s0_f._3) s1_f;
+    R_Assign y e s0_f
+  | R_Nondet _ #y w ->
+    state_equiv_eq (override s0_f._1 y w, s0_f._2, s0_f._3) s1_f;
+    R_Nondet s0_f #y w
+  | R_Assume s #e _ ->
+    eval_expr_fresh s e x v;
+    R_Assume s0_f #e ()
+  | R_SeqEr #p #q r_p ->
+    R_SeqEr #p #q #s0_f #s1_f (r_fresh r_p x v #())
+  | R_Seq #p #q #s #t r_p r_q ->
+    let r_p_f = r_fresh r_p x v #() in
+    let r_q_f = r_fresh r_q x v #() in
+    R_Seq #p #q #s0_f #(set_var t x v) #s1_f r_p_f r_q_f
+  | R_ChoiceL #p #q r_p ->
+    R_ChoiceL #p #q #s0_f #s1_f (r_fresh r_p x v #())
+  | R_ChoiceR #p #q r_q ->
+    R_ChoiceR #p #q #s0_f #s1_f (r_fresh r_q x v #())
+  | R_Kleene0 #p ->
+    R_Kleene0 #p #s0_f
+  | R_KleeneS #p r_seq ->
+    R_KleeneS #p #s0_f #s1_f (r_fresh r_seq x v #())
+  | R_Alloc _ #y l w ->
+    state_equiv_eq
+      (override s0_f._1 y (Loc l),
+      override s0_f._2 l (Full w), s0_f._3)
+      s1_f;
+    R_Alloc s0_f #y l w
+  | R_Free s e l w ->
+    eval_expr_fresh s e x v;
+    R_Free s0_f e l w
+  | R_FreeEr s e l ->
+    eval_expr_fresh s e x v;
+    R_FreeEr s0_f e l
+  | R_FreeNull s e ->
+    eval_expr_fresh s e x v;
+    R_FreeNull s0_f e
+  | R_Load s y e l w ->
+    eval_expr_fresh s e x v;
+    state_equiv_eq (override s0_f._1 y w, s0_f._2, s0_f._3) s1_f;
+    R_Load s0_f y e l w
+  | R_LoadEr s y e l ->
+    eval_expr_fresh s e x v;
+    R_LoadEr s0_f y e l
+  | R_LoadNull s y e ->
+    eval_expr_fresh s e x v;
+    R_LoadNull s0_f y e
+  | R_Store s e1 e2 l w ->
+    eval_expr_fresh s e1 x v;
+    eval_expr_fresh s e2 x v;
+    R_Store s0_f e1 e2 l w
+  | R_StoreEr s e1 e2 l ->
+    eval_expr_fresh s e1 x v;
+    R_StoreEr s0_f e1 e2 l
+  | R_StoreNull s e1 e2 ->
+    eval_expr_fresh s e1 x v;
+    R_StoreNull s0_f e1 e2
+
 let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
   Lemma (requires (exists (x : a) (y : b). p x y))
         (ensures (exists (tup : a & b). p (fst tup) (snd tup))) = 
@@ -588,7 +707,6 @@ let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
-#push-options "--split_queries always"
 let rec soundness
   (p : stmt) (pre : cond) (post : cond)
   (pf : isl_triple pre p post)
@@ -729,6 +847,22 @@ let rec soundness
         (|s0, r|)
     in
     aux n s1
+  
+  | ISL_Exists #p #pre #post x pf_p _ ->
+    let v =
+      FStar.IndefiniteDescription.indefinite_description_ghost
+        value (fun v -> post (set_var s1 x v))
+    in
+    let s1_v = set_var s1 x v in
+    let (|s0_v, r|) = soundness p (is_ok pre) post pf_p s1_v in
+    let orig = s1._1 x in
+    let s0 = set_var s0_v x orig in
+    let r' = r_fresh r x orig #() in
+    state_equiv_eq (set_var s1_v x orig) s1;
+    state_equiv_eq (set_var s0 x (s0_v._1 x)) s0_v;
+    Classical.exists_intro
+      (fun w -> pre (set_var s0 x w)) (s0_v._1 x);
+    (|s0, r'|)
   
   | ISL_Consequence #pre #p #post pre' post' pf_p _ _ ->
     let (|s0, r|) = soundness p (is_ok pre) post pf_p s1 in
@@ -891,8 +1025,6 @@ let rec soundness
     let s0 = (st, hp, Ok) in
     let r = R_StoreNull s0 e1 e2 in
     (|s0, r|)
-
-#pop-options
 
 // ============================================================
 // 7. Footprints
@@ -1276,7 +1408,6 @@ let framed_seq_er (#p #q : stmt) (#s0 : state) (#s1 : state { s1._3 == Er })
 // 11. Completitud de la descomposición en huellas
 // ============================================================
 
-#push-options "--split_queries always"
 let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) (decreases r) =
   match r with
@@ -1568,8 +1699,6 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     state_equiv_eq s0_framed s0;
     state_equiv_eq s1_framed s1;
     ff
-
-#pop-options
  
 let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) =

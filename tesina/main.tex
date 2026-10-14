@@ -3,6 +3,7 @@
 \input{preamble.tex}
 
 \usepackage{combelow}
+\usepackage{stmaryrd}
 
 % Comentarios
 \usepackage{xcolor}
@@ -159,6 +160,7 @@ Esta demostración puede comporbarse sin ejecutar el programa ni depender de que
 La versión original de la Lógica de Incorrectitud (IL) presentada por O'Hearn es análoga a la HL clásica,
 ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
 pero sin un \emph{heap}.
+\guido{al final no estaba mal esto?}
 Por lo tanto, no permite operaciones sobre memoria dinámica y estructuras de datos mutables.
 En el ámbito de la correctitud,
 la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
@@ -295,9 +297,9 @@ Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop
 donde $\mathsf{Prop}$ representa el universo de las proposiciones lógicas.
 Por lo tanto, para cada estado $\sigma$, la expresión $p(\sigma)$ afirma una propiedad que puede ser verdadera o falsa.
 En particular, una aserción puede identificarse con el conjunto de estados que la satisfacen:
-$$[\![p]\!] = \{\sigma \in \Sigma \mid p(\sigma)\}$$
+$$\llbracket p \rrbracket = \{\sigma \in \Sigma \mid p(\sigma)\}$$
 En lo que sigue se utilizará esta identificación de manera implícita.
-Por lo tanto, las expresiones $\sigma \in p$ y $p(\sigma)$ se considerarán equivalentes.
+Por lo tanto, las expresiones $\sigma \in \llbracket p \rrbracket$ y $p(\sigma)$ se considerarán equivalentes.
 
 \subsection*{Relaciones entre estados}
 Además de describir conjuntos de estados, es necesario expresar cómo un estado puede transformarse en otro
@@ -2595,6 +2597,8 @@ let override (#a : eqtype) (#b : Type)
   (f : a -> b) (x : a) (y : b) : a ^-> b =
   FE.on a (fun z -> if z = x then y else f z)
 \end{lstlisting}
+\guido{y si fijamos a/b a var y value? si no, hay que explicar eqtype. En el codigo
+puede ser general, aca puede ser monomorfica}
 La expresión \lstinline|override f x y| produce una nueva función que devuelve \lstinline|y| para el argumento \lstinline|x|
 y conserva el comportamiento de \lstinline|f| para todos los demás argumentos.
 La operación \lstinline|FE.on| permite construir el resultado con la representación extensional requerida.
@@ -2620,7 +2624,8 @@ mientras que \lstinline|Er| indica que se ha alcanzado un estado de error.
 Esta distinción mecaniza los dos canales de salida \emph{ok} y \emph{er}.
 En la presentación abstracta del \autoref{cap:conceptos-previos},
 la condición de salida $\epsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
-En esta formalización se incorpora directamente en el estado.
+En esta formalización se incorpora directamente en el estado
+\guido{y la semántica no permite que un estado de error avance en su ejecucion?}.
 De esta manera,
 una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
 
@@ -2725,6 +2730,7 @@ let state_equiv_eq (s1 s2 : state)
           (ensures s1 == s2) =
   FE.extensionality var (fun _ -> value) s1._1 s2._1
 \end{lstlisting}
+\guido{veo que \texttt{R\_Ext} ya no esta en el codigo, bien}
 
 \changed{La llamada a \lstinline|FE.extensionality| demustra la igualdad de los \emph{stores} a partir de su coincidencia punto a punto.
 Junto con la igualdad de los modos de terminación,
@@ -2745,6 +2751,7 @@ se evalúa la expresión en el estado inicial y se actualiza el valor de la vari
   #x : var -> #e : expr ->
   runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
 \end{lstlisting}
+\guido{ayudaria definir un \lstinline{ok_state} para no repetir el refinamiento?}
 
 Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
 Toma un estado de éxito arbitrario \lstinline|s|,
@@ -2769,6 +2776,8 @@ el valor \lstinline|v| no se calcula computacionalmente,
 sino que se recibe como un parámetro lógico que el sistema deductivo provee.
 Esto le otorga al verificador la capacidad de instanciar \lstinline|v| libremente con cualquier valor necesario
 para explorar una traza que conduzca a un error.
+\guido{qué verificador? todavía no hablamos de eso.
+Yo diría que esto permite generar ejecuciones eligiendo v arbitrariamente}
 
 Representamos la terminación normal,
 de error y filtrado de caminos de la siguiente manera:
@@ -2846,6 +2855,9 @@ mientras que el caso inductivo agrega una nueva ejecución \lstinline|p| a una r
   runsto (Seq (Kleene p) p) s t ->
   runsto (Kleene p) s t
 \end{lstlisting}
+\guido{alguna razon aca para anidar el Kleene p a la izquierda en vez de a la derecha?
+son lo mismo, pero a veces uno es mas facil de trabajar que el otro. Aca posiblemente
+esta forma sea mas comoda}
 
 \section{La IL como tipo inductivo}
 \label{sec:il-tipoind}
@@ -2904,6 +2916,8 @@ En primer lugar, observamos las instrucciones más simples de nuestro lenguaje:
     (is_ok (fun s -> pre s /\ eval_expr s e =!= 0))
 \end{lstlisting}
 
+\guido{Mostrá la regla de Consequence}
+
 La regla \lstinline|I_Skip| conserva la aserción.
 Por el contrario,
 la regla \lstinline|I_Error| modela la interrupción del flujo normal.
@@ -2956,7 +2970,8 @@ La composición secuencial demuestra el poder composicional de manejar ambos flu
 
 La postcondición reúne dos clases de resultados.
 \lstinline|post s| contiene los estados obtenidos después de ejecutar tanto \lstinline|p| como \lstinline|q|.
-La segunda disyunción contiene los estados de error producidos durante \lstinline|p|,
+La segunda disyunción \guido{el segundo disjunto, la disjunción es la expresión entera}
+contiene los estados de error producidos durante \lstinline|p|,
 en los cuales \lstinline|q| no se ejecuta.
 Cuando \lstinline|p| finaliza normalmente,
 el estado intermedio satisface \lstinline|mid| y puede utilizarse como presunción de \lstinline|q|.
@@ -3008,6 +3023,10 @@ la formalización incluye una regla paramétrica basada en una familia de aserci
 La premisa demuestra que cada estado perteneciente a \lstinline|variant (n + 1)|
 puede reconstruirse a partir de un estado perteneciente a \lstinline|variant n|.
 Repitiendo este argumento es posible obtener una traza finita que comienza en \lstinline|variant 0|.
+\guido{Acá parece que la estas explicando desde cero, pero ya lo explicamos (mas o menos)
+en 2.3 cuando se introduce IL. Lo ideal acá es que expliques como se escriben esas reglas
+como tipo inductivo y si tomaste decisiones interesantes (e.g. usar el xinit en asignacion).
+No hay que explicar las reglas en sí mismas, eso ya lo hicimos.}
 
 Como se observó en el Lema~\ref{lem:prop-pi},
 la postimagen preserva uniones.

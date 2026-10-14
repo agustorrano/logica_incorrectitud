@@ -68,37 +68,42 @@
 \usepackage{subfig}
 % \usepackage{subcaption}
 
-% Code c++
+% F* code
 \usepackage{listings}
 \usepackage{xcolor}
 \renewcommand{\lstlistingname}{Código}
 
-\definecolor{fstarblue}{RGB}{0,92,153}
-\definecolor{fstarpurple}{RGB}{126,47,142}
-\definecolor{fstargreen}{RGB}{40,120,70}
-\definecolor{fstargray}{RGB}{110,110,110}
-\definecolor{fstarred}{RGB}{170,50,50}
+\definecolor{fstarnavy}{HTML}{254B6E}
+\definecolor{fstargreen}{HTML}{356B4A}
+\definecolor{fstargray}{HTML}{666666}
+
+% Replace complete keyword tokens without changing longer identifiers.
+\makeatletter
+\newcommand{\fstarsymbol}[1]{%
+  \color{black}%
+  \lst@token{\ensuremath{#1}}%
+  \lst@length=1\relax
+}
+\makeatother
 
 \lstdefinelanguage{FStar}{
   sensitive=true,
+  alsoletter={'},
   morekeywords={
     module,open,include,
     let,rec,and,in,
     type,noeq,unfold,
     match,with,when,
     if,then,else,
-    fun,function,
-    forall,exists,
+    function,
     val,assume,
     requires,ensures,decreases,
     Lemma,Tot,GTot,Type,Type0,prop,
     squash
   },
-  %morekeywords=[2]{
-  %  nat,int,string,bool,
-  %  True,False,
-  %  Some,None
-  %},
+  morekeywords=[2]{exists},
+  morekeywords=[3]{forall},
+  morekeywords=[4]{fun},
   morecomment=[l]{//},
   morecomment=[s]{(*}{*)},
   morestring=[b]"
@@ -106,20 +111,27 @@
 
 \lstdefinestyle{fstar}{
   language=FStar,
+  literate=*
+    {/\\}{{\color{black}\ensuremath{\land}}}1
+    {\\/}{{\color{black}\ensuremath{\lor}}}1
+    {->}{{\color{black}\ensuremath{\rightarrow}}}1
+    {==>}{{\color{black}\ensuremath{\Rightarrow}}}1
+    {<==>}{{\color{black}\ensuremath{\Leftrightarrow}}}1,
   basicstyle=\ttfamily\small,
   breakindent=1.5em,
-  keywordstyle=\color{fstarpurple},
-  keywordstyle=[2]\color{fstarblue},
-  keywordstyle=[3]\color{fstarred},
-  commentstyle=\color{fstargreen}\itshape,
-  stringstyle=\color{fstarpurple},
+  keywordstyle=\color{fstarnavy},
+  keywordstyle=[2]\fstarsymbol{\exists},
+  keywordstyle=[3]\fstarsymbol{\forall},
+  keywordstyle=[4]\fstarsymbol{\lambda},
+  commentstyle=\color{fstargray}\itshape,
+  stringstyle=\color{fstargreen},
   %numbers=left,
   %numberstyle=\tiny\color{fstargray},
   %numbersep=10pt,
   %stepnumber=1,
   frame=none,
   breaklines=true,
-  breakatwhitespace=false,
+  breakatwhitespace=true,
   showstringspaces=false,
   keepspaces=true,
   columns=fullflexible,

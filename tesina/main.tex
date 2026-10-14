@@ -2437,6 +2437,7 @@ podemos definir una relación entre dos listas de enteros que tienen la misma lo
 \begin{lstlisting}
 type same_length : list int -> list int -> Type =
   | SLNil : same_length [] []
+
   | SLCons : x : int -> y : int ->
     xs : list int -> ys : list int ->
     same_length xs ys ->
@@ -2760,7 +2761,9 @@ Representamos la terminación normal, de error y filtrado de caminos de la sigui
 
 \begin{lstlisting}
 | R_Skip : s : state { s._2 == Ok } -> runsto Skip s s
+
 | R_Error : s : state { s._2 == Ok } -> runsto Error s (s._1, Er)
+
 | R_Assume : s : state { s._2 == Ok } -> #e : expr ->
   squash (eval_expr s e =!= 0) ->
   runsto (Assume e) s s
@@ -2784,6 +2787,7 @@ La composición secuencial se divide según el modo de terminación del primer c
   #s : state { s._2 == Ok } -> #t : state { t._2 == Ok } -> #u : state ->
   runsto p s t -> runsto q t u ->
   runsto (Seq p q) s u
+
 | R_SeqEr : #p : stmt -> #q : stmt ->
   #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
   runsto p s t -> runsto (Seq p q) s t
@@ -2807,6 +2811,7 @@ La elección no determinista posee una regla para cada rama:
 | R_ChoiceL : #p : stmt -> #q : stmt ->
   #s : state { s._2 == Ok } -> #t : state ->
   runsto p s t -> runsto (Choice p q) s t
+
 | R_ChoiceR : #p : stmt -> #q : stmt ->
   #s: state { s._2 == Ok } -> #t : state ->
   runsto q s t -> runsto (Choice p q) s t
@@ -2822,6 +2827,7 @@ mientras que el caso inductivo agrega una nueva ejecución \lstinline{p} a una r
 \begin{lstlisting}
 | R_Kleene0 : #p : stmt -> #s : state { s._2 == Ok } ->
   runsto (Kleene p) s s
+
 | R_KleeneS : #p : stmt -> #s : state { s._2 == Ok } -> #t : state ->
   runsto (Seq (Kleene p) p) s t ->
   runsto (Kleene p) s t
@@ -2835,13 +2841,13 @@ Utilizando la correspondencia Curry-Howard y los tipos inductivos indexados pres
 Una aserción puede interpretarse como un predicado sobre el conjunto de estados.
 Dado que en la \autoref{sec:il-sintaxis} dicho conjunto fue instanciado mediante el tipo \texttt{state}, las aserciones se representan en \fstar{} como:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type cond = state -> prop
 \end{lstlisting}
 
 A partir de esta definición, la derivabilidad de una tripleta se representa mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 noeq type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 \end{lstlisting}
 
@@ -2856,7 +2862,7 @@ Del mismo modo que un término de \texttt{runsto p s0 s1} constituye un testigo 
 Las precondiciones de las reglas describen estados desde los cuales la ejecución todavía puede continuar, es decir, es correcta.
 Para expresarlo se utiliza:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 unfold let is_ok (c : cond) : cond = fun s -> c s /\ s._2 == Ok
 \end{lstlisting}
 
@@ -2865,12 +2871,14 @@ A continuación se analiza cómo se codifican estructuralmente las reglas de la 
 
 En primer lugar, observamos las instrucciones más simples de nuestro lenguaje:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Skip : pre : cond ->
   il_triple (is_ok pre) Skip (is_ok pre)
+
 | I_Error : pre : cond ->
   il_triple (is_ok pre) Error
             (fun s -> let (st, m) = s in m == Er /\ pre (st, Ok))
+
 | I_Assume : pre : cond -> #e : expr ->
   il_triple (is_ok pre) (Assume e)
             (is_ok (fun s -> pre s /\ eval_expr s e =!= 0))
@@ -2886,7 +2894,7 @@ Como se mencionó en la introducción, la subaproximación requiere descartar el
 En su lugar, la IL exige el uso del razonamiento hacia adelante.
 La regla de asignación debe conservar suficiente información histórica para justificar la alcanzabilidad del estado final:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Assign : #pre : cond -> #x : var -> #e : expr ->
   il_triple
     (is_ok pre) (Assign x e)
@@ -2903,7 +2911,7 @@ La segunda establece que el valor actual de \texttt{x} coincide con la evaluaci�
 La regla \texttt{I\_Nondet} usa una construcción similar.
 En este caso, para cada estado final se exige la existencia de algún valor anterior de \texttt{x} que permita reconstruir un estado inicial que satisfaga la presunción.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Nondet : #x : var -> #pre : cond ->
   il_triple (is_ok pre) (Nondet x)
             (is_ok (fun s -> exists v. pre ((override s._1 x v), s._2)))
@@ -2911,7 +2919,7 @@ En este caso, para cada estado final se exige la existencia de algún valor ante
 
 La composición secuencial demuestra el poder composicional de manejar ambos flujos en un solo canal de estados:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Seq : #p : stmt -> #q : stmt ->
   #pre : cond -> #mid : cond -> #post : cond ->
   il_triple (is_ok pre) p mid ->
@@ -2928,11 +2936,12 @@ Cuando \texttt{p} finaliza en \texttt{Er}, el error se propaga directamente al r
 
 La IL permite justificar una ejecución no determinista seleccionando solo una rama:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_ChoiceL : #p : stmt -> #q : stmt ->
   #pre : cond -> #post : cond ->
   il_triple (is_ok pre) p post ->
   il_triple (is_ok pre) (Choice p q) post
+
 | I_ChoiceR : #p : stmt -> #q : stmt ->
   #pre : cond -> #post : cond ->
   il_triple (is_ok pre) q post ->
@@ -2945,10 +2954,11 @@ En la formalización, la rama relevante es seleccionada explícitamente al const
 
 El caso de las iteraciones finitas se representa mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Kleene0 :
   #p : stmt -> #pre : cond ->
   il_triple (is_ok pre) (Kleene p) (is_ok pre)
+
 | I_KleeneS : #p : stmt -> #pre : cond -> #post : cond ->
   il_triple (is_ok pre) (Seq (Kleene p) p) post ->
   il_triple (is_ok pre) (Kleene p) post
@@ -2956,20 +2966,20 @@ El caso de las iteraciones finitas se representa mediante:
 
 Además, la formalización incluye una regla paramétrica basada en una familia de aserciones:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_KleeneVariant :
   #variant : (nat -> cond) -> #p : stmt ->
   (n : nat -> il_triple (is_ok (variant n)) p (variant (n + 1))) ->
   il_triple (kleene_pre variant) (Kleene p) (kleene_post variant)
 \end{lstlisting}
 
-La premisa demuestra que cada estado perteneciente a \texttt{variant (n + 1)} puede reconstruirse a partir de un estado perteneciente a \texttt{variant n}.
+La premisa demuestra que cada estado perteneciente a \lstinline{variant (n + 1)} puede reconstruirse a partir de un estado perteneciente a \texttt{variant n}.
 Repitiendo este argumento es posible obtener una traza finita que comienza en \texttt{variant 0}.
 
 Como se observó en el Lema~\ref{lem:prop-pi}, la postimagen preserva uniones.
 Esta propiedad se refleja mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Disjunction : #pre1 : cond -> #pre2 : cond ->
   #p : stmt -> #post1 : cond -> #post2 : cond ->
   il_triple (is_ok pre1) p post1 ->
@@ -2993,7 +3003,7 @@ $$\operatorname{post}' \subseteq \operatorname{post}'(C)(\operatorname{pre}')$$
 
 Esta regla se codifica mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Consequence : #pre : cond -> #p : stmt ->
   #post : cond -> pre' : cond -> post' : cond ->
   il_triple (is_ok pre) p post ->
@@ -3025,7 +3035,7 @@ $$\forall s_1. \, post \; s_1 \implies \exists s_0. \, pre \; s_0 \land \operato
 
 En \fstar{} codificamos este teorema de forma constructiva mediante la siguiente función con tipos dependientes:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec soundness
   (p : stmt) (pre : cond) (post : cond)
   (pf : il_triple pre p post) (s1 : state { post s1 })
@@ -3034,8 +3044,8 @@ let rec soundness
 
 La firma constituye una traducción directa del Lema~\ref{lem:caracterizacion}:
 \begin{itemize}
-  \item \texttt{s1 : state \{ post s1 \}} representa un estado final $\sigma_q \in q$;
-  \item \texttt{s0 : state \{ pre s0 \}} representa un estado inicial testigo $\sigma_p \in p$;
+  \item \lstinline|s1 : state { post s1 }| representa un estado final $\sigma_q \in q$;
+  \item \lstinline|s0 : state { pre s0 }| representa un estado inicial testigo $\sigma_p \in p$;
   \item \texttt{runsto p s0 s1} representa la transición $(\sigma_p, \sigma_q) \in [\![C]\!]_\epsilon$.
 \end{itemize}
 La función conecta así los dos niveles mecanizados en las secciones anteriores.
@@ -3047,7 +3057,7 @@ La cláusula \texttt{decreases pf} indica que cada llamada recursiva se realiza 
 Hay instrucciones en las que la traza se reconstruye de forma directa.
 En el caso de \texttt{Skip}, el estado inicial coincide con el final:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Skip _ ->
   let s0 = s1 in
   let r = R_Skip s0 in
@@ -3056,7 +3066,7 @@ En el caso de \texttt{Skip}, el estado inicial coincide con el final:
 
 Para \texttt{Error}, el \emph{store} inicial coincide con el final, pero el modo de terminación difiere:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Error _ ->
   let (st1, _) = s1 in
   let s0 = (st1, Ok) in
@@ -3066,7 +3076,7 @@ Para \texttt{Error}, el \emph{store} inicial coincide con el final, pero el modo
 
 En \texttt{Assume}, la postcondición ya contiene la prueba de que la expresión es verdadera:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Assume pre #e ->
   let s0 = s1 in
   let r = R_Assume s0 #e () in
@@ -3082,7 +3092,7 @@ Para resolver esto nos apoyamos en la operación fantasma \texttt{indefinite\_de
 Esta operación fantasma de elección clásica nos permite transformar la existencia lógica de un estado en un testigo que podemos manipular en el código de la demostración.
 Este testigo no forma parte de un programa ejecutable, solo se usa durante la demostración:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Assign #pre #x #e ->
   let (st1, m) = s1 in
   let x_init = FStar.IndefiniteDescription.indefinite_description_ghost
@@ -3106,7 +3116,7 @@ La demostración para la secuenciación de comandos \texttt{I\_Seq} ilustra cóm
 La regla deductiva afirma que el resultado de \texttt{Seq p q} puede derivar del éxito final de \texttt{q} o de un fallo prematuro en \texttt{p}.
 Por lo tanto, el teorema de soundness debe inspeccionar el estado final \texttt{s1} para decidir qué fragmento de la semántica reconstruir:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_Seq #p #q #pre #mid #post pf_p pf_q ->
   if t2b (post s1) then
     let (|s_mid, r_q|) = soundness q (is_ok mid) post pf_q s1 in
@@ -3129,7 +3139,7 @@ En ese caso, se reconstruye únicamente la ejecución del primer comando y se ut
 
 Los casos de elección aplican la hipótesis inductiva solo en la rama seleccionada por la derivación:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | I_ChoiceL #p #q #pre #post pf_p ->
   let (|s0, r_p|) = soundness p (is_ok pre) post pf_p s1 in
   let r = R_ChoiceL #p #q #s0 #s1 r_p in
@@ -3194,7 +3204,7 @@ En consecuencia, el estado utilizado para la formalización de la ISL se redefin
 
 En primer lugar, se incorporan las ubicaciones de memoria y se amplía el tipo de los valores:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type var = string
 type loc = nat
 type value =
@@ -3210,7 +3220,7 @@ La dirección 0 se reserva para modelar el puntero nulo, por lo que las reglas c
 La Definición~\ref{def:heap_ext} presentó los \emph{heaps} de la ISL como funciones parciales cuyo codominio incluye tanto valores como una marca negativa $\perp$.
 Para modelar esta parcialidad en \fstar{} se decidió codificar como una función total hacia un nuevo tipo de dato \texttt{cell}, el cual explicita las tres situaciones posibles de una celda:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type cell =
   | Full of value
   | Empty
@@ -3238,7 +3248,7 @@ Esta decisión de representación se corresponde con la intuición de monotonía
 
 El estado completo queda definido como:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type state = store & heap & term_mode
 type cond = state -> prop
 \end{lstlisting}
@@ -3249,14 +3259,14 @@ Para representar la conjunción separadora de la Definición~\ref{def:sep-conj} 
 Para el primer caso, como los \emph{heaps} se representan como funciones totales, la disjunción se define punto a punto.
 Dos celdas son disjuntas cuando al menos una de ellas no contiene información local:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let cell_disjoint (c1 c2 : cell) : prop =
   c1 == Unknown \/ c2 == Unknown
 \end{lstlisting}
 
 Luego, dos \emph{heaps} son disjuntos cuando sus celdas son disjuntas para toda ubicación:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
 \end{lstlisting}
@@ -3267,7 +3277,7 @@ En la representación de \fstar{}, se exige que no exista una ubicación conocid
 
 Si dos celdas son disjuntas, su unión selecciona la celda que contiene información:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let cell_union (c1 c2 : cell { cell_disjoint c1 c2 }) : cell =
   match c1 with
     | Unknown -> c2
@@ -3278,7 +3288,7 @@ En esta formalización, el constructor \texttt{Unknown} actúa como elemento neu
 El caso restante puede devolver \texttt{c1} porque el refinamiento \texttt{cell\_disjoint c1 c2} garantiza que, cuando \texttt{c1} es conocida, \texttt{c2} es necesariamente \texttt{Unknown}.
 Luego, la unión de \emph{heaps} se define punto a punto:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
   fun l -> cell_union (h1 l) (h2 l)
 \end{lstlisting}
@@ -3290,7 +3300,7 @@ Para construir las especificaciones de los programas, formalizamos los tres pred
 El más simple es \texttt{emp}, el cual afirma que la huella de memoria actual está completamente vacía.
 Matemáticamente esto significa que el programa no tiene permisos sobre ninguna celda, por lo que toda locación debe ser evaluada como \texttt{Unknown}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let emp : cond =
   fun (st, hp, m) -> forall l. hp l == Unknown
 \end{lstlisting}
@@ -3298,7 +3308,7 @@ let emp : cond =
 Por otro lado, cuando un programa aloja memoria o accede a un puntero, necesitamos describir celdas específicas.
 Para esto definimos los predicados \texttt{points\_to} y \texttt{points\_to\_empty}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let points_to (l : loc) (v : value) : cond =
   fun (st, hp, m) -> l =!=0 /\ hp l == Full v /\
                      forall l'. (l' <> l) ==> (hp l' == Unknown)
@@ -3318,7 +3328,7 @@ Expresa que \texttt{l} es una ubicación conocida, no nula, que fue liberada y t
 
 A partir del álgebra anterior, la conjunción separadora se representa mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 unfold
 let sep_conj (p q : cond) : cond =
   fun (st, hp, m) -> exists h1 h2.
@@ -3330,7 +3340,7 @@ unfold let ( ** ) = sep_conj
 \end{lstlisting}
 
 Esta definición constituye la traducción directa de la Definición~\ref{def:sep-conj}.
-Para que un estado satisfaga \texttt{p ** q}, deben construirse dos \emph{heaps} disjuntos cuya unión sea el \emph{heap} original, de forma que \texttt{p} se satisfaga sobre el primer fragmento y \texttt{q} sobre el segundo.
+Para que un estado satisfaga \lstinline{p ** q}, deben construirse dos \emph{heaps} disjuntos cuya unión sea el \emph{heap} original, de forma que \texttt{p} se satisfaga sobre el primer fragmento y \texttt{q} sobre el segundo.
 Al obligar a las aserciones a razonar sobre particiones estrictamente independientes de la memoria, el operador $**$ prepara el terreno para la introducción de la Regla del Marco y de las huellas locales que se introducirán más adelante.
 
 \section{Semántica operacional y metateoría}
@@ -3340,7 +3350,7 @@ La diferencia en este caso es que opera sobre estados formados por un \emph{stor
 Los constructores correspondientes a asignación, no determinismo, secuencia, elección y estrella de Kleene mantienen el mismo comportamiento general.
 La extensión principal consiste en incorporar las operaciones \texttt{Alloc}, \texttt{Free}, \texttt{Load} y \texttt{Store}, introducidas teóricamente en la \autoref{sec:logsep}.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 type stmt =
   | Assign : var -> expr -> stmt
   | Nondet : var -> stmt
@@ -3358,7 +3368,7 @@ type stmt =
 
 Como tanto el \emph{store} como el \emph{heap} se representan mediante funciones, la equivalencia de estados del \autoref{cap:formalizacion-il} debe apilarse para comparar ambos componentes punto a punto:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 unfold let state_equiv (s1 s2 : state) : prop =
   (forall x. s1._1 x == s2._1 x) /\
   (forall l. s1._2 l == s2._2 l) /\
@@ -3368,7 +3378,7 @@ unfold let state_equiv (s1 s2 : state) : prop =
 Analizamos los constructores operacionales que difieren de aquellos vistos en el \autoref{cap:formalizacion-il}.
 La regla operacional de reserva es:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Alloc : s : state { s._3 == Ok } -> #x : var ->
   l : loc { l =!= 0 } -> v : value ->
   #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
@@ -3383,7 +3393,7 @@ Esta distinción corresponde a las reglas \textsc{Alloc1} y \textsc{Alloc2} de l
 
 La liberación exitosa se formaliza mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Free : s : state { s._3 == Ok } -> e : expr -> l : loc -> v : value ->
   #(squash (eval_expr s e == l /\ l =!= 0)) ->
   #(squash (s._2 l == Full v)) ->
@@ -3397,7 +3407,7 @@ De esta manera, se preserva el recurso negativo requerido por la ISL.
 Si la dirección ya se encontraba liberada, se produce un \emph{double free}.
 En este caso, el \emph{heap} se conserva, ya que la ubicación continúa estando liberada, pero el modo cambia a \texttt{Er}.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_FreeEr : s : state { s._3 == Ok } -> e : expr -> l : loc { l =!= 0 } ->
   #(squash (eval_expr s e == l)) ->
   #(squash (s._2 l == Empty)) ->
@@ -3406,7 +3416,7 @@ En este caso, el \emph{heap} se conserva, ya que la ubicación continúa estando
 
 El intento de liberar la dirección nula se trata mediante un constructor separado:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_FreeNull : s : state { s._3 == Ok } -> e : expr ->
   #(squash (eval_expr s e == 0)) ->
   runsto (Free e) s (s._1, s._2, Er)
@@ -3415,7 +3425,7 @@ El intento de liberar la dirección nula se trata mediante un constructor separa
 Las reglas de lectura siguen el mismo patrón.
 Una lectura exitosa requiere una celda activa y actualiza el \emph{store} con su contenido:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Load : s : state { s._3 == Ok } -> x : var -> e : expr ->
   l : loc { l =!= 0 } -> v : value ->
   #(squash (s._2 l == Full v)) ->
@@ -3428,7 +3438,7 @@ El acceso a la dirección nula se modela de forma análoga mediante \texttt{R\_L
 
 La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza su contenido:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Store : s : state { s._3 == Ok } -> e1 : expr -> e2 : expr ->
   l : loc { l =!= 0 } -> v : value ->
   #(squash (s._2 l == Full v)) ->
@@ -3446,7 +3456,7 @@ La propiedad central del razonamiento local es que una ejecución sobre un fragm
 Esta propiedad fue presentada de forma abstracta en el Lema~\ref{lem:localidad}.
 En la formalización se mecaniza con la función \texttt{r\_frame}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   (r : runsto p s0 s1) (h_fr : heap)
   (#_ : squash (let (_, hp, _) = s0 in heaps_disjoint hp h_fr))
@@ -3468,7 +3478,7 @@ Para cada constructor \texttt{runsto} se reconstruye la misma ejecución sobre l
 El caso secuencial requiere conocer que el marco también es disjunto del \emph{heap} intermedio.
 Para obtener esta propiedad se utiliza el lema:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
   (h_fr : heap) (r : runsto p s0 s1) :
   Lemma (requires (let (_, hp1, _) = s1 in heaps_disjoint hp1 h_fr))
@@ -3488,7 +3498,7 @@ Estamos en condiciones de mecanizar el sistema deductivo de la ISL.
 Al igual que en el \autoref{cap:formalizacion-il}, representamos la relación de derivabilidad mediante un tipo inductivo en \fstar{}, al que denominaremos \texttt{isl\_triple}.
 Su firma mantiene la estructura fundamental de la subaproximación, separando los canales de éxito y error, pero ahora sus precondiciones y postcondiciones evalúan la forma del \emph{heap}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 noeq type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 \end{lstlisting}
 
@@ -3500,10 +3510,10 @@ En nuestra formalización, el comportamiento de esta instrucción se divide en c
 
 La regla para la liberación exitosa refleja la mutación de una celda activa hacia un \emph{heap} negativo.
 Tras la ejecución de \texttt{Free e}, la postcondición asegura que la locación evaluada se encuentra vacía.
-Sin embargo, para garantizar que este estado proviene de uno válido, la aserción utiliza el cuantificador existencial \texttt{exists v} para reconstruir el estado histórico.
+Sin embargo, para garantizar que este estado proviene de uno válido, la aserción utiliza el cuantificador existencial \lstinline{exists v} para reconstruir el estado histórico.
 Afirma que, si tomáramos el estado actual y restauráramos la celda liberada con el valor original, obtendríamos exactamente el estado histórico que satisfacía la precondición original:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | ISL_Free : #pre : cond -> e : expr ->
     isl_triple (is_ok pre) (Free e)
       (is_ok (fun s -> exists (v : value).
@@ -3514,7 +3524,7 @@ Afirma que, si tomáramos el estado actual y restauráramos la celda liberada co
 Al preservar el \emph{heap} negativo como un recurso, la ISL habilita la detección deductiva de errores espaciales.
 Si el programa intentase liberar un puntero que ya ha sido liberado previamente, la semántica intercepta la violación de tipo \emph{double free}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | ISL_FreeEr : #pre : cond -> e : expr ->
     isl_triple (is_ok pre) (Free e)
       (fun s -> s._3 == Er /\
@@ -3524,7 +3534,7 @@ Si el programa intentase liberar un puntero que ya ha sido liberado previamente,
 
 Finalmente, modelamos la desreferencia de punteros nulos:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | ISL_FreeNull : #pre : cond -> e : expr ->
     isl_triple (is_ok pre) (Free e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ pre (s._1, s._2, Ok))
@@ -3536,7 +3546,7 @@ Las reglas exitosas reconstruyen el \emph{store} o el \emph{heap} anterior media
 Por otro lado, la Regla del Marco debe preservar no solo el \emph{heap} adicional, sino también la validez de la aserción enmarcada respecto del \emph{store}.
 Para expresar esta condición se calcula el conjunto de variables que un comando puede modificar:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec modifies (p : stmt) (x : var) : prop =
   match p with
   | Assign y _ -> x = y
@@ -3553,7 +3563,7 @@ Luego, definimos cuándo una aserción es semánticamente inmune a la mutación 
 Dos \emph{stores} coinciden fuera de un conjunto de variables cuando asignan los mismos valores a todas las variables no incluidas en dicho conjunto.
 Basándonos en esto, una aserción es independiente de un conjunto de variables si su evaluación lógica devuelve el mismo resultado sin importar cómo cambien los valores de dichas variables:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let match_except_vars (vars : string -> prop) (st1 st2 : store) : prop =
   forall x. ~(vars x) ==> st1 x == st2 x
 
@@ -3568,7 +3578,7 @@ Esta condición permite preservar el marco incluso cuando una ejecución pasa de
 
 Con esto, la Regla del Marco se codifica como el siguiente constructor:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | ISL_Frame : #pre : cond -> #p : stmt -> #post : cond -> fr : cond ->
   isl_triple (is_ok pre) p post ->
   squash (independent_on_vars (modifies p) fr) ->
@@ -3597,7 +3607,7 @@ $$\forall s_1. \, post \; s_1 \implies \exists s_0. \, pre \; s_0 \land \operato
 
 En \fstar{}, el teorema se codifica mediante la siguiente función con tipos dependientes:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec soundness
   (p : stmt) (pre : cond) (post : cond)
   (pf : isl_triple pre p post) (s1 : state { post s1 })
@@ -3606,8 +3616,8 @@ let rec soundness
 
 La firma constituye la misma traducción de la caracterización subaproximada utilizada en el \autoref{cap:formalizacion-il}:
 \begin{itemize}
-  \item \texttt{s1 : state \{ post s1 \}} representa un estado final perteneciente al resultado;
-  \item \texttt{s0 : state \{ pre s0 \}} representa el estado inicial testigo;
+  \item \lstinline|s1 : state { post s1 }| representa un estado final perteneciente al resultado;
+  \item \lstinline|s0 : state { pre s0 }| representa el estado inicial testigo;
   \item \texttt{runsto p s0 s1} es la ejecución que conecta ambos estados.
 \end{itemize}
 
@@ -3628,14 +3638,14 @@ Si bien la mayoría de los casos axiomáticos reconstruyen el estado de forma di
 Demostrar que \texttt{ISL\_Frame} no introduce falsos positivos requiere coordinar el razonamiento deductivo de la lógica de separación con las pruebas de simulación semántica que se definieron en \texttt{r\_frame}.
 Analicemos cómo el verificador reconstruye esta traza paso a paso.
 
-Cuando la prueba fue construida mediante el marco, sabemos lógicamente que el estado final \texttt{s1} satisface la conjunción separadora \texttt{p\_post ** fr}.
+Cuando la prueba fue construida mediante el marco, sabemos lógicamente que el estado final \texttt{s1} satisface la conjunción separadora \lstinline{p_post ** fr}.
 Por la Definición~\ref{def:sep-conj} de la conjunción separadora, el \emph{heap} final puede dividirse en dos fragmentos disjuntos:
 $$hp_1 = h_1 \uplus h_2,$$
 donde la postcondición local se satisface sobre $h_1$, que de ahora en más llamaremos \texttt{h\_local}, y la aserción del marco se satisface sobre $h_2$, renombrado a \texttt{h\_fr}.
 
 En la prueba se define esta información mediante un predicado auxiliar:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let unfold p_two (h1 : heap) (h2 : heap) : prop =
   heaps_disjoint h1 h2 /\
   hp1 == heap_union h1 h2 /\
@@ -3649,7 +3659,7 @@ Para materializarlos, se transforman los dos testigos existenciales en una tupla
 
 Una vez aislado el fragmento local del \emph{heap}, aplicamos la hipótesis inductiva de nuestro teorema.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
   let (|s0_local, r_local|) =
     soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
 \end{lstlisting}
@@ -3661,12 +3671,12 @@ El último paso es elevar esa certeza local al contexto global, es decir, agrega
 La disjunción con el \emph{heap} final se conoce por la partición de \texttt{s1}.
 La disjunción con el \emph{heap} inicial se obtiene mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 lemma_runsto_disjoint h_fr r_local;
 \end{lstlisting}
 Luego, se usa la propiedad operacional del marco:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let r_global = r_frame r_local h_fr #() #() in
 \end{lstlisting}
 Esto produce una ejecución sobre los \emph{heaps} globales.
@@ -3698,7 +3708,7 @@ La relación \texttt{runsto} permite que los estados inicial y final tengan memo
 Por ejemplo, una ejecución de \texttt{Load x e} puede ocurrir en un \emph{heap} con varias celdas, aunque la instrucción solo contiene una única dirección.
 Para aislar el fragmento local utilizado por cada comando se define el siguiente tipo inductivo:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 noeq type footprint : stmt -> state -> state -> Type0
 \end{lstlisting}
 
@@ -3708,7 +3718,7 @@ La diferencia con \texttt{runsto} es que sus constructores restringen los \emph{
 
 Para representar los comandos que no acceden a memoria dinámica se define el \emph{heap} vacío:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let empty_heap : heap = fun _ -> Unknown
 \end{lstlisting}
 
@@ -3716,7 +3726,7 @@ Todas sus ubicaciones son \texttt{Unknown}, por lo que el fragmento no contiene 
 Este \emph{heap} se utiliza en las huellas de instrucciones como \texttt{Skip}, \texttt{Error}, \texttt{Assign}, \texttt{Nondet} y \texttt{Assume}, cuyos efectos solo involucran el \emph{store} o el modo de terminación.
 Por ejemplo, la huella de \texttt{Skip} se codifica como:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Skip : st : store ->
   footprint Skip (st, empty_heap, Ok) (st, empty_heap, Ok)
 \end{lstlisting}
@@ -3724,7 +3734,7 @@ La instrucción no requiere recursos espaciales y conserva todos los componentes
 
 Para las operaciones de memoria se definen \emph{heaps} formados por una única celda:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let singleton_empty_heap (l : loc) : heap =
   fun l' -> if l' = l then Empty else Unknown
 
@@ -3736,7 +3746,7 @@ Todas las demás direcciones quedan fuera del fragmento local.
 
 Una lectura exitosa requiere únicamente la celda que será consultada:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Load : st : store -> x : var -> e : expr -> l : loc { l =!= 0 } -> v : value ->
   #(squash (eval_expr' st e == l)) ->
   footprint (Load x e) (st, singleton_full_heap l v, Ok)
@@ -3747,7 +3757,7 @@ La lectura conserva esa celda y actualiza en el \emph{store} el valor de \texttt
 
 En cambio, una lectura sobre una ubicación previamente liberada requiere una celda negativa:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_LoadEr : st : store -> x : var -> e : expr -> l : loc { l =!= 0 } ->
   #(squash (eval_expr' st e == l)) ->
   footprint (Load x e) (st, singleton_empty_heap l, Ok)
@@ -3759,7 +3769,7 @@ La celda negativa permanece en el estado final como justificación espacial del 
 Las reglas correspondientes a la escritura y a la liberación de memoria siguen el mismo patrón.
 Una liberación exitosa transforma un \emph{heap} singleton positivo en uno negativo:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Free : st : store -> e : expr -> l : loc { l =!= 0 } -> v : value ->
   #(squash (eval_expr' st e == l)) ->
   footprint (Free e) (st, singleton_full_heap l v, Ok)
@@ -3767,7 +3777,7 @@ Una liberación exitosa transforma un \emph{heap} singleton positivo en uno nega
 \end{lstlisting}
 Una escritura exitosa conserva la dirección, pero reemplaza su contenido:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Store : st : store -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
   #(squash (eval_expr' st e1 == l)) ->
   footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
@@ -3790,7 +3800,7 @@ El \emph{heap} $h_p$ contiene los recursos exclusivos de \texttt{p}, mientras qu
 
 La estructura principal del constructor es:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Seq : p : stmt -> q : stmt -> st0 : store -> stm : store ->
   st1 : store -> h_common : heap ->
   h_p : heap { heaps_disjoint h_common h_p } ->
@@ -3819,7 +3829,7 @@ Por lo tanto, las dos ejecuciones pueden componerse mediante la regla operaciona
 
 La propagación de un error producido por el primer comando se representa con un constructor separado:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_SeqEr : p : stmt -> q : stmt ->
   s : state { s._3 == Ok } -> t : state { t._3 == Er } ->
   footprint p s t ->
@@ -3830,7 +3840,7 @@ Como el primer comando termina en error, el segundo no se ejecuta y no incorpora
 La relación incluye además el constructor \texttt{F\_Ext}.
 Este constructor cierra la relación de huellas bajo equivalencia de estados.
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Ext : p : stmt -> s0 : state -> s1 : state -> footprint p s0 s1 ->
   s0' : state -> s1' : state ->
   squash (state_equiv s0 s0') ->
@@ -3846,7 +3856,7 @@ Esto ocurre especialmente al asociar y reordenar uniones de fragmentos en \textt
 \subsection*{Corrección operacional de las huellas}
 Una vez definida la relación local, el primer resultado consiste en demostrar que toda huella representa una ejecución operacional válida:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
                         (f : footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases f)
@@ -3862,7 +3872,7 @@ La prueba construye primero la regla operacional correspondiente y luego usa \te
 
 El caso \texttt{F\_Ext} refleja la relación entre los dos niveles:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | F_Ext p s0 s1 fp s0' s1' e0 e1 ->
   let r = footprint_sound p s0 s1 fp in
   R_Ext r s0' s1' e0 e1
@@ -3879,7 +3889,7 @@ Después de ajustar los estados intermedios mediante la equivalencia, las dos de
 El Teorema de la Huella no relaciona directamente \texttt{footprint} con \texttt{runsto}, sino la semántica global con la clausura por marcos de las ejecuciones locales.
 Para representar dicha clausura se define:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 noeq
 type framed_footprint : stmt -> state -> state -> Type0 =
   | FF_Frame : p : stmt -> s0 : state -> s1 : state ->
@@ -3888,6 +3898,7 @@ type framed_footprint : stmt -> state -> state -> Type0 =
     d1 : squash (heaps_disjoint s1._2 h_fr) ->
     framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3)
                        (s1._1, heap_union s1._2 h_fr, s1._3)
+
   | FF_Ext : p : stmt -> s0 : state -> s1 : state ->
     framed_footprint p s0 s1 -> s0' : state -> s1' : state ->
     squash (state_equiv s0 s0') -> squash (state_equiv s1 s1') ->
@@ -3899,7 +3910,7 @@ Por otro lado, \texttt{FF\_Ext} aplica al nivel de \texttt{framed\_footprint} el
 
 La corrección operacional de la clausura se demuestra mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec framed_footprint_sound (p : stmt) (s0 : state) (s1 : state)
   (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases ff) =
@@ -3925,7 +3936,7 @@ Para completar la caracterización es necesario demostrar la dirección inversa.
 Dada una derivación operacional, debe ser posible separar los recursos utilizados localmente por el comando de aquellos que permanecen como marco.
 Esta propiedad se mecaniza con:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) (decreases r)
 \end{lstlisting}
@@ -3935,7 +3946,7 @@ La demostración procede por inducción estructural sobre \texttt{r}.
 
 Cuando la derivación operacional comienza con \texttt{R\_Ext}, la hipótesis inductiva descompone la ejecución original y \texttt{FF\_Ext} transporta el resultado:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Ext #p #s0 #s1 r_base s0' s1' eq0 eq1 ->
   let ff = runsto_decompose r_base in
   FF_Ext p s0 s1 ff s0' s1' eq0 eq1
@@ -3949,7 +3960,7 @@ $$(st, \text{\texttt{empty\_heap}}, Ok) \xrightarrow{\texttt{skip}} (st, \text{\
 a la que se agrega el marco $h$ con \texttt{FF\_Frame}.
 Como \texttt{heap\_union empty\_heap h} puede no ser igual que \texttt{h}, se termina usando \texttt{FF\_Ext}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 | R_Skip s ->
   let st = s._1 in
   let h = s._2 in
@@ -3963,7 +3974,7 @@ En esta construcción, \texttt{FF\_Frame} agrega los recursos globales, mientras
 Las operaciones de memoria requieren separar del \emph{heap} global la celda utilizada.
 Para ello se define:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let heap_without (h : heap) (l : loc) : heap =
   fun l' -> if l' = l then Unknown else h l'
 \end{lstlisting}
@@ -3979,7 +3990,7 @@ Las reglas de elección no determinista y estrella de Kleene reutilizan la desco
 Para preservar las capas de marco y equivalencia se usa la función auxiliar \texttt{map\_framed\_footprint}.
 La estructura es la siguiente:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let rec map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
   (transform : (#sl0 : state -> #sl1 : state -> footprint p sl0 sl1 ->
                 GTot (footprint q sl0 sl1)))
@@ -4020,7 +4031,7 @@ $$h_3 = h_{13} \uplus h_{23},$$
 $$h_4 = h_{14} \uplus h_{24}.$$
 La estructura que almacena estos componentes se define mediante:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 noeq
 type cross_split_witness (h1 h2 h3 h4 : heap) = {
   h13 : heap; h14 : heap; h23 : heap; h24 : heap;
@@ -4055,7 +4066,7 @@ $$\operatorname{runsto} \; p \; s_0 \; s_1 \iff \operatorname{framed\_footprint}
 \end{teorema}
 En \fstar{}, las dos expresiones se expresan como:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state)
   (ff : framed_footprint p s0 s1) : GTot (runsto p s0 s1) =
   framed_footprint_sound p s0 s1 ff
@@ -4098,7 +4109,7 @@ Este recurso negativo permite conservar la información de que la dirección fue
 
 Consideramos el siguiente programa a verificar escrito en nuestra sintaxis:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let prog_uaf =
   (Alloc "x") `Seq`
   ((Free (Var "x")) `Seq`
@@ -4114,7 +4125,7 @@ En este caso, la postcondición final describe un estado con el modo erróneo en
 La primera instrucción que se invoca es \texttt{ISL\_Alloc1}, la cual reserva una dirección de memoria nueva respecto del fragmento local.
 Luego de su ejecución, la aserción final del comando garantiza que la memoria aloja un valor válido en el canal de éxito:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_alloc (s : state) : prop =
   exists (l : loc) (v : value).
     s._3 == Ok /\ s._1 "x" == Loc l /\
@@ -4128,7 +4139,7 @@ El segundo paso del programa es la liberación de la memoria apuntada por \textt
 Al evaluar el axioma \texttt{ISL\_Free}, la semántica consume el recurso activo y lo transforma en una aserción negativa.
 El estado resultante refleja la transición:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_free (s : state) : prop =
   exists (v : value).
     s._3 == Ok /\ points_to_empty (eval_expr s (Var "x")) s /\
@@ -4141,7 +4152,7 @@ El fallo ocurre en la tercera instrucción, cuando el programa intenta realizar 
 Entre las reglas disponibles para la instrucción de escritura está \texttt{ISL\_StoreEr}, la cual exige tener estrictamente el recurso \texttt{points\_to\_empty}, nuestro estado actual.
 Por lo tanto, la postcondición final se define como:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_uaf_err (s : state) : prop =
   s._3 == Er /\ points_to_empty (eval_expr s (Var "x")) s /\
   post_free (s._1, s._2, Ok)
@@ -4152,7 +4163,7 @@ De esta manera, la derivación no solo afirma que hubo un fallo, sino que contie
 La construcción de esta demostración en \fstar{} se realiza componiendo los axiomas de nuestra lógica mediante constructores secuenciales y la regla de consecuencia.
 El árbol de prueba completo para este programa se codifica de la siguiente manera:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let proof_uaf : isl_triple (is_ok emp) prog_uaf post_uaf_err =
   let p_alloc_raw = ISL_Alloc1 #emp "x" in
   let p_alloc = ISL_Consequence emp post_alloc p_alloc_raw () () in
@@ -4183,7 +4194,7 @@ Este fue un caso de estudio motivacional para el diseño de la ISL original.
 
 El siguiente fragmento de código abstrae conceptualmente este comportamiento en un lenguaje similar a C:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 int* x = *v;
 push_back(v); // Puede no hacer nada, o hacer free(*v) y reasignar
 *x = 88;      // Posible uso de puntero colgante
@@ -4191,7 +4202,7 @@ push_back(v); // Puede no hacer nada, o hacer free(*v) y reasignar
 
 En nuestra formalización \fstar{}, modelamos este comportamiento mediante la definición del comando \texttt{client}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let client (ptr : var) : stmt =
   (Load "x" (Var ptr)) `Seq`
   ((push_back ptr) `Seq` (Store (Var "x") (Const 88)))
@@ -4202,7 +4213,7 @@ La secuencia de operaciones del cliente se divide en tres etapas:
   \item \textbf{Captura de la referencia:} El cliente accede a la estructura original para guardar un puntero directo a su memoria activa mediante la instrucción de lectura \texttt{Load}.
   \item \textbf{Interacción con la biblioteca:} El programa cliente invoca la función de agregado llamando a \texttt{push\_back}.
   Esta función de biblioteca encapsula un comportamiento no determinista interno, por lo que el cliente desconoce si la estructura mantendrá su bloque de memoria original o si será movida y reasignada en un bloque nuevo:
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let push_back (ptr : var) : stmt =
   Choice
     ((Load "y" (Var ptr)) `Seq`
@@ -4219,14 +4230,14 @@ La postcondición correspondiente registra el valor cargado en \texttt{x}, la ce
 
 Para demostrar el error no es necesario analizar las dos ramas de \texttt{push\_back}.
 La interpretación subaproximada permite seleccionar la rama que conduce al estado de interés.
-En este caso, la derivación usa \texttt{p\_push\_back\_raw = ISL\_ChoiceL p\_seq\_pb1}.
+En este caso, la derivación usa \lstinline{p_push_back_raw = ISL_ChoiceL p_seq_pb1}.
 Esto no afirma que la rama derecha sea imposible, sino que la rama izquierda tiene una ejecución válida que alcanza la postcondición buscada.
 
 La postcondición de esa rama describe que la estructura apunta a una nueva ubicación.
 El recurso negativo correspondiente a la dirección anterior se conserva dentro de una cadena de aserciones históricas producidas por las reglas de liberación y asignación.
 Por ejemplo, la aserción posterior a la liberación contiene:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_free_y (ptr : var) (s : state) : prop =
   exists (v : value).
     s._3 == Ok /\
@@ -4241,7 +4252,7 @@ La variable \texttt{x} sigue almacenando la dirección original.
 Esta forma encaja en el axioma de fallo \texttt{ISL\_StoreEr}.
 En nuestro código, la postcondición de error tiene la forma:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_err (ptr : var) (s : state) : prop =
   s._3 == Er /\
   points_to_empty (eval_expr s (Var "x")) s /\
@@ -4252,7 +4263,7 @@ Esta postcondición describe una ejecución que termina en el modo de error y co
 Desde el comienzo se mencionó que la prueba iba a abarcar solo una de las ramas posibles de ejecución.
 En particular, la aplicación de la regla de elección es:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let p_push_back_raw = ISL_ChoiceL p_seq_pb1 in
 let p_push_back = ISL_Consequence (post_load_x ptr) (post_store_v ptr)
                   p_push_back_raw () () in
@@ -4278,7 +4289,7 @@ El caso busca mostrar dos propiedades del sistema deductivo:
 
 Consideremos el siguiente programa:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 n := 1000000;
 i, j := 0;
 while (i < n){
@@ -4299,9 +4310,9 @@ Este cálculo no interviene en la demostración mecanizada.
 La lógica solo necesita establecer que la secuencia de elecciones existe.
 
 El primer paso es modelar la aleatoriedad de forma que podamos controlarla lógicamente.
-En nuestra sintaxis abstracta, la condición se modela mediante el operador de elección no determinista \texttt{Choice}, codificado con el operador \texttt{|||}:
+En nuestra sintaxis abstracta, la condición se modela mediante el operador de elección no determinista \texttt{Choice}, codificado con el operador \lstinline{|||}:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 Assign "j" (Plus (Var "j") (Const 1)) ||| Skip
 \end{lstlisting}
 
@@ -4313,7 +4324,7 @@ Para evitar ese desenrollado se usa \texttt{ISL\_KleeneVariant}.
 
 La familia de aserciones se define como sigue:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let variant (k : nat) : cond =
   fun (st, _, m) ->
     k <= 1000000 /\ st "n" == Nat 1000000 /\
@@ -4330,7 +4341,7 @@ Una vez demostrado el paso general, la regla permite obtener estados correspondi
 
 La instrucción de aserción se codifica como una elección entre el camino de error y el exitoso:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let assert_stmt =
   Seq (Assume (Eq (Var "j") (Var "n"))) Error |||
   Assume (enot (Eq (Var "j") (Var "n")))
@@ -4344,7 +4355,7 @@ La derivación vuelve a usar \texttt{ISL\_ChoiceL} para seleccionar la rama que 
 
 La postcondición final es:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_er_bug : cond =
   fun (st, _, m) ->
     st "n" == Nat 1000000 /\ st "i" == Nat 1000000 /\
@@ -4364,7 +4375,7 @@ Si la suma es igual, la aserción falla y el programa aborta.
 
 Conceptualmente, el código bajo análisis se describe de la siguiente manera:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 sum = 0;
 len = 0;
 while (ptr != 0) {
@@ -4387,7 +4398,7 @@ En nuestra formalización, modelamos esta estructura desarmándola en sus compon
 Un nodo ocupa dos ubicaciones de memoria adyacentes:
 \begin{enumerate}
   \item la dirección base \texttt{curr\_ptr}, que almacena el valor numérico del nodo y
-  \item la dirección consecutiva \texttt{curr\_ptr + 1}, que almacena el puntero hacia el siguiente nodo de la estructura.
+  \item la dirección consecutiva \lstinline{curr_ptr + 1}, que almacena el puntero hacia el siguiente nodo de la estructura.
 \end{enumerate}
 
 Para describir una lista con una longitud arbitraria se definen los predicados \texttt{list\_seg} y \texttt{prefix\_seg}.
@@ -4409,7 +4420,7 @@ En este momento el \emph{heap} se divide en cuatro partes,
 \end{enumerate}
 Luego, definimos la aserción de estado intermedio de la siguiente manera:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let post_len_shape (start_ptr curr_ptr next_ptr : loc) (k : nat) : cond =
   fun s ->
     k < n_target /\ s._3 == Ok /\ s._1 "sum" == Nat (k + 1) /\
@@ -4425,7 +4436,7 @@ Por lo tanto, el \emph{heap} completo debe poder dividirse en cuatro fragmentos 
 $$h = h_{\mathrm{prefix}} \uplus h_{\mathrm{value}} \uplus h_{\mathrm{next}} \uplus h_{\mathrm{suffix}}.$$
 El prefijo tiene la parte ya recorrida de la lista.
 La celda \texttt{curr\_ptr} tiene el valor 1, que acaba de cargarse en \texttt{v}.
-La celda \texttt{curr\_ptr + 1} guarda la dirección \texttt{next\_ptr}.
+La celda \lstinline{curr_ptr + 1} guarda la dirección \texttt{next\_ptr}.
 Por último, el sufijo describe los nodos pendientes.
 Esto se puede observar en la \autoref{fig:particion-lista}.
 
@@ -4475,13 +4486,13 @@ Esto se puede observar en la \autoref{fig:particion-lista}.
 \end{figure}
 
 La definición de la conjunción separadora exige que estos \emph{heaps} sean disjuntos.
-Al avanzar a la iteración \texttt{k + 1},  se extrae el nodo de la cabeza del sufijo, se evalúa, y se empaqueta lógicamente dentro del prefijo.
+Al avanzar a la iteración \lstinline{k + 1},  se extrae el nodo de la cabeza del sufijo, se evalúa, y se empaqueta lógicamente dentro del prefijo.
 De esta manera, el razonamiento sobre el nodo actual no puede usar accidentalmente una celda que pertenezca al prefijo o al sufijo.
 
 Si el programa original fuese inicializado con una memoria arbitraria, el verificador deductivo no podría afirmar la relación final entre la suma y la longitud.
 En nuestra demostración, inicializamos la prueba exigiendo en la precondición que el \emph{heap} contenga el predicado \texttt{list\_seg} poblado exactamente con una lista de unos:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let pre_init (start_ptr : loc) : cond =
   fun s -> let xs = ones n_target in
     (exists (curr_ptr : loc).
@@ -4495,7 +4506,7 @@ Luego, el programa incrementa las variables acumuladoras.
 En nuestra mecanización, hemos formalizado este avance lógico mediante lemas de correctitud locales.
 En particular, el avance de \texttt{sum} se respalda con el siguiente lema auxiliar que reconstruye el \emph{store} anterior a la asignación:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let lemma_prove_sum_step (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr k s))
           (ensures (is_ok (fun s0 -> exists (st_init : var -> value).
@@ -4507,27 +4518,27 @@ let lemma_prove_sum_step (start_ptr : loc) (k : nat) (s : state)
 El lema correspondiente a \texttt{len} sigue el mismo patrón.
 
 Estas demostraciones no ejecutan el programa para cada valor de \texttt{k}.
-Establecen algebraicamente que, si antes de la asignación se cumple \texttt{sum = len = k}, entonces después de las actualizaciones se cumple \texttt{sum = len = k + 1}.
+Establecen algebraicamente que, si antes de la asignación se cumple \lstinline{sum = len = k}, entonces después de las actualizaciones se cumple \lstinline{sum = len = k + 1}.
 
 A partir de este punto, el paso entre una iteración y la siguiente modifica la partición lógica del \emph{heap}.
 El nodo actual deja de formar parte del sufijo y pasa a integrarse al prefijo.
-El nuevo valor de \texttt{ptr} se obtiene de la celda \texttt{curr\_ptr + 1}, por lo que la siguiente iteración empieza en \texttt{next\_ptr}.
+El nuevo valor de \texttt{ptr} se obtiene de la celda \lstinline{curr_ptr + 1}, por lo que la siguiente iteración empieza en \texttt{next\_ptr}.
 
 Al igual que en la \autoref{sec:bucle}, el recorrido se demuestra con \texttt{ISL\_KleeneVariant}.
 En este caso, la familia de aserciones relaciona el índice \texttt{k} con la longitud del prefijo ya visitado, los valores de \texttt{sum} y \texttt{len}, la posición actual de \texttt{ptr} y la estructura del sufijo restante.
-El paso inductivo demuestra que una ejecución del cuerpo transforma la aserción correspondiente a \texttt{k} en la correspondiente a \texttt{k + 1}.
-Cuando \texttt{k = n\_target}, el sufijo es vacío y \texttt{ptr} contiene la dirección nula.
-Además, \texttt{sum = n\_target = len}.
+El paso inductivo demuestra que una ejecución del cuerpo transforma la aserción correspondiente a \texttt{k} en la correspondiente a \lstinline{k + 1}.
+Cuando \lstinline{k = n_target}, el sufijo es vacío y \texttt{ptr} contiene la dirección nula.
+Además, \lstinline{sum = n_target = len}.
 
 La aserción se representa como:
 
-\begin{lstlisting}[style=fstar]
+\begin{lstlisting}
 let assert_stmt =
   Seq (Assume (Eq (Var "sum") (Var "len"))) Error |||
   Assume (enot (Eq (Var "sum") (Var "len")))
 \end{lstlisting}
 
-Como la variante final establece \texttt{sum = len}, la derivación selecciona la rama izquierda con \texttt{ISL\_ChoiceL}.
+Como la variante final establece \lstinline{sum = len}, la derivación selecciona la rama izquierda con \texttt{ISL\_ChoiceL}.
 El \texttt{Assume} conserva el estado y \texttt{Error} cambia el modo de terminación a \texttt{Er}.
 
 Este caso de estudio combina los principales componentes espaciales e iterativos de la formalización.

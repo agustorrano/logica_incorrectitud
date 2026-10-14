@@ -2,6 +2,7 @@ module IncLogic
 
 open FStar.FunctionalExtensionality
 module FE = FStar.FunctionalExtensionality
+module ID = FStar.IndefiniteDescription
 
 // ============================================================
 // 1. Sintaxis y estados
@@ -40,19 +41,19 @@ type cond = state -> prop
 
 let rec eval_expr' (s : store) (e : expr) : GTot nat =
   match e with
-    | Var x -> s x
-    | Const n -> n
-    | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
-    | Minus e1 e2 -> 
-      let res = eval_expr' s e1 - eval_expr' s e2 in
-      if res >= 0 then res else 0
-    | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
-    | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
-                  then 1 else 0
-    | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
-                  then 1 else 0
-    | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
-                  then 1 else 0
+  | Var x -> s x
+  | Const n -> n
+  | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
+  | Minus e1 e2 -> 
+    let res = eval_expr' s e1 - eval_expr' s e2 in
+    if res >= 0 then res else 0
+  | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
+  | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
+                then 1 else 0
+  | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
+                then 1 else 0
+  | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
+                then 1 else 0
 
 let eval_expr (s : state) (e : expr)
   : GTot nat = eval_expr' s._1 e
@@ -117,8 +118,6 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
 // ============================================================
 // 3. Lógica de Incorrectitud
 // ============================================================
-
-let init : state = (FE.on var #value (fun _ -> 0), Ok)
 
 unfold let is_ok (c : cond) : cond = fun s -> c s /\ s._2 == Ok
 
@@ -212,33 +211,21 @@ let rec soundness
   = match pf with
   | I_Assign #pre #x #e ->
     let (st1, m) = s1 in
-    assert (p == Assign x e);
-    assert (exists x_init. pre ((override st1 x x_init), m) 
-            /\ (st1 x = eval_expr ((override st1 x x_init), m) e));
-    let x_init = FStar.IndefiniteDescription.indefinite_description_ghost 
-                 _ (fun x_init -> pre ((override st1 x x_init), m) 
-                    /\ (st1 x = eval_expr ((override st1 x x_init), m) e))
+    let x_init = ID.indefinite_description_ghost 
+      _ (fun x_init -> pre ((override st1 x x_init), m) 
+      /\ (st1 x = eval_expr ((override st1 x x_init), m) e))
     in
-    assert (pre ((override st1 x x_init), m) 
-            /\ (st1 x = eval_expr ((override st1 x x_init), m) e));
     let st0 = override st1 x x_init in
     let s0 = (st0, Ok) in
-    assert (pre s0);
     let pf0 = R_Assign s0 #x #e in
-    assert (forall y. override st0 x (eval_expr s0 e) y == st1 y);
     state_equiv_eq (override st0 x (eval_expr s0 e), Ok) s1;
     (|s0, pf0|)
 
   | I_Nondet #x #pre ->
     let (st1, m) = s1 in
-    assert (p == Nondet x);
-    assert (exists v. pre ((override st1 x v), m));
-    let v = FStar.IndefiniteDescription.indefinite_description_ghost
-              _ (fun v -> pre ((override st1 x v), m)) in
-    assert (pre ((override st1 x v), m));
+    let v = ID.indefinite_description_ghost _ (fun v -> pre ((override st1 x v), m)) in
     let st0 = override st1 x v in
     let s0 = (st0, Ok) in
-    assert (pre s0);
     let pf0 : runsto (Nondet x) s0 ((override st0 x (st1 x)), Ok) =
       R_Nondet s0 #x (st1 x)
     in
@@ -257,7 +244,6 @@ let rec soundness
     (|s0, r|)
 
   | I_Assume pre #e ->
-    assert (pre s1 /\ eval_expr s1 e =!= 0);
     let s0 = s1 in
     let r = R_Assume s0 #e () in
     (|s0, r|)
@@ -302,10 +288,7 @@ let rec soundness
 
   | I_KleeneVariant #variant #p pf_var ->
     let p_n (n : nat) : prop = variant n s1 /\ (n == 0 ==> s1._2 == Ok) in
-    assert (exists n. p_n n);
-    let n = FStar.IndefiniteDescription.indefinite_description_ghost
-              _ p_n in
-    assert (variant n s1);
+    let n = ID.indefinite_description_ghost _ p_n in
     let rec aux (m : nat) (t : state { variant m t /\ (m == 0 ==> t._2 == Ok) })
       : GTot (s0 : state { variant 0 s0 /\ s0._2 == Ok } & runsto (Kleene p) s0 t) (decreases m) =
       if m = 0 then
@@ -332,7 +315,6 @@ let rec soundness
       let (|s0, r|) = soundness p (is_ok pre1) post1 pf_p1 s1 in
       (|s0, r|)
     else (
-      assert (post2 s1);
       let (|s0, r|) = soundness p (is_ok pre2) post2 pf_p2 s1 in
       (|s0, r|)
     )

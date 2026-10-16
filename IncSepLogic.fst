@@ -3,6 +3,7 @@ module IncSepLogic
 open FStar.Classical
 open FStar.FunctionalExtensionality
 module FE = FStar.FunctionalExtensionality
+module ID = FStar.IndefiniteDescription
 
 // ============================================================
 // 1. Sintaxis y estados
@@ -63,23 +64,23 @@ type cond = state -> prop
 
 let rec eval_expr' (s : store) (e : expr) : GTot nat =
   match e with
-    | Var x -> (
-      match s x with
-        | Nat n -> n
-        | Loc l -> l
-      )
-    | Const n -> n
-    | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
-    | Minus e1 e2 -> 
-      let res = eval_expr' s e1 - eval_expr' s e2 in
-      if res >= 0 then res else 0
-    | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
-    | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
-                  then 1 else 0
-    | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
-                  then 1 else 0
-    | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
-                  then 1 else 0
+  | Var x -> (
+    match s x with
+      | Nat n -> n
+      | Loc l -> l
+    )
+  | Const n -> n
+  | Plus e1 e2 -> eval_expr' s e1 + eval_expr' s e2
+  | Minus e1 e2 -> 
+    let res = eval_expr' s e1 - eval_expr' s e2 in
+    if res >= 0 then res else 0
+  | Times e1 e2 -> eval_expr' s e1 * eval_expr' s e2
+  | Eq e1 e2 -> if eval_expr' s e1 = eval_expr' s e2
+                then 1 else 0
+  | Lt e1 e2 -> if eval_expr' s e1 < eval_expr' s e2
+                then 1 else 0
+  | Gt e1 e2 -> if eval_expr' s e1 > eval_expr' s e2
+                then 1 else 0
 
 let eval_expr (s : state) (e : expr) 
   : GTot nat = eval_expr' s._1 e
@@ -420,6 +421,39 @@ let sep_conj (p q : cond) : cond =
       p (st, h1, m) /\ q (st, h2, m)
 
 unfold let ( ** ) = sep_conj
+
+let points_to_flex (l : loc) (v : value) : cond =
+  points_to l v ** (fun _ -> True)
+
+let lemma_points_to_flex (l : loc) (v : value) (s : state)
+  : Lemma (ensures (points_to_flex l v s <==> (l <> 0 /\ s._2 l == Full v))) =
+  if t2b (points_to_flex l v s) then (
+    let h1 = ID.indefinite_description_ghost
+      heap (fun h1 -> exists h2.
+        heaps_disjoint h1 h2 /\
+        s._2 == heap_union h1 h2 /\
+        points_to l v (s._1, h1, s._3))
+    in
+    let h2 = ID.indefinite_description_ghost
+      heap (fun h2 ->
+        heaps_disjoint h1 h2 /\
+        s._2 == heap_union h1 h2 /\
+        points_to l v (s._1, h1, s._3))
+    in
+    assert (l <> 0 /\ s._2 l == Full v)
+  ) else if l <> 0 && s._2 l == Full v then (
+    let h1 = singleton_full_heap l v in
+    let h2 = heap_without s._2 l in
+    FE.extensionality loc (fun _ -> cell) s._2 (heap_union h1 h2);
+    exists_intro (fun b ->
+      heaps_disjoint h1 b /\
+      s._2 == heap_union h1 b /\
+      points_to l v (s._1, h1, s._3)) h2;
+    exists_intro (fun a -> exists b.
+      heaps_disjoint a b /\
+      s._2 == heap_union a b /\
+      points_to l v (s._1, a, s._3)) h1
+  )
 
 let independent_on_vars (vars : string -> prop) (c : cond) : prop =
   forall (st1 st2 : store) (hp : heap) (m1 m2 : term_mode).

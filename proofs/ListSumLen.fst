@@ -59,7 +59,7 @@ let ghost_free (pre : cond) : prop =
 let load_post (pre : cond) (x : var) (e : expr) : cond =
   fun s -> s._3 == Ok /\
     exists (x_old : value) (l : loc) (v : value).
-      l <> 0 /\ s._2 l == Full v /\ s._1 x == v /\
+      points_to_flex l v s /\ s._1 x == v /\
       eval_expr (override s._1 x x_old, s._2, Ok) e == l /\
       pre (override s._1 x x_old, s._2, Ok)
 
@@ -83,6 +83,12 @@ let split_cell (st : store) (hp : heap) (l : loc) (v : value)
             hp == heap_union (singleton_full_heap l v) (heap_without hp l)) =
   FE.extensionality loc (fun _ -> cell) hp
     (heap_union (singleton_full_heap l v) (heap_without hp l))
+
+let lemma_points_to_flex_store (st1 st2 : store) (hp : heap) 
+  (m : term_mode) (v : value) (l : loc)
+  : Lemma (ensures (points_to_flex l v (st1, hp, m) <==> points_to_flex l v (st2, hp, m))) =
+  lemma_points_to_flex l v (st1, hp, m);
+  lemma_points_to_flex l v (st2, hp, m)
 
 let load_fresh (x : var) (e : expr) : prop =
   x <> g_old /\ x <> g_addr /\ x <> g_value /\
@@ -143,12 +149,13 @@ let lemma_load_post_implies (pre : cond) (x : var) (e : expr)
               (load_local_post x e ** load_frame pre x))) s) =
   let old = ID.indefinite_description_ghost
     value (fun old ->
-      exists (l : loc) (v : value). l <> 0 /\ s._2 l == Full v /\
+      exists (l : loc) (v : value). points_to_flex l v s /\
         s._1 x == v /\ eval_expr (override s._1 x old, s._2, Ok) e == l /\
         pre (override s._1 x old, s._2, Ok))
   in
   let l = eval_expr (override s._1 x old, s._2, Ok) e in
   let v = s._1 x in
+  lemma_points_to_flex l v s;
   let st = override (override (override s._1 g_value v) g_addr (Loc l)) g_old old in
   let h1 = singleton_full_heap l v in
   let h2 = heap_without s._2 l in
@@ -223,12 +230,13 @@ let framed_load (pre : cond) (x : var) (e : expr)
 // Estados intermedios
 let rec history (start_ptr curr_ptr : loc) (k : nat) (hp : heap)
   : GTot prop (decreases k) =
+  let s = FE.on var (fun _ -> Nat 0), hp, Ok in
   if k = 0 then
     curr_ptr == start_ptr /\
-    list_seg start_ptr 0 (ones n_target) (FE.on var (fun _ -> Nat 0), hp, Ok)
+    list_seg start_ptr 0 (ones n_target) s
   else exists (prev_ptr : loc).
-    prev_ptr <> 0 /\ hp prev_ptr == Full (Nat 1) /\
-    hp (prev_ptr + 1) == Full (Loc curr_ptr) /\
+    points_to_flex prev_ptr (Nat 1) s /\
+    points_to_flex (prev_ptr + 1) (Loc curr_ptr) s /\
     history start_ptr prev_ptr (k - 1) hp
 
 let pre_init (start_ptr : loc) : cond =
@@ -255,7 +263,7 @@ let post_load_v (start_ptr : loc) (k : nat) : cond =
   fun s ->
     k < n_target /\ mid_assume start_ptr k s /\ s._1 "v" == Nat 1 /\
     exists (curr_ptr : loc). 
-      s._1 "ptr" == Loc curr_ptr /\ s._2 curr_ptr == Full (Nat 1)
+      s._1 "ptr" == Loc curr_ptr /\ points_to_flex curr_ptr (Nat 1) s
 
 let post_sum (start_ptr : loc) (k : nat) : cond =
   fun s ->
@@ -263,9 +271,9 @@ let post_sum (start_ptr : loc) (k : nat) : cond =
     s._1 "sum" == Nat (k + 1) /\ s._1 "len" == Nat k /\
     s._1 "v" == Nat 1 /\
     exists (curr_ptr : loc).
-      curr_ptr <> 0 /\ s._1 "ptr" == Loc curr_ptr /\
+      s._1 "ptr" == Loc curr_ptr /\
       history start_ptr curr_ptr k s._2 /\
-      s._2 curr_ptr == Full (Nat 1)
+      points_to_flex curr_ptr (Nat 1) s
 
 let post_len (start_ptr : loc) (k : nat) : cond =
   fun s ->
@@ -273,9 +281,9 @@ let post_len (start_ptr : loc) (k : nat) : cond =
     s._1 "sum" == Nat (k + 1) /\ s._1 "len" == Nat (k + 1) /\
     s._1 "v" == Nat 1 /\
     exists (curr_ptr : loc).
-      curr_ptr <> 0 /\ s._1 "ptr" == Loc curr_ptr /\
+      s._1 "ptr" == Loc curr_ptr /\
       history start_ptr curr_ptr k s._2 /\
-      s._2 curr_ptr == Full (Nat 1)
+      points_to_flex curr_ptr (Nat 1) s
 
 let pre_assert (start_ptr : loc) : cond =
   fun s -> exists (k : nat). variant start_ptr k s
@@ -295,6 +303,13 @@ let lemma_mid_assume_ghost (start_ptr : loc) (k : nat)
           (ensures (mid_assume start_ptr k (override st g v, hp, m) <==>
             mid_assume start_ptr k (st, hp, m))) =
   eval_expr_fresh (st, hp, m) (enot (Eq (Var "ptr") (Const 0))) g v
+
+let lemma_post_len_ghost (start_ptr : loc) (k : nat)
+  (st : store) (hp : heap) (m : term_mode) (g : var) (v : value)
+  : Lemma (requires (g == g_old \/ g == g_addr \/ g == g_value))
+          (ensures (post_len start_ptr k (override st g v, hp, m) <==>
+            post_len start_ptr k (st, hp, m))) =
+  forall_intro (lemma_points_to_flex_store st (override st g v) hp m (Nat 1))
 
 let lemma_prove_sum_step (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr k s))
@@ -324,19 +339,19 @@ let lemma_prove_load_v (start_ptr : loc) (k : nat) (s : state)
   : Lemma (requires post_load_v start_ptr k s)
           (ensures load_post (mid_assume start_ptr k) "v" (Var "ptr") s) =
   let curr_ptr = ID.indefinite_description_ghost
-    loc (fun curr_ptr -> s._1 "ptr" == Loc curr_ptr /\ s._2 curr_ptr == Full (Nat 1))
+    loc (fun curr_ptr -> s._1 "ptr" == Loc curr_ptr /\ points_to_flex curr_ptr (Nat 1) s)
   in
   state_equiv_eq (override s._1 "v" (s._1 "v"), s._2, Ok) s;
   exists_intro (fun v ->
-    curr_ptr <> 0 /\ s._2 curr_ptr == Full v /\ s._1 "v" == v /\
+    points_to_flex curr_ptr v s /\ s._1 "v" == v /\
     eval_expr (override s._1 "v" (s._1 "v"), s._2, Ok) (Var "ptr") == curr_ptr /\
     mid_assume start_ptr k (override s._1 "v" (s._1 "v"), s._2, Ok)) (Nat 1);
   exists_intro (fun l -> exists (v : value).
-    l <> 0 /\ s._2 l == Full v /\ s._1 "v" == v /\
+    points_to_flex l v s /\ s._1 "v" == v /\
     eval_expr (override s._1 "v" (s._1 "v"), s._2, Ok) (Var "ptr") == l /\
     mid_assume start_ptr k (override s._1 "v" (s._1 "v"), s._2, Ok)) curr_ptr;
   exists_intro (fun x_old -> exists (l : loc) (v : value).
-    l <> 0 /\ s._2 l == Full v /\ s._1 "v" == v /\
+    points_to_flex l v s /\ s._1 "v" == v /\
     eval_expr (override s._1 "v" x_old, s._2, Ok) (Var "ptr") == l /\
     mid_assume start_ptr k (override s._1 "v" x_old, s._2, Ok)) (s._1 "v")
 
@@ -351,26 +366,32 @@ let lemma_prove_load_ptr (start_ptr : loc) (k : nat) (s : state)
   let curr_ptr = ID.indefinite_description_ghost
     loc (fun curr_ptr -> s._1 "ptr" == Loc curr_ptr /\ history start_ptr curr_ptr (k + 1) s._2)
   in
+  let hs = FE.on var (fun _ -> Nat 0), s._2, Ok in
   let prev_ptr = ID.indefinite_description_ghost
     loc (fun prev_ptr ->
-      prev_ptr <> 0 /\ s._2 prev_ptr == Full (Nat 1) /\
-      s._2 (prev_ptr + 1) == Full (Loc curr_ptr) /\
+      points_to_flex prev_ptr (Nat 1) hs /\
+      points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs /\
       history start_ptr prev_ptr k s._2)
   in
+  lemma_points_to_flex prev_ptr (Nat 1) hs;
+  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs;
+  lemma_points_to_flex prev_ptr (Nat 1) (override s._1 "ptr" (Loc prev_ptr), s._2, Ok);
+  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) s;
   exists_intro (fun p ->
-    p <> 0 /\ (override s._1 "ptr" (Loc prev_ptr)) "ptr" == Loc p /\
-    history start_ptr p k s._2 /\ s._2 p == Full (Nat 1)) prev_ptr;
+    (override s._1 "ptr" (Loc prev_ptr)) "ptr" == Loc p /\
+    history start_ptr p k s._2 /\
+    points_to_flex p (Nat 1) (override s._1 "ptr" (Loc prev_ptr), s._2, Ok)) prev_ptr;
   eval_pointer s._1 s._2 prev_ptr;
   exists_intro (fun v ->
-    (prev_ptr + 1) <> 0 /\ s._2 (prev_ptr + 1) == Full v /\ s._1 "ptr" == v /\
+    points_to_flex (prev_ptr + 1) v s /\ s._1 "ptr" == v /\
     eval_expr (override s._1 "ptr" (Loc prev_ptr), s._2, Ok) (Plus (Var "ptr") (Const 1)) == prev_ptr + 1 /\
     post_len start_ptr k (override s._1 "ptr" (Loc prev_ptr), s._2, Ok)) (Loc curr_ptr);
   exists_intro (fun l -> exists (v : value).
-    l <> 0 /\ s._2 l == Full v /\ s._1 "ptr" == v /\
+    points_to_flex l v s /\ s._1 "ptr" == v /\
     eval_expr (override s._1 "ptr" (Loc prev_ptr), s._2, Ok) (Plus (Var "ptr") (Const 1)) == l /\
     post_len start_ptr k (override s._1 "ptr" (Loc prev_ptr), s._2, Ok)) (prev_ptr + 1);
   exists_intro (fun x_old -> exists (l : loc) (v : value).
-    l <> 0 /\ s._2 l == Full v /\ s._1 "ptr" == v /\
+    points_to_flex l v s /\ s._1 "ptr" == v /\
     eval_expr (override s._1 "ptr" x_old, s._2, Ok) (Plus (Var "ptr") (Const 1)) == l /\
     post_len start_ptr k (override s._1 "ptr" x_old, s._2, Ok)) (Loc prev_ptr)
 
@@ -416,7 +437,12 @@ let proof_loop_step (start_ptr : loc) (k : nat)
   let pf_len = forall_intro (move_requires (lemma_prove_len_step start_ptr k)) in
   let p_len = ISL_Consequence (post_sum start_ptr k) (post_len start_ptr k) p_len_raw () pf_len in
 
-  let p_ptr_raw = framed_load (post_len start_ptr k) "ptr" (Plus (Var "ptr") (Const 1)) #() #() in
+  let p_ptr_raw =
+    framed_load (post_len start_ptr k) "ptr" (Plus (Var "ptr") (Const 1)) #()
+      #(forall_intro (fun st -> forall_intro (fun hp -> forall_intro (fun m ->
+        forall_intro (fun g -> forall_intro
+          (move_requires (lemma_post_len_ghost start_ptr k st hp m g)))))))
+  in
   let pf_ptr = forall_intro (move_requires (lemma_prove_load_ptr start_ptr k)) in
   let p_ptr = ISL_Consequence (post_len start_ptr k) (variant start_ptr (k + 1)) p_ptr_raw () pf_ptr in
   

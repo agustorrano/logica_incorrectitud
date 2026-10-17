@@ -3349,11 +3349,18 @@ Sin embargo, el modelo de memoria que se utilizó es insuficiente para analizar 
 Al introducir referencias de memoria dinámica surge el problema de \emph{aliasing}.
 
 En este capítulo presentamos la formalización mecanizada de la ISL.
-No se reexplicarán los fundamentos de la subaproximación, los cuales se mantienen idénticos al capítulo anterior, sino detallar cómo la arquitectura de nuestra formalización en \fstar{} debió evolucionar para incorporar el razonamiento local sobre porciones disjuntas de memoria, la conjunción separadora y la detección de \emph{bugs} especiales como el \emph{Use After Free}.
+No se reexplicarán los fundamentos de la subaproximación, los cuales se
+mantienen idénticos al capítulo anterior, sino \sout{detallar}\guido{que
+detallaremos} cómo la arquitectura de nuestra formalización en \fstar{} debió
+evolucionar para incorporar el razonamiento local sobre porciones disjuntas de
+memoria, la conjunción separadora y la detección de \emph{bugs} especiales
+\guido{especiales o espaciales? en todo caso use-after-free es temporal}
+como el \emph{Use After Free}.
 
 \section{Extensión del lenguaje y del modelo de estado}
 \label{sec:isl-estado}
 Para soportar el razonamiento local propuesto por \citet{sl} en la SL, y su posterior extensión en la ISL, debemos abandonar la premisa de que un programa conoce y opera sobre la totalidad de la memoria.
+\guido{muy bueno!}
 En el \autoref{cap:formalizacion-il}, el estado estaba formado por un \emph{store} y un modo de terminación.
 Ese modelo era suficiente para razonar sobre asignaciones, no determinismo y control de flujo, pero no permitía representar memoria dinámica ni \emph{aliasing}.
 
@@ -3374,7 +3381,8 @@ type store = var -> value
 
 A diferencia del \autoref{cap:formalizacion-il}, donde todos los valores eran números naturales, ahora se distingue entre valores numéricos y direcciones de memoria.
 El constructor \texttt{Nat n} representa el valor natural \texttt{n}, mientras que \texttt{Loc l} representa la ubicación \texttt{l}.
-La dirección 0 se reserva para modelar el puntero nulo, por lo que las reglas correspondientes a accesos exitosos exigen direcciones no nulas.
+La dirección 0 se reserva para modelar el puntero nulo;
+\sout{por lo que} las accesos exitosos a memoria exigen direcciones no nulas.
 
 La Definición~\ref{def:heap_ext} presentó los \emph{heaps} de la ISL como funciones parciales cuyo codominio incluye tanto valores como una marca negativa $\perp$.
 Para modelar esta parcialidad en \fstar{} se decidió codificar como una función total hacia un nuevo tipo de dato \texttt{cell}, el cual explicita las tres situaciones posibles de una celda:
@@ -3397,11 +3405,19 @@ Cada uno de los constructores de \texttt{cell} define cuál es el estado actual 
 El constructor \texttt{Empty} constituye la representación mecanizada del elemento negativo $\perp$ introducido en la Definición~\ref{def:heap_ext}.
 Por otro lado, \texttt{Unknown} permite representar la parcialidad del \emph{heap} dentro de una función total.
 
-Es importante distinguir \texttt{Empty} de \texttt{Unknown}.
-Una ubicación marcada como \texttt{Empty} pertenece al fragmento conocido de memoria y registra que fue liberada.
-En cambio, una ubicación marcada como \texttt{Unknown} se encuentra fuera del fragmento local descrito y puede formar parte de otro \emph{heap} disjunto agregado mediante un marco.
+Es importante distinguir \texttt{Empty} de \texttt{Unknown}.  Una ubicación
+marcada como \texttt{Empty} pertenece al fragmento conocido de memoria y
+registra que fue liberada.  En cambio, una ubicación marcada como
+\texttt{Unknown} se encuentra fuera del fragmento local descrito y puede formar
+parte de otro \emph{heap} disjunto agregado mediante un marco.
+\guido{``En lógicas de correctitud, no se suelen distinguir
+ambos estados debido a que se comportan similarmente (esa
+celda no puede usarse). En logicas de incorrectitud la diferencia sí importa,
+como vimos en ...''}
 
-En este caso, la liberación de memoria transforma una celda \texttt{Full v} en \texttt{Empty}, pero no la convierte en \texttt{Unknown}.
+En este caso, la liberación de memoria
+\guido{querés decir la semántica operacional o la regla? supongo ambas}
+transforma una celda \texttt{Full v} en \texttt{Empty}, pero no la convierte en \texttt{Unknown}.
 De esta manera, la formalización conserva la información de que la ubicación es conocida incluso después de haber sido liberada.
 Esta decisión de representación se corresponde con la intuición de monotonía presentada en el Lema~\ref{lem:monotonia}, donde una ubicación conocida no deja de ser conocida como consecuencia de una liberación.
 
@@ -3411,6 +3427,8 @@ El estado completo queda definido como:
 type state = store & heap & term_mode
 type cond = state -> prop
 \end{lstlisting}
+
+\guido{el heap inicial está en Empty o en Unknown?}
 
 \section{Álgebra de \emph{heaps} y aserciones espaciales}
 \label{sec:isl-aserciones}
@@ -3432,7 +3450,10 @@ let heaps_disjoint (h1 h2 : heap) : prop =
 
 Esta definición mecaniza la relación $h_1 \perp h_2$ de la Definición~\ref{def:disj_heaps}.
 En el modelo matemático del \autoref{cap:conceptos-previos}, la disjunción se expresaba mediante la separación de los dominios de dos funciones parciales.
-En la representación de \fstar{}, se exige que no exista una ubicación conocida simultáneamente por ambos \emph{heaps}.
+En la representación de \fstar{}, \guido{donde hemos totalizado las
+funciones},
+se exige que no exista una ubicación conocida simultáneamente por ambos
+\emph{heaps}.
 
 Si dos celdas son disjuntas, su unión selecciona la celda que contiene información:
 
@@ -3476,10 +3497,13 @@ let points_to_empty (l : loc) : cond =
   fun (st, hp, m) -> l =!= 0 /\ hp l == Empty /\
                      forall l'. (l' <> l) ==> (hp l' == Unknown)
 \end{lstlisting}
+\guido{serviría usar sintaxis de operadores? \lstinline`points_to_empty` podría
+llamarse \lstinline`is_empty` o algo mas claro?}
 
 En el primero, se mecaniza la aserción positiva que describe exactamente una celda activa.
 La condición fuerza que todas las ubicaciones diferentes de \texttt{l} sean \texttt{Unknown}.
 Por lo tanto, \texttt{points\_to l v} no describe un \emph{heap} arbitrariamente grande que contiene esa celda, sino un fragmento local formado exactamente por ella.
+\guido{heap unitario o heaplet? dale un nombre}
 Esto corresponde a la interpretación exacta del points-to de la Definición~\ref{def:points_to}.
 En el segundo caso, se está representando a la aserción negativa.
 \texttt{points\_to\_empty l} mecaniza la aserción de \emph{heap} negativo de la Definición~\ref{def:heap_negativo}.
@@ -3507,7 +3531,7 @@ Al obligar a las aserciones a razonar sobre particiones estrictamente independie
 La relación \texttt{runsto} conserva la estructura introducida en la \autoref{sec:il-sintaxis}.
 La diferencia en este caso es que opera sobre estados formados por un \emph{store}, un \emph{heap} y un modo de terminación.
 Los constructores correspondientes a asignación, no determinismo, secuencia, elección y estrella de Kleene mantienen el mismo comportamiento general.
-La extensión principal consiste en incorporar las operaciones \texttt{Alloc}, \texttt{Free}, \texttt{Load} y \texttt{Store}, introducidas teóricamente en la \autoref{sec:logsep}.
+La extensión principal consiste en incorporar las operaciones \texttt{Alloc}, \texttt{Free}, \texttt{Load} y \texttt{Store}, introducidas teóricamente\guido{?} en la \autoref{sec:logsep}.
 
 \begin{lstlisting}
 type stmt =
@@ -3533,6 +3557,8 @@ unfold let state_equiv (s1 s2 : state) : prop =
   (forall l. s1._2 l == s2._2 l) /\
   s1._3 == s2._3
 \end{lstlisting}
+\guido{esto es simplemente $==$ creo, porque podemos usar extensionalidad,
+aunque no importa mucho}
 
 Analizamos los constructores operacionales que difieren de aquellos vistos en el \autoref{cap:formalizacion-il}.
 La regla operacional de reserva es:
@@ -3543,12 +3569,16 @@ La regla operacional de reserva es:
   #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
   runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
 \end{lstlisting}
+\guido{realmente la pre es unknown o empty? como puede
+ser que el caso unknown funcione con el marco?}
 
 La ubicación seleccionada debe ser no nula.
 Además, debe ser una dirección sobre la cual el \emph{heap} no poseía información o una dirección conocida que se encontraba liberada.
 El primer caso representa la reserva de una ubicación nueva respecto del fragmento local.
 El segundo representa la reasignación de una celda negativa.
 Esta distinción corresponde a las reglas \textsc{Alloc1} y \textsc{Alloc2} de la \autoref{fig:reglas-isl}.
+\guido{me confunde referenciar a la logica porque estamos hablando
+de la semantica. por ahi estoy confundido yo}
 
 La liberación exitosa se formaliza mediante:
 
@@ -3591,6 +3621,7 @@ Una lectura exitosa requiere una celda activa y actualiza el \emph{store} con su
   #(squash (eval_expr s e == l)) ->
   runsto (Load x e) s (override s._1 x v, s._2, s._3)
 \end{lstlisting}
+\guido{para que se toma l si es igual a evalexpr ...?}
 
 Si la dirección contiene \texttt{Empty}, la ejecución representa un acceso posterior a una liberación y finaliza en modo \texttt{Er}.
 El acceso a la dirección nula se modela de forma análoga mediante \texttt{R\_LoadNull}.
@@ -3647,6 +3678,13 @@ let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
 
 Este lema transporta hacia atrás la disjunción con el marco.
 En el caso de una secuencia, primero se aplica la ejecución del segundo comando para obtener la disjunción con el \emph{heap} intermedio y luego a la ejecución del primero.
+\guido{si tenes este lema no podes borrar una de las
+precondiciones de disjoint en r\_frame?}
+\guido{esta es la parte que me confunde de poder alocar
+en una direcciion que esta en Unknown, por cierto, porque el programa
+p podria alocar y liberarla, y en ese caso podria poner de marco
+algo que tambien contiene a esa direccion \textbf{pero} en realidad no
+porque queda en Empty... debe estar bien (la prueba anda) pero me suena raro}
 
 La función \texttt{r\_frame} demuestra la dirección local a global de la propiedad de localidad.
 Luego, será reutilizada tanto en la prueba de \emph{soundness} de la Regla del Marco como en la demostración del Teorema de la Huella~\ref{teo:huella}.
@@ -3663,6 +3701,7 @@ noeq type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 
 Los constructores correspondientes a la asignación, no determinismo, secuencia, elección, consecuencia, disyunción y estrella de Kleene mantienen la estructura presentada para la IL.
 Las diferencias se centran en las reglas de memoria dinámica y en la incorporación de la Regla del Marco.
+\guido{Omitimos detallarlos aquí.}
 
 El poder de los \emph{heaps} negativos se ilustra al analizar la instrucción de liberación de memoria correspondiente a \texttt{Free}.
 En nuestra formalización, el comportamiento de esta instrucción se divide en constructores independientes según su canal de terminación.
@@ -3679,6 +3718,7 @@ Afirma que, si tomáramos el estado actual y restauráramos la celda liberada co
         points_to_empty (eval_expr s e) s /\
         pre (s._1, override s._2 (eval_expr s e) (Full v), s._3)))
 \end{lstlisting}
+\guido{posta es $s_3$ al final o es siempre $Ok$?}
 
 Al preservar el \emph{heap} negativo como un recurso, la ISL habilita la detección deductiva de errores espaciales.
 Si el programa intentase liberar un puntero que ya ha sido liberado previamente, la semántica intercepta la violación de tipo \emph{double free}:

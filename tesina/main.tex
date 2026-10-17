@@ -2565,7 +2565,7 @@ En este capítulo se presenta la mecanización de este sistema deductivo utiliza
 
 Para lograrlo, se aplica el paradigma de programación orientada a pruebas.
 En primer lugar, se modela la sintaxis y semántica del lenguaje imperativo subyacente.
-Luego, se codifican los axiomas de la IL a través del isomorfismo de Curry-Howard.
+Luego, se codifican las reglas de inferencia de la IL a través del isomorfismo de Curry-Howard.
 Por último, se demuestra su solidez (\emph{soundness}) respecto a la semántica operacional.
 
 \section{Lenguaje y semántica operacional}
@@ -2619,11 +2619,12 @@ Para un estado \lstinline|s|,
 las proyecciones \lstinline|s._1| y \lstinline|s._2| permiten acceder a estos componentes,
 respectivamente.
 
-El modo \lstinline|Ok| indica que la ejecución puede continuar,
+Con respecto a \lstinline|term_mode|,
+el modo \lstinline|Ok| indica que la ejecución puede continuar,
 mientras que \lstinline|Er| indica que se ha alcanzado un estado de error.
 Esta distinción mecaniza los dos canales de salida \emph{ok} y \emph{er}.
 En la presentación abstracta del \autoref{cap:conceptos-previos},
-la condición de salida $\epsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
+la condición de salida $\varepsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
 En esta formalización se incorpora directamente en el estado
 \guido{y la semántica no permite que un estado de error avance en su ejecucion?}.
 De esta manera,
@@ -2671,6 +2672,14 @@ let eval_expr (s : state) (e : expr) : GTot nat =
   eval_expr' s._1 e
 \end{lstlisting}
 
+Como los valores son naturales,
+la resta se trunca en cero cuando el segundo operando supera el primero.
+A su vez,
+las comparaciones devuelven uno cuando se cumplen y cero en caso contrario.
+No se introduce un tipo separado de expresiones booleanas:
+en los comandos de filtrado,
+cero representa falso y cualquier valor distinto de cero representa verdadero.
+
 La definición de comandos es similar,
 pero incluye instrucciones que modifican el estado o controlan el flujo.
 
@@ -2692,6 +2701,9 @@ type stmt =
 \lstinline|Assume e| conserva solo los caminos donde \lstinline|e| es verdadera.
 \lstinline|Seq p q| representa composición secuencial,
 \lstinline|Choice p q| elección no determinista y \lstinline|Kleene p| una cantidad finita y no determinista de ejecuciones de \lstinline|p|.
+Las construcciones derivadas \lstinline|if|, \lstinline|while| y \lstinline|assert| pueden expresarse mediante estos constructores,
+siguiendo las expansiones de la \autoref{sec:loginc},
+por lo que no requieren constructores adicionales.
 
 La semántica relacional presentada en la \autoref{sec:loginc} se mecaniza mediante un tipo inductivo indexado
 por el comando y sus estados inicial y final.
@@ -2699,14 +2711,13 @@ A diferencia de aquella presentación,
 el modo de terminación se incorpora al estado final,
 en lugar de aparecer como un índice separado de la relación:
 \begin{lstlisting}
-noeq
 type runsto : stmt -> state -> state -> Type0
 \end{lstlisting}
 
 Un valor de tipo \lstinline|runsto c s0 s1| representa una derivación
 de la ejecución del comando \lstinline|c| desde \lstinline|s0| hasta \lstinline|s1|.
 Sus constructores codifican las reglas de la semántica operacional,
-siguiendo la representación de relaciones mediante tipos indctivos indexados introducida en la \autoref{sec:fstar}.
+siguiendo la representación de relaciones mediante tipos inductivos indexados.
 Las ejecuciones comienzan en un estado con modo \lstinline|Ok| y pueden finalizar con modo \lstinline|Ok| o \lstinline|Er|,
 según terminen normalmente o con error.
 
@@ -2721,7 +2732,7 @@ unfold let state_equiv (s1 s2 : state) : prop =
 \end{lstlisting}
 
 \changed{Con la representación extensional de los \emph{stores},
-esta eqiuvalencia implica la igualdad de los estados.
+esta equivalencia implica la igualdad de los estados.
 El siguiente lema establece esta propiedad:}
 
 \begin{lstlisting}
@@ -2732,7 +2743,7 @@ let state_equiv_eq (s1 s2 : state)
 \end{lstlisting}
 \guido{veo que \texttt{R\_Ext} ya no esta en el codigo, bien}
 
-\changed{La llamada a \lstinline|FE.extensionality| demustra la igualdad de los \emph{stores} a partir de su coincidencia punto a punto.
+\changed{La llamada a \lstinline|FE.extensionality| demuestra la igualdad de los \emph{stores} a partir de su coincidencia punto a punto.
 Junto con la igualdad de los modos de terminación,
 permite concluir la igualdad de los estados en su totalidad.}
 
@@ -2768,16 +2779,13 @@ La asignación no determinista se representa mediante:
   runsto (Nondet x) s (override s._1 x v, Ok)
 \end{lstlisting}
 
-Si estuviéramos programando un intérprete tradicional,
-implementar el no determinismo requeriría un generador de números pseudoaleatorios,
-lo cual ensuciaría el razonamiento matemático.
-En nuestra formalización,
-el valor \lstinline|v| no se calcula computacionalmente,
-sino que se recibe como un parámetro lógico que el sistema deductivo provee.
-Esto le otorga al verificador la capacidad de instanciar \lstinline|v| libremente con cualquier valor necesario
-para explorar una traza que conduzca a un error.
-\guido{qué verificador? todavía no hablamos de eso.
-Yo diría que esto permite generar ejecuciones eligiendo v arbitrariamente}
+El valor \lstinline|v| es un parámetro del constructor.
+Para cada valor posible,
+\lstinline|R_Nondet| permite construir una derivación que actualiza \lstinline|x| con ese valor.
+De este modo,
+la relación representa todas las elecciones permitidas por el comando.
+Al construir una derivación concreta,
+se proporciona el valor correspondiente a la ejecución que se desea justificar.
 
 Representamos la terminación normal,
 de error y filtrado de caminos de la siguiente manera:
@@ -2877,7 +2885,7 @@ type cond = state -> prop
 A partir de esta definición, la derivabilidad de una tripleta se representa mediante:
 
 \begin{lstlisting}
-noeq type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
+type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 \end{lstlisting}
 
 Un valor de tipo \lstinline|il_triple pre p post| es un árbol de derivación construido mediante las reglas del sistema.
@@ -2886,12 +2894,12 @@ Por lo tanto,
 no la validez semántica.
 La relación entre ambas nociones será establecida en la \autoref{sec:il-soundness} mediante la función \lstinline|soundness|.
 
-Cada constructor de \lstinline|il_triple| corresponde a una de las reglas de inferencia presentadas en la \autoref{fig:reglas-il}.
+Cada constructor de \lstinline|il_triple| corresponde a una adaptación de las reglas de inferencia presentadas en la \autoref{fig:reglas-il}.
 Del mismo modo que un término de \lstinline|runsto p s0 s1| constituye un testigo de ejecución,
 un término de \lstinline|il_triple pre p post| constituye un testigo de derivabilidad.
 
 Las precondiciones de las reglas describen estados desde los cuales la ejecución todavía puede continuar,
-es decir, es correcta.
+es decir, tienen modo \lstinline|Ok|.
 Para expresarlo se utiliza:
 
 \begin{lstlisting}
@@ -2926,11 +2934,10 @@ pero cambia el modo de terminación.
 \lstinline|I_Assume| incorpora la condición evaluada al resultado.
 La postcondición conserva solo los estados que satisfacen la presunción y para los cuales la expresión es verdadera.
 
-Como se mencionó en la introducción,
-la subaproximación requiere descartar el axioma de sustitución hacia atrás de la HL,
-ya que este es inválido para garantizar la alcanzabilidad.
-En su lugar, la IL exige el uso del razonamiento hacia adelante.
-La regla de asignación debe conservar suficiente información histórica para justificar la alcanzabilidad del estado final:
+Como se explicó en la \autoref{sec:loginc},
+la regla de asignación de la IL conserva información sobre el valor anterior de la variable para justificar la alcanzabilidad del estado final.
+En la formalización,
+esta información se representa mediante un cuantificador existencial:
 
 \begin{lstlisting}
 | I_Assign : #pre : cond -> #x : var -> #e : expr ->
@@ -2943,8 +2950,8 @@ La regla de asignación debe conservar suficiente información histórica para j
 
 El valor existencial \lstinline|x_init| representa el valor que tenía \lstinline|x| antes de la asignación.
 A partir del \emph{store} final se reconstruye un posible \emph{store} inicial reemplazando el valor actual de \lstinline|x| por \lstinline|x_init|.
-La primer conjunción exige que este estado reconstruido satisfaga \lstinline|pre|.
-La segunda establece que el valor actual de \lstinline|x| coincide con la evaluación de \lstinline|e| en dicho estado inicial.
+El primer miembro de la conjunción exige que este estado reconstruido satisfaga \lstinline|pre|.
+El segundo establece que el valor actual de \lstinline|x| coincide con la evaluación de \lstinline|e| en dicho estado inicial.
 
 La regla \lstinline|I_Nondet| usa una construcción similar.
 En este caso,
@@ -2978,7 +2985,8 @@ el estado intermedio satisface \lstinline|mid| y puede utilizarse como presunci�
 Cuando \lstinline|p| finaliza en \lstinline|Er|,
 el error se propaga directamente al resultado de la secuencia.
 
-La IL permite justificar una ejecución no determinista seleccionando solo una rama:
+La elección no determinista se codifica mediante dos constructores,
+uno por cada rama:
 
 \begin{lstlisting}
 | I_ChoiceL : #p : stmt -> #q : stmt ->
@@ -2992,11 +3000,10 @@ La IL permite justificar una ejecución no determinista seleccionando solo una r
   il_triple (is_ok pre) (Choice p q) post
 \end{lstlisting}
 
-A diferencia de un análisis que intenta cubrir todos los caminos,
-una derivación que se da por una subaproximación puede centrarse en una única rama capaz de alcanzar el resultado deseado.
-Esta posibilidad no significa que la lógica determine automáticamente qué rama conduce a un error.
-En la formalización,
-la rama relevante es seleccionada explícitamente al construir el árbol de derivación.
+El constructor \lstinline|I_ChoiceL| utiliza una derivación para \lstinline|p|,
+mientras que \lstinline|I_ChoiceR| utiliza una para \lstinline|q|.
+En ambos casos,
+la precondición y la postcondición se conservan al pasar a \lstinline|Choice p q|.
 
 El caso de las iteraciones finitas se representa mediante:
 
@@ -3014,21 +3021,35 @@ Además,
 la formalización incluye una regla paramétrica basada en una familia de aserciones:
 
 \begin{lstlisting}
+unfold
+let kleene_pre (variant : nat -> cond) : cond =
+  is_ok (variant 0)
+
+unfold
+let kleene_post (variant : nat -> cond) : cond =
+  is_ok (fun s -> exists (n : nat). variant n s)
+
 | I_KleeneVariant :
   #variant : (nat -> cond) -> #p : stmt ->
-  (n : nat -> il_triple (is_ok (variant n)) p (variant (n + 1))) ->
+  (n : nat ->
+    il_triple (is_ok (variant n)) p (is_ok (variant (n + 1)))) ->
   il_triple (kleene_pre variant) (Kleene p) (kleene_post variant)
 \end{lstlisting}
 
-La premisa demuestra que cada estado perteneciente a \lstinline|variant (n + 1)|
-puede reconstruirse a partir de un estado perteneciente a \lstinline|variant n|.
-Repitiendo este argumento es posible obtener una traza finita que comienza en \lstinline|variant 0|.
+La familia \lstinline|variant| describe los estados asociados a cada cantidad de iteraciones.
+La premisa permite justificar cada estado normal de \lstinline|variant (n + 1)| mediante una ejecución de \lstinline|p|
+desde un estado normal de \lstinline|variant n|.
+La precondición corresponde a cero iteraciones,
+mientras que la postcondición reúne los resultados para algún número finito de iteraciones.
+La postcondición exige además el modo \lstinline|Ok|,
+por lo que esta regla describe iteraciones que terminan normalmente.
 \guido{Acá parece que la estas explicando desde cero, pero ya lo explicamos (mas o menos)
 en 2.3 cuando se introduce IL. Lo ideal acá es que expliques como se escriben esas reglas
 como tipo inductivo y si tomaste decisiones interesantes (e.g. usar el xinit en asignacion).
 No hay que explicar las reglas en sí mismas, eso ya lo hicimos.}
 
-Como se observó en el Lema~\ref{lem:prop-pi},
+Por último,
+como se observó en el Lema~\ref{lem:prop-pi},
 la postimagen preserva uniones.
 Esta propiedad se refleja mediante:
 
@@ -3040,7 +3061,6 @@ Esta propiedad se refleja mediante:
   il_triple (is_ok (fun s -> pre1 s \/ pre2 s)) p
     (fun s -> post1 s \/ post2 s)
 \end{lstlisting}
-
 La regla permite combinar derivaciones obtenidas a partir de conjuntos diferentes de estados iniciales.
 
 \section{La Regla de Consecuencia}
@@ -3050,9 +3070,15 @@ a esto más adelante?}
 Una de las diferencias estructurales entre la IL y la verificación clásica es el comportamiento de su Regla de Consecuencia.
 Como vimos en la \autoref{sec:loginc},
 la subaproximación exige invertir la dirección de las implicaciones.
+
 El sistema permite debilitar la precondición y fortalecer la postcondición.
-Esto es para no exigir estados iniciales innecesarios y para enfocar el análisis en un subconjunto de estados finales de interés,
-descartando lógicamente otras ramas.
+Al debilitar la precondición,
+se conservan los estados iniciales que ya permitían alcanzar los resultados demostrados.
+Por otro lado,
+al fortalecer la postcondición,
+solo se descartan resultados cuya alcanzabilidad ya estaba justificada.
+Por lo tanto,
+ambas operaciones preservan la validez de la tripleta.
 \guido{de nuevo, esto ya está explicado, acá deberías presentar
 la formalización nomás. Podés explicar que las implicaciones
 se modelan como una implicación squasheada y que generalmente
@@ -3062,9 +3088,9 @@ La validez de estas direcciones se justificó utilizando la monotonía de la pos
 Si una tripleta satisface $\operatorname{post} \subseteq \operatorname{post}(C)(\operatorname{pre})$,
 entonces las condiciones $\operatorname{pre} \subseteq \operatorname{pre}'$ y $\operatorname{post}' \subseteq \operatorname{post}$
 permiten concluir:
-$$\operatorname{post}' \subseteq \operatorname{post}'(C)(\operatorname{pre}')$$
-
-Esta regla se codifica mediante:
+$$\operatorname{post}' \subseteq \operatorname{post} \subseteq \operatorname{post}(C)(\operatorname{pre})
+\subseteq \operatorname{post}(C)(\operatorname{pre}')$$
+Luego, esta regla se codifica mediante:
 
 \begin{lstlisting}
 | I_Consequence : #pre : cond -> #p : stmt ->
@@ -3082,14 +3108,6 @@ sin necesidad de inspeccionar la estructura computacional de sus demostraciones.
 en muchos casos,
 pueden ser resueltas automáticamente por Z3.
 \guido{bien}
-
-Sin embargo,
-esta automatización es local.
-El \emph{solver} puede comprobar implicaciones proposicionales,
-igualdades y restricciones aritméticas,
-pero no construye por sí mismo la derivación principal de la IL.
-El usuario debe elegir las reglas,
-proporcionar aserciones intermedias y definir el camino de ejecución que se quiere justificar.
 
 \section{El Teorema de Soundness}
 \label{sec:il-soundness}
@@ -3112,7 +3130,8 @@ $$\forall s_1. \, post \; s_1 \implies \exists s_0. \, pre \; s_0 \land \operato
 \guido{me parece que habria que recordar que el modo
 de terminación se modela distinto}
 
-En \fstar{} codificamos este teorema de forma constructiva mediante la siguiente función con tipos dependientes:
+En \fstar{} codificamos este teorema mediante una función fantasma con tipos dependientes
+que proporciona un estado inicial y una derivación operacional:
 
 \begin{lstlisting}
 let rec soundness
@@ -3140,38 +3159,21 @@ la derivación de $\itriple{pre}{s}{post}$ para
 encontrar un $s_0$ que cumpla $pre$.''}
 La cláusula \lstinline|decreases pf| indica que cada llamada recursiva se realiza sobre una subderivación menor.
 
-Hay instrucciones en las que la traza se reconstruye de forma directa.
-En el caso de \lstinline|Skip|,
-el estado inicial coincide con el final:
+Los casos de \lstinline|I_Skip|,
+\lstinline|I_Error| e \lstinline|I_Assume| permiten reconstruir la ejecución de forma directa.
 
 \begin{lstlisting}
 | I_Skip _ ->
   let s0 = s1 in
   let r = R_Skip s0 in
   (|s0, r|)
-\end{lstlisting}
 
-Para \lstinline|Error|,
-el \emph{store} inicial coincide con el final,
-pero el modo de terminación difiere:
-
-\begin{lstlisting}
 | I_Error _ ->
   let (st1, _) = s1 in
   let s0 = (st1, Ok) in
   let r = R_Error s0 in
   (|s0, r|)
-\end{lstlisting}
 
-En el caso de \lstinline|I_Assume p|,
-\guido{recordamos que la regla
-tiene $pre~s$ en su postcondición,
-con lo cual $s_1$ satisface $pre$, y podemos tomar $s_0 = s_1$.
-Esto tiene sentido intuitivo: los estados finales
-están estrictamente más restringidos que los estados iniciales,
-y la operación \lstinline`Assume` no modifica el estado, con lo cual
-es trivial demostrar la solidez de esta regla.}
-\sout{la postcondición ya contiene la prueba de que la expresión es verdadera:}
 
 \begin{lstlisting}
 | I_Assume pre #e ->
@@ -3180,6 +3182,23 @@ es trivial demostrar la solidez de esta regla.}
   (|s0, r|)
 \end{lstlisting}
 
+En \lstinline|Skip|,
+el estado inicial coincide con el final y la ejecución se justifica mediante \lstinline|R_Skip|.
+Para \lstinline|Error|,
+el \emph{store} inicial coincide con el final,
+pero se reemplaza su modo de terminación por \lstinline|Ok| para reconstruir el estado inicial.
+Por último,
+en \lstinline|Assume|,
+\guido{recordamos que la regla
+tiene $pre~s$ en su postcondición,
+con lo cual $s_1$ satisface $pre$, y podemos tomar $s_0 = s_1$.
+Esto tiene sentido intuitivo: los estados finales
+están estrictamente más restringidos que los estados iniciales,
+y la operación \lstinline`Assume` no modifica el estado, con lo cual
+es trivial demostrar la solidez de esta regla.}
+\sout{la postcondición ya contiene la prueba de que la expresión es verdadera,
+por lo que ambos estados también coinciden}
+
 Las reglas de asignación y no determinismo contienen cuantificadores existenciales en sus postcondiciones.
 Sus testigos permiten reconstruir un estado inicial desde el cual se alcanza el estado final recibido.
 
@@ -3187,17 +3206,14 @@ En el caso de asignación,
 la postcondición garantiza la existencia de un valor histórico \lstinline|x_init| tal que,
 al colocarlo en la variable \lstinline|x| del \emph{store} final,
 se obtiene un estado que satisface la precondición.
-Sin embargo,
-a nivel computacional en \fstar{},
-no es posible ejecutar hacia atrás para adivinar 
-\guido{?}
-cuál era ese valor en el \emph{store} original.
-Para resolver esto nos apoyamos en la operación fantasma \lstinline|indefinite_description_ghost|.
+Para seleccionar un valor anterior que satisfaga estas condiciones,
+nos apoyamos en la operación fantasma \lstinline|indefinite_description_ghost|.
 Esta operación de elección clásica está en el módulo \lstinline|FStar.IndefiniteDescription| (\lstinline|ID|)
-y nos permite transformar la existencia lógica de un estado
-en un testigo que podemos manipular en el código de la demostración.
+y nos permite transformar la existencia lógica de un valor
+en un testigo que podemos manipular en el código de la demostración,
+\guido{mientras estemos dentro del efecto Ghost}.
 Este testigo no forma parte de un programa ejecutable,
-solo se usa durante la demostración:
+solo se usa durante la demostración.
 \guido{Está bien. Aunque cambiaria
 ``solo se usa durante la demostración''
 por
@@ -3223,12 +3239,11 @@ o algo asi}
   let pf0 = R_Assign s0 #x #e in
   state_equiv_eq (override st0 x (eval_expr s0 e), Ok) s1;
   (|s0, pf0|)
-
 \end{lstlisting}
 
 Una vez reconstruido el \emph{store} inicial,
 se aplica \lstinline|R_Assign| para obtener una derivación de la asignación.
-Para que esta derivación alcnance el estado final \lstinline|s1|,
+Para que esta derivación alcance el estado final \lstinline|s1|,
 se comprueba que el \emph{store} resultante tiene los mismos valores que el de \lstinline|s1| y que ambos estados tienen modo \lstinline|Ok|.
 El lema \lstinline|state_equiv_eq| permite concluir que estos estados son iguales,
 por lo que se puede utilizar directamente la derivación obtenida.
@@ -3237,11 +3252,24 @@ El caso de \lstinline|Nondet| sigue el mismo patrón.
 La postcondición proporciona un valor histórico que permite reconstruir un estado inicial,
 mientras que la ejecución se instancia con el valor final de \lstinline|x|.
 
+\begin{lstlisting}
+| I_Nondet #x #pre ->
+  let (st1, m) = s1 in
+  let v = ID.indefinite_description_ghost _ (fun v -> pre ((override st1 x v), m)) in
+  let st0 = override st1 x v in
+  let s0 = (st0, Ok) in
+  let pf0 : runsto (Nondet x) s0 ((override st0 x (st1 x)), Ok) =
+    R_Nondet s0 #x (st1 x)
+  in
+  state_equiv_eq (override st0 x (st1 x), Ok) s1;
+  (|s0, pf0|)
+\end{lstlisting}
+
 La demostración para la secuenciación de comandos \lstinline|I_Seq| ilustra cómo la subaproximación captura flujos anormales.
 La regla deductiva afirma que el resultado de \lstinline|Seq p q|
-puede derivar del éxito final de \lstinline|q| o de un fallo prematuro en \lstinline|p|.
+puede derivar de la ejecución de \lstinline|q| o de un fallo prematuro en \lstinline|p|.
 Por lo tanto,
-el teorema de soundness debe inspeccionar el estado final \lstinline|s1| para decidir qué fragmento de la semántica reconstruir:
+el teorema de soundness debe inspeccionar el estado final \lstinline|s1| para decidir qué fragmento de la semántica reconstruir.
 
 \begin{lstlisting}
 | I_Seq #p #q #pre #mid #post pf_p pf_q ->
@@ -3250,17 +3278,17 @@ el teorema de soundness debe inspeccionar el estado final \lstinline|s1| para de
     let (|s0, r_p|) = soundness p (is_ok pre) mid pf_p s_mid in
     let r = R_Seq #p #q #s0 #s_mid #s1 r_p r_q in
     (|s0, r|)
-  else (
+  else
     let (|s0, r_p|) = soundness p (is_ok pre) mid pf_p s1 in
     let r = R_SeqEr #p #q #s0 #s1 r_p in
     (|s0, r|)
-  )
 \end{lstlisting}
 
+La comprobación mediante \lstinline|t2b| se realiza en el contexto fantasma de la prueba.
 Si \lstinline|s1| satisface \lstinline|post|,
-el estado \sout{fue}
-\guido{pudo haber sido!!!!}
- obtenido después de ejecutar \lstinline|q|.
+se reconstruye una ejecución que alcanza ese estado después de ejecutar \lstinline|q|.
+\guido{bien, acá parecía decir que el programa \textbf{tuvo} que haber venido de ese
+caso, pero no es necesariamente asi, pueden solaparse ambas ramas}
 La reconstrucción ocurre en orden inverso a la ejecución,
 primero se aplica la hipótesis inductiva a \lstinline|q|,
 obteniendo el estado intermedio \lstinline|s_mid|,
@@ -3275,7 +3303,7 @@ En ese caso,
 se reconstruye únicamente la ejecución del primer comando y se utiliza \lstinline|R_SeqEr| para propagar el fallo.
 
 
-Los casos de elección \guido{no determinista} aplican la hipótesis inductiva solo en la rama seleccionada por la derivación:
+Los casos de elección \guido{no determinista} aplican la hipótesis inductiva solo en la rama seleccionada por la derivación.
 
 \begin{lstlisting}
 | I_ChoiceL #p #q #pre #post pf_p ->
@@ -3283,38 +3311,67 @@ Los casos de elección \guido{no determinista} aplican la hipótesis inductiva s
   let r = R_ChoiceL #p #q #s0 #s1 r_p in
   (|s0, r|)
 \end{lstlisting}
-
 El caso derecho es análogo.
 No es necesario reconstruir una ejecución de la rama descartada.
 
 \guido{Los casos del desenrollado de bucles son también simples.}
-Para \lstinline|I_Kleene0|,
-la ejecución realiza cero iteraciones.
+El caso de \lstinline|I_Kleene0| es análogo al de \lstinline|I_Skip|:
+se toma el estado final como estado inicial y se utiliza \lstinline|R_Kleene0| para justificar una ejecución sin iteraciones.
 Para \lstinline|I_KleeneS|,
-la hipótesis inductiva reconstruye una ejecución de \lstinline|Seq (Kleene p) p|,
-que luego se transforma en una ejecución de \lstinline|Kleene p| mediante \lstinline|R_KleeneS|.
+se aplica la hipótesis inductiva en la derivación de \lstinline|Seq (Kleene p) p| recibida como premisa.
+Esto proporciona un estado inicial y una derivación operacional de la secuencia,
+que \lstinline|R_KleeneS| convierte en una derivación de \lstinline|Kleene p| entre los mismos estados.
 
-El tratamiento de la iteración mediante \lstinline|I_KleeneVariant| usa un mecanismo híbrido.
+El tratamiento de la iteración mediante \lstinline|I_KleeneVariant| usa una inducción auxiliar sobre el número de iteraciones.
+
+\begin{lstlisting}
+| I_KleeneVariant #variant #p pf_var ->
+  let p_n (n : nat) : prop = variant n s1 /\ s1._2 == Ok in
+  let n = ID.indefinite_description_ghost _ p_n in
+  let rec aux (m : nat) (t : state { variant m t /\ t._2 == Ok } )
+    : GTot (s0 : state { variant 0 s0 /\ s0._2 == Ok } & runsto (Kleene p) s0 t) (decreases m) =
+    if m = 0 then
+      let s0 = t in
+      let r = R_Kleene0 #p in
+      (|s0, r|)
+    else 
+      let m' = m - 1 in
+      let pf_p = pf_var m' in
+      let (|s_mid, r_p|) =
+        soundness p (is_ok (variant m')) (is_ok (variant (m' + 1))) pf_p t in
+      let (|s0, r_kleene|) = aux m' s_mid in
+      let r = R_KleeneS #p (R_Seq r_kleene r_p) in
+      (|s0, r|)
+  in
+  aux n s1
+\end{lstlisting}
 Primero,
-utiliza la descripción indefinida para encontrar el número de iteraciones \lstinline|n| en el que finalizó el bucle.
+utiliza la descripción indefinida para seleccionar un número de iteraciones \lstinline|n| que satisfaga la postcondición.
 Luego,
 construye la traza completa declarando una función auxiliar recursiva
 sobre el número de iteraciones.
 El caso base utiliza \lstinline|R_Kleene0|.
 En el caso inductivo,
 se reconstruye primero la última ejecución de \lstinline|p|,
-luego a repetición anterior y finalmente se componen ambas mediante \lstinline|R_Seq| y \lstinline|R_KleeneS|
+luego la repetición anterior y finalmente se componen ambas mediante \lstinline|R_Seq| y \lstinline|R_KleeneS|.
 \guido{y si mostramos el tipo de este lema inductivo auxiliar?}
 
 En \lstinline|I_Consequence|,
 el estado final que satisface \lstinline|post'| también satisface \lstinline|post| por la condición lateral de fortalecimiento.
-Luego se aplica la hipótesis inductiva a la derivación original.
+Se aplica entonces la hipótesis inductiva a la derivación original.
 El estado inicial obtenido satisface \lstinline|pre| y,
 por debilitamiento, 
-ambién satisface \lstinline|pre'|.
+también satisface \lstinline|pre'|,
+por lo que puede devolverse junto con la misma derivación operacional.
 
-Para \lstinline|I_Disjunction|,
-la prueba inspecciona cuál de las dos postcondiciones satisface el estado final y aplica la hipótesis inductiva a la derivación correspondiente.
+Finalmente,
+en \lstinline|I_Disjunction|,
+el estado final satisface al menos una de las dos postcondiciones.
+La prueba distingue los casos mediante \lstinline|t2b| y aplica la hipótesis inductiva a la derivación correspondiente.
+El estado inicial obtenido satisface la precondición de esa derivación y,
+por lo tanto,
+también la disyunción de las precondiciones,
+por lo que puede devolverse con la misma derivación operacional.
 \guido{acá de vuelta se pueden solapar, por ahí merece un mínimo comentario}
 
 La \sout{aceptación de la} función \lstinline|soundness| \sout{por \fstar{}} instancia el Teorema~\ref{teo:sound-il} para el lenguaje concreto de este capítulo.

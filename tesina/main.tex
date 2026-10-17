@@ -3044,6 +3044,8 @@ Esta propiedad se refleja mediante:
 La regla permite combinar derivaciones obtenidas a partir de conjuntos diferentes de estados iniciales.
 
 \section{La Regla de Consecuencia}
+\guido{merece realmente otra sección? es porque hacés referencia
+a esto más adelante?}
 \label{sec:il-consecuencia}
 Una de las diferencias estructurales entre la IL y la verificación clásica es el comportamiento de su Regla de Consecuencia.
 Como vimos en la \autoref{sec:loginc},
@@ -3051,6 +3053,10 @@ la subaproximación exige invertir la dirección de las implicaciones.
 El sistema permite debilitar la precondición y fortalecer la postcondición.
 Esto es para no exigir estados iniciales innecesarios y para enfocar el análisis en un subconjunto de estados finales de interés,
 descartando lógicamente otras ramas.
+\guido{de nuevo, esto ya está explicado, acá deberías presentar
+la formalización nomás. Podés explicar que las implicaciones
+se modelan como una implicación squasheada y que generalmente
+el solver las maneja fácilmente}
 La validez de estas direcciones se justificó utilizando la monotonía de la postimagen establecida en el Lema~\ref{lem:prop-pi}.
 
 Si una tripleta satisface $\operatorname{post} \subseteq \operatorname{post}(C)(\operatorname{pre})$,
@@ -3075,6 +3081,7 @@ sin necesidad de inspeccionar la estructura computacional de sus demostraciones.
 \fstar{} transforma estas condiciones en obligaciones de verificación que,
 en muchos casos,
 pueden ser resueltas automáticamente por Z3.
+\guido{bien}
 
 Sin embargo,
 esta automatización es local.
@@ -3101,6 +3108,9 @@ para todo estado final $s_1$ que satisface $post$,
 existe un estado inicial $s_0$ que satisface $pre$ y una ejecución operacional de $p$ desde $s_0$ hasta $s_1$:
 $$\forall s_1. \, post \; s_1 \implies \exists s_0. \, pre \; s_0 \land \operatorname{runsto} \; p \; s_0 \; s_1$$
 \end{teorema}
+\guido{ya explicaste que \lstinline`x:s & t` es un par dependiendente / tipo sigma?}
+\guido{me parece que habria que recordar que el modo
+de terminación se modela distinto}
 
 En \fstar{} codificamos este teorema de forma constructiva mediante la siguiente función con tipos dependientes:
 
@@ -3124,6 +3134,10 @@ y produce un habitante de \lstinline|runsto|,
 que certifica la existencia de una ejecución.
 
 La demostración se realiza por inducción estructural sobre \lstinline|pf|.
+\guido{``A continuación, detallamos algunos casos de la prueba.
+A grandes rasgos, la prueba consiste en usar $s_1$, que cumple $post$
+la derivación de $\itriple{pre}{s}{post}$ para
+encontrar un $s_0$ que cumpla $pre$.''}
 La cláusula \lstinline|decreases pf| indica que cada llamada recursiva se realiza sobre una subderivación menor.
 
 Hay instrucciones en las que la traza se reconstruye de forma directa.
@@ -3149,8 +3163,15 @@ pero el modo de terminación difiere:
   (|s0, r|)
 \end{lstlisting}
 
-En \lstinline|Assume|,
-la postcondición ya contiene la prueba de que la expresión es verdadera:
+En el caso de \lstinline|I_Assume p|,
+\guido{recordamos que la regla
+tiene $pre~s$ en su postcondición,
+con lo cual $s_1$ satisface $pre$, y podemos tomar $s_0 = s_1$.
+Esto tiene sentido intuitivo: los estados finales
+están estrictamente más restringidos que los estados iniciales,
+y la operación \lstinline`Assume` no modifica el estado, con lo cual
+es trivial demostrar la solidez de esta regla.}
+\sout{la postcondición ya contiene la prueba de que la expresión es verdadera:}
 
 \begin{lstlisting}
 | I_Assume pre #e ->
@@ -3160,7 +3181,7 @@ la postcondición ya contiene la prueba de que la expresión es verdadera:
 \end{lstlisting}
 
 Las reglas de asignación y no determinismo contienen cuantificadores existenciales en sus postcondiciones.
-Sus testigos permiten reconstruir un estado inical desde el cual se alcanza el estado final recibido.
+Sus testigos permiten reconstruir un estado inicial desde el cual se alcanza el estado final recibido.
 
 En el caso de asignación,
 la postcondición garantiza la existencia de un valor histórico \lstinline|x_init| tal que,
@@ -3168,13 +3189,27 @@ al colocarlo en la variable \lstinline|x| del \emph{store} final,
 se obtiene un estado que satisface la precondición.
 Sin embargo,
 a nivel computacional en \fstar{},
-no es posible ejecutar hacia atrás para adivinar cuál era ese valor en el \emph{store} original.
+no es posible ejecutar hacia atrás para adivinar 
+\guido{?}
+cuál era ese valor en el \emph{store} original.
 Para resolver esto nos apoyamos en la operación fantasma \lstinline|indefinite_description_ghost|.
 Esta operación de elección clásica está en el módulo \lstinline|FStar.IndefiniteDescription| (\lstinline|ID|)
 y nos permite transformar la existencia lógica de un estado
 en un testigo que podemos manipular en el código de la demostración.
 Este testigo no forma parte de un programa ejecutable,
 solo se usa durante la demostración:
+\guido{Está bien. Aunque cambiaria
+``solo se usa durante la demostración''
+por
+``esto es válido debido a que nuestra está en GTot, un efecto fantasma
+que permite ejecutar estas operaciones no-constructivas''.
+Por cierto si esto fuera en Coq no habría
+nada raro: un existencial es una par de testigo + prueba, y mientras
+te quedes en Prop podés eliminar a gusto. \fstar{} lo hace distinto
+con Tot/GTot}
+
+\guido{Dado esto, construimos $s_1 = s_0 [ x \leftarrow xinit ] $,
+o algo asi}
 
 \begin{lstlisting}
 | I_Assign #pre #x #e ->
@@ -3223,7 +3258,9 @@ el teorema de soundness debe inspeccionar el estado final \lstinline|s1| para de
 \end{lstlisting}
 
 Si \lstinline|s1| satisface \lstinline|post|,
-el estado fue obtenido después de ejecutar \lstinline|q|.
+el estado \sout{fue}
+\guido{pudo haber sido!!!!}
+ obtenido después de ejecutar \lstinline|q|.
 La reconstrucción ocurre en orden inverso a la ejecución,
 primero se aplica la hipótesis inductiva a \lstinline|q|,
 obteniendo el estado intermedio \lstinline|s_mid|,
@@ -3237,7 +3274,8 @@ la postcondición de \lstinline|I_Seq| garantiza que se trata de un estado de er
 En ese caso,
 se reconstruye únicamente la ejecución del primer comando y se utiliza \lstinline|R_SeqEr| para propagar el fallo.
 
-Los casos de elección aplican la hipótesis inductiva solo en la rama seleccionada por la derivación:
+
+Los casos de elección \guido{no determinista} aplican la hipótesis inductiva solo en la rama seleccionada por la derivación:
 
 \begin{lstlisting}
 | I_ChoiceL #p #q #pre #post pf_p ->
@@ -3249,6 +3287,7 @@ Los casos de elección aplican la hipótesis inductiva solo en la rama seleccion
 El caso derecho es análogo.
 No es necesario reconstruir una ejecución de la rama descartada.
 
+\guido{Los casos del desenrollado de bucles son también simples.}
 Para \lstinline|I_Kleene0|,
 la ejecución realiza cero iteraciones.
 Para \lstinline|I_KleeneS|,
@@ -3259,11 +3298,13 @@ El tratamiento de la iteración mediante \lstinline|I_KleeneVariant| usa un meca
 Primero,
 utiliza la descripción indefinida para encontrar el número de iteraciones \lstinline|n| en el que finalizó el bucle.
 Luego,
-construye la traza completa declarando una función auxiliar recursiva sobre el número de iteraciones.
+construye la traza completa declarando una función auxiliar recursiva
+sobre el número de iteraciones.
 El caso base utiliza \lstinline|R_Kleene0|.
 En el caso inductivo,
 se reconstruye primero la última ejecución de \lstinline|p|,
 luego a repetición anterior y finalmente se componen ambas mediante \lstinline|R_Seq| y \lstinline|R_KleeneS|
+\guido{y si mostramos el tipo de este lema inductivo auxiliar?}
 
 En \lstinline|I_Consequence|,
 el estado final que satisface \lstinline|post'| también satisface \lstinline|post| por la condición lateral de fortalecimiento.
@@ -3274,10 +3315,12 @@ ambién satisface \lstinline|pre'|.
 
 Para \lstinline|I_Disjunction|,
 la prueba inspecciona cuál de las dos postcondiciones satisface el estado final y aplica la hipótesis inductiva a la derivación correspondiente.
+\guido{acá de vuelta se pueden solapar, por ahí merece un mínimo comentario}
 
-La aceptación de la función \lstinline|soundness| por \fstar{} instancia el Teorema~\ref{teo:sound-il} para el lenguaje concreto de este capítulo.
+La \sout{aceptación de la} función \lstinline|soundness| \sout{por \fstar{}} instancia el Teorema~\ref{teo:sound-il} para el lenguaje concreto de este capítulo.
 En particular,
-construye los testigos exigidos por la caracterización del Lema~\ref{lem:caracterizacion}:
+construye\guido{mas o menos, en ghost, así que realmente solo
+demuestra la existencia} los testigos exigidos por la caracterización del Lema~\ref{lem:caracterizacion}:
 
 $$\operatorname{il\_triple} \; pre \; p \; post \implies \forall s_1 \in post. \, \exists s_0 \in pre. \, \operatorname{runsto} \; p \; s_0 \; s_1$$
 Por lo tanto,

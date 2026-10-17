@@ -127,7 +127,7 @@ let kleene_pre (variant : nat -> cond) : cond =
 
 unfold
 let kleene_post (variant : nat -> cond) : cond =
-  fun s -> exists (n : nat). variant n s /\ (n == 0 ==> s._2 == Ok)
+  is_ok (fun s -> exists (n : nat). variant n s)
 
 noeq
 type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
@@ -182,7 +182,7 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | I_KleeneVariant :
     #variant : (nat -> cond) -> #p : stmt ->
     (n : nat ->
-      il_triple (is_ok (variant n)) p (variant (n + 1))) ->
+      il_triple (is_ok (variant n)) p (is_ok (variant (n + 1)))) ->
     il_triple (kleene_pre variant) (Kleene p) (kleene_post variant)
   
   | I_Consequence : #pre : cond -> #p : stmt -> 
@@ -287,9 +287,9 @@ let rec soundness
     (|s0, r|)
 
   | I_KleeneVariant #variant #p pf_var ->
-    let p_n (n : nat) : prop = variant n s1 /\ (n == 0 ==> s1._2 == Ok) in
+    let p_n (n : nat) : prop = variant n s1 /\ s1._2 == Ok in
     let n = ID.indefinite_description_ghost _ p_n in
-    let rec aux (m : nat) (t : state { variant m t /\ (m == 0 ==> t._2 == Ok) })
+    let rec aux (m : nat) (t : state { variant m t /\ t._2 == Ok } )
       : GTot (s0 : state { variant 0 s0 /\ s0._2 == Ok } & runsto (Kleene p) s0 t) (decreases m) =
       if m = 0 then
         let s0 = t in
@@ -299,7 +299,7 @@ let rec soundness
         let m' = m - 1 in
         let pf_p = pf_var m' in
         let (|s_mid, r_p|) =
-          soundness p (is_ok (variant m')) (variant (m' + 1)) pf_p t in
+          soundness p (is_ok (variant m')) (is_ok (variant (m' + 1))) pf_p t in
         let (|s0, r_kleene|) = aux m' s_mid in
         let r = R_KleeneS #p (R_Seq r_kleene r_p) in
         (|s0, r|)

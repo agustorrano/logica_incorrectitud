@@ -256,12 +256,11 @@ let rec soundness
         soundness p (is_ok pre) mid pf_p s_mid in
       let r = R_Seq #p #q #s0 #s_mid #s1 r_p r_q in
       (|s0, r|)
-    else (
+    else
       let (|s0, r_p|) =
         soundness p (is_ok pre) mid pf_p s1 in
       let r = R_SeqEr #p #q #s0 #s1 r_p in
       (|s0, r|)
-    )
   
   | I_ChoiceL #p #q #pre #post pf_p ->
     let (|s0, r_p|) =
@@ -314,7 +313,6 @@ let rec soundness
     if t2b (post1 s1) then
       let (|s0, r|) = soundness p (is_ok pre1) post1 pf_p1 s1 in
       (|s0, r|)
-    else (
+    else
       let (|s0, r|) = soundness p (is_ok pre2) post2 pf_p2 s1 in
       (|s0, r|)
-    )

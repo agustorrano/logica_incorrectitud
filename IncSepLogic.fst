@@ -2,8 +2,7 @@ module IncSepLogic
 
 open FStar.Classical
 open FStar.FunctionalExtensionality
-module FE = FStar.FunctionalExtensionality
-module ID = FStar.IndefiniteDescription
+open FStar.IndefiniteDescription
 
 // ============================================================
 // 1. Sintaxis y estados
@@ -29,7 +28,7 @@ let heap_is_complete (h : heap) : prop =
 let complete_heap : Type = h : heap { heap_is_complete h }
 
 let initial_heap : complete_heap =
-  FE.on loc (fun _ -> Empty)
+  on loc (fun _ -> Empty)
 
 type expr =
   | Var : var -> expr
@@ -86,7 +85,7 @@ let eval_expr (s : state) (e : expr)
   : GTot nat = eval_expr' s._1 e
 
 let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : (a ^-> b) =
-  FE.on a (fun z -> if z = x then y else f z)
+  on a (fun z -> if z = x then y else f z)
 
 unfold let state_equiv (s1 s2 : state) : prop =
   (forall x. s1._1 x == s2._1 x) /\
@@ -96,8 +95,8 @@ unfold let state_equiv (s1 s2 : state) : prop =
 let state_equiv_eq (s1 s2 : state)
   : Lemma (requires (state_equiv s1 s2))
           (ensures s1 == s2) =
-  FE.extensionality var (fun _ -> value) s1._1 s2._1;
-  FE.extensionality loc (fun _ -> cell) s1._2 s2._2
+  extensionality var (fun _ -> value) s1._1 s2._1;
+  extensionality loc (fun _ -> cell) s1._2 s2._2
 
 // ============================================================
 // 2. Modelo y álgebra del heap
@@ -108,26 +107,26 @@ let cell_disjoint (c1 c2 : cell) : prop =
 
 let cell_union (c1 c2 : cell { cell_disjoint c1 c2 }) : cell =
   match c1 with
-    | Unknown -> c2
-    | _ -> c1
+  | Unknown -> c2
+  | _ -> c1
 
 let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
 
 let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
-  FE.on loc (fun l -> cell_union (h1 l) (h2 l))
+  on loc (fun l -> cell_union (h1 l) (h2 l))
 
 let empty_heap : heap =
-  FE.on loc (fun _ -> Unknown)
+  on loc (fun _ -> Unknown)
 
 let singleton_empty_heap (l : loc) : heap =
-  FE.on loc (fun l' -> if l' = l then Empty else Unknown)
+  on loc (fun l' -> if l' = l then Empty else Unknown)
 
 let singleton_full_heap (l : loc) (v : value) : heap =
-  FE.on loc (fun l' -> if l' = l then Full v else Unknown)
+  on loc (fun l' -> if l' = l then Full v else Unknown)
 
 let heap_without (h : heap) (l : loc) : heap =
-  FE.on loc (fun l' ->
+  on loc (fun l' ->
     if l' = l then Unknown
     else h l')
 
@@ -266,10 +265,8 @@ let rec lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
 
 let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state) 
   (h_fr : heap) (r : runsto p s0 s1) :
-  Lemma (requires (let (_, hp1, _) = s1 in 
-                   heaps_disjoint hp1 h_fr))
-        (ensures (let (_, hp0, _) = s0 in
-                  heaps_disjoint hp0 h_fr))
+  Lemma (requires (let (_, hp1, _) = s1 in heaps_disjoint hp1 h_fr))
+        (ensures (let (_, hp0, _) = s0 in heaps_disjoint hp0 h_fr))
         (decreases r) 
   = match r with
   | R_SeqEr r_p ->
@@ -371,12 +368,9 @@ let rec fv_expr (e : expr) (x : var) : prop =
   match e with
   | Var y -> x = y
   | Const _ -> False
-  | Plus e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
-  | Minus e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
-  | Times e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
-  | Eq e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
-  | Lt e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
-  | Gt e1 e2 -> fv_expr e1 x \/ fv_expr e2 x
+  | Plus e1 e2 | Minus e1 e2 | Times e1 e2
+  | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 ->
+    fv_expr e1 x \/ fv_expr e2 x
 
 let rec fv_stmt (p : stmt) (x: var) : prop =
   match p with
@@ -427,24 +421,22 @@ let points_to_flex (l : loc) (v : value) : cond =
 
 let lemma_points_to_flex (l : loc) (v : value) (s : state)
   : Lemma (ensures (points_to_flex l v s <==> (l <> 0 /\ s._2 l == Full v))) =
-  if t2b (points_to_flex l v s) then (
-    let h1 = ID.indefinite_description_ghost
-      heap (fun h1 -> exists h2.
-        heaps_disjoint h1 h2 /\
-        s._2 == heap_union h1 h2 /\
-        points_to l v (s._1, h1, s._3))
+  if t2b (points_to_flex l v s) then
+    let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
+      heaps_disjoint h1 h2 /\
+      s._2 == heap_union h1 h2 /\
+      points_to l v (s._1, h1, s._3))
     in
-    let h2 = ID.indefinite_description_ghost
-      heap (fun h2 ->
-        heaps_disjoint h1 h2 /\
-        s._2 == heap_union h1 h2 /\
-        points_to l v (s._1, h1, s._3))
+    let h2 = indefinite_description_ghost heap (fun h2 ->
+      heaps_disjoint h1 h2 /\
+      s._2 == heap_union h1 h2 /\
+      points_to l v (s._1, h1, s._3))
     in
     assert (l <> 0 /\ s._2 l == Full v)
-  ) else if l <> 0 && s._2 l == Full v then (
+  else if l <> 0 && s._2 l == Full v then
     let h1 = singleton_full_heap l v in
     let h2 = heap_without s._2 l in
-    FE.extensionality loc (fun _ -> cell) s._2 (heap_union h1 h2);
+    extensionality loc (fun _ -> cell) s._2 (heap_union h1 h2);
     exists_intro (fun b ->
       heaps_disjoint h1 b /\
       s._2 == heap_union h1 b /\
@@ -453,7 +445,6 @@ let lemma_points_to_flex (l : loc) (v : value) (s : state)
       heaps_disjoint a b /\
       s._2 == heap_union a b /\
       points_to l v (s._1, a, s._3)) h1
-  )
 
 let independent_on_vars (vars : string -> prop) (c : cond) : prop =
   forall (st1 st2 : store) (hp : heap) (m1 m2 : term_mode).
@@ -654,8 +645,7 @@ let rec eval_expr_fresh (s : state) (e : expr) (x : var) (v : value)
           (ensures (eval_expr (set_var s x v) e == eval_expr s e))
           (decreases e) =
   match e with
-  | Var _ -> ()
-  | Const _ -> ()
+  | Var _ | Const _ -> ()
   | Plus e1 e2 | Minus e1 e2 | Times e1 e2
   | Eq e1 e2 | Lt e1 e2 | Gt e1 e2 ->
     eval_expr_fresh s e1 x v;
@@ -734,10 +724,8 @@ let rec r_fresh (#p : stmt) (#s0 #s1 : state)
 let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
   Lemma (requires (exists (x : a) (y : b). p x y))
         (ensures (exists (tup : a & b). p (fst tup) (snd tup))) = 
-  let x = FStar.IndefiniteDescription.indefinite_description_ghost 
-    a (fun x -> exists y. p x y) in
-  let y = FStar.IndefiniteDescription.indefinite_description_ghost 
-    b (fun y -> p x y) in
+  let x = indefinite_description_ghost a (fun x -> exists y. p x y) in
+  let y = indefinite_description_ghost b (fun y -> p x y) in
   let tup : a & b = (x, y) in
   assert (p (fst tup) (snd tup))
 
@@ -749,31 +737,19 @@ let rec soundness
   = match pf with
   | ISL_Assign #pre #x #e ->
     let (st1, hp1, m) = s1 in
-    assert (p == Assign x e);
-    assert (exists (st_init : store). pre (st_init, hp1, m) /\ 
-            st1 x == Nat (eval_expr (st_init, hp1, m) e) /\
-            (forall y. y <> x ==> st1 y == st_init y));
-    let st_init = FStar.IndefiniteDescription.indefinite_description_ghost 
-                  store (fun st_i -> pre (st_i, hp1, m) 
-                  /\ st1 x == Nat (eval_expr (st_i, hp1, m) e)
-                  /\ (forall y. y <> x ==> st1 y == st_i y))
+    let st_init = indefinite_description_ghost store (fun st_i -> pre (st_i, hp1, m) 
+      /\ st1 x == Nat (eval_expr (st_i, hp1, m) e)
+      /\ (forall y. y <> x ==> st1 y == st_i y))
     in
     let s0 = (st_init, hp1, Ok) in
-    assert (pre s0);
     let pf0 = R_Assign x e s0 in
-    assert (forall y. override st_init x (Nat (eval_expr s0 e)) y == s1._1 y);
     state_equiv_eq (override st_init x (Nat (eval_expr s0 e)), hp1, Ok) s1;
     (|s0, pf0|)
   
   | ISL_Nondet #pre #x -> 
     let (st1, hp1, m) = s1 in
-    assert (p == Nondet x);
-    assert (exists v. pre (override st1 x v, hp1, m));
-    let v = FStar.IndefiniteDescription.indefinite_description_ghost
-              _ (fun v -> pre (override st1 x v, hp1, m)) in
-    assert (pre (override st1 x v, hp1, m));
+    let v = indefinite_description_ghost _ (fun v -> pre (override st1 x v, hp1, m)) in
     let s0 = (override st1 x v, hp1, Ok) in
-    assert (pre s0);
     let pf0 = R_Nondet s0 #x (st1 x) in
     state_equiv_eq (override s0._1 x (st1 x), hp1, Ok) s1;
     (|s0, pf0|)
@@ -790,7 +766,7 @@ let rec soundness
     let logic_parts (hp_tup : heap & heap) : prop = 
       p_two (fst hp_tup) (snd hp_tup) 
     in
-    let h_parts = FStar.IndefiniteDescription.indefinite_description_ghost (heap & heap) logic_parts in
+    let h_parts = indefinite_description_ghost (heap & heap) logic_parts in
     let h_ok = fst h_parts in
     let h_fr = snd h_parts in
     let (|s0_local, r_local|) = 
@@ -800,7 +776,6 @@ let rec soundness
     let s0 : state = (st0, heap_union hp0 h_fr, m0) in
     let r_global = r_frame r_local h_fr #() #() in
     lemma_runsto_modifies r_local;
-    assert (match_except_vars (modifies p_cmd) st0 st1);
     (|s0, r_global|)
 
   | ISL_Skip ->
@@ -815,7 +790,6 @@ let rec soundness
     (|s0, r|)
 
   | ISL_Assume #pre #e ->
-    assert (pre s1 /\ eval_expr s1 e =!= 0);
     let s0 = s1 in
     let r = R_Assume s0 #e () in
     (|s0, r|)
@@ -828,12 +802,11 @@ let rec soundness
         soundness p (is_ok pre) mid pf_p s_mid in
       let r = R_Seq #p #q #s0 #s_mid #s1 r_p r_q in
       (|s0, r|)
-    else (
+    else
       let (|s0, r_p|) =
         soundness p (is_ok pre) mid pf_p s1 in
       let r = R_SeqEr #p #q #s0 #s1 r_p in
       (|s0, r|)
-    )
 
   | ISL_ChoiceL #p #q #pre #post pf_p ->
     let (|s0, r_p|) =
@@ -860,9 +833,7 @@ let rec soundness
   
   | ISL_KleeneVariant #variant #p pf_var ->
     let p_n (n : nat) : prop = variant n s1 /\ (n == 0 ==> s1._3 == Ok) in
-    assert (exists n. p_n n);
-    let n = FStar.IndefiniteDescription.indefinite_description_ghost
-            _ p_n in
+    let n = indefinite_description_ghost _ p_n in
     let rec aux (m : nat) (t : state { variant m t /\ (m == 0 ==> t._3 == Ok) })
       : GTot (s0 : state { variant 0 s0 /\ s0._3 == Ok } & runsto (Kleene p) s0 t) (decreases m) =
       if m = 0 then
@@ -883,10 +854,7 @@ let rec soundness
     aux n s1
   
   | ISL_Exists #p #pre #post x pf_p _ ->
-    let v =
-      FStar.IndefiniteDescription.indefinite_description_ghost
-        value (fun v -> post (set_var s1 x v))
-    in
+    let v = indefinite_description_ghost value (fun v -> post (set_var s1 x v)) in
     let s1_v = set_var s1 x v in
     let (|s0_v, r|) = soundness p (is_ok pre) post pf_p s1_v in
     let orig = s1._1 x in
@@ -894,8 +862,7 @@ let rec soundness
     let r' = r_fresh r x orig #() in
     state_equiv_eq (set_var s1_v x orig) s1;
     state_equiv_eq (set_var s0 x (s0_v._1 x)) s0_v;
-    Classical.exists_intro
-      (fun w -> pre (set_var s0 x w)) (s0_v._1 x);
+    exists_intro (fun w -> pre (set_var s0 x w)) (s0_v._1 x);
     (|s0, r'|)
   
   | ISL_Consequence #pre #p #post pre' post' pf_p _ _ ->
@@ -906,11 +873,9 @@ let rec soundness
     if t2b (post1 s1) then
       let (|s0, r|) = soundness p (is_ok pre1) post1 pf_p1 s1 in
       (|s0, r|)
-    else (
-      assert (post2 s1);
+    else
       let (|s0, r|) = soundness p (is_ok pre2) post2 pf_p2 s1 in
       (|s0, r|)
-    )
 
   | ISL_Alloc1 #pre #x -> 
     let (st1, hp1, m1) = s1 in
@@ -921,19 +886,18 @@ let rec soundness
     let logic_parts (lv : loc & value) : prop =
       p_lv (fst lv) (snd lv)
     in
-    let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
+    let lv_w = indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
     let p_xold (x_o : value) : prop =
       pre (override st1 x x_o, override hp1 l Unknown, Ok)
     in
-    let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
+    let x_old = indefinite_description_ghost value p_xold in
     let st0 = override st1 x x_old in
     let hp0 = override hp1 l Unknown in
     let s0 : state = (st0, hp0, Ok) in
     let r = R_Alloc s0 #x l v #() in
     state_equiv_eq (override st0 x (Loc l), override hp0 l (Full v), Ok) s1;
-    assert pre s0;
     (|s0, r|)
 
   | ISL_Alloc2 #pre #x _ ->
@@ -945,13 +909,13 @@ let rec soundness
     let logic_parts (lv : loc & value) : prop =
       p_lv (fst lv) (snd lv)
     in
-    let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
+    let lv_w = indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
     let p_xold (x_o : value) : prop =
       pre (override st1 x x_o, override hp1 l Empty, Ok)
     in
-    let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
+    let x_old = indefinite_description_ghost value p_xold in
     let st0 = override st1 x x_old in
     let hp0 = override hp1 l Empty in
     let s0 : state = (st0, hp0, Ok) in
@@ -965,7 +929,7 @@ let rec soundness
     let p_v (v_i : value) : prop = 
       m1 == Ok /\ points_to_empty l s1 /\ pre (st1, override hp1 l (Full v_i), Ok) 
     in
-    let v = FStar.IndefiniteDescription.indefinite_description_ghost value p_v in
+    let v = indefinite_description_ghost value p_v in
     let st0 = st1 in
     let hp0 = override hp1 l (Full v) in
     let s0 : state = (st0, hp0, Ok) in
@@ -994,7 +958,7 @@ let rec soundness
         points_to l_i v_i s1 /\ st1 x = v_i /\
         pre (override st1 x x_o, hp1, Ok)
     in
-    let x_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_xold in
+    let x_old = indefinite_description_ghost value p_xold in
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
       eval_expr (override st1 x x_old, hp1, Ok) e == l_i /\ 
       points_to l_i v_i s1 /\ st1 x == v_i /\
@@ -1002,13 +966,13 @@ let rec soundness
     in
     lemma_exists_tuple p_lv;
     let logic_parts (lv : loc & value) : prop = p_lv (fst lv) (snd lv) in
-    let lv_w = FStar.IndefiniteDescription.indefinite_description_ghost (loc & value) logic_parts in
+    let lv_w = indefinite_description_ghost (loc & value) logic_parts in
     let l = fst lv_w in
     let v = snd lv_w in
     let st0 = override st1 x x_old in
     let hp0 = hp1 in
     let s0 : state = (st0, hp0, Ok) in
-    Classical.exists_intro (fun v_i -> points_to l v_i s0) v;
+    exists_intro (fun v_i -> points_to l v_i s0) v;
     let r = R_Load s0 x e l v in
     let st1' = override st0 x v in
     state_equiv_eq (st1', hp0, Ok) s1;
@@ -1032,16 +996,16 @@ let rec soundness
     let p_l (l_i : loc) : prop =
       eval_expr s1 e1 == l_i /\ points_to l_i (Nat (eval_expr s1 e2)) s1
     in
-    let l = FStar.IndefiniteDescription.indefinite_description_ghost loc p_l in
+    let l = indefinite_description_ghost loc p_l in
     let p_vold (v_o : value) : prop =
       pre (st1, override hp1 l (Full v_o), Ok)
     in
-    let v_old = FStar.IndefiniteDescription.indefinite_description_ghost value p_vold in
+    let v_old = indefinite_description_ghost value p_vold in
     let st0 = st1 in
     let hp0 = override hp1 l (Full v_old) in
     let s0 = (st0, hp0, Ok) in
-    Classical.exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
-    Classical.exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
+    exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
+    exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
     let r = R_Store s0 e1 e2 l v_old in
     let hp1' = override hp0 l (Full (Nat (eval_expr s0 e2))) in
     state_equiv_eq (st0, hp1', Ok) s1;
@@ -1193,13 +1157,11 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     let r_q =
       footprint_sound q (stm, heap_union h_common h_q, Ok) (st1, h1, m1) f_q
     in
-
     let r_p_framed = r_frame r_p h_q #() #() in
     let r_q_framed = r_frame r_q h_p #() #() in
     let s_mid_p = (stm, heap_union (heap_union h_common h_p) h_q, Ok) in
     let s_mid_q = (stm, heap_union (heap_union h_common h_q) h_p, Ok) in
     let s_final = (st1, heap_union h1 h_p, m1) in
-
     state_equiv_eq s_mid_q s_mid_p;
     R_Seq #p #q #(st0, heap_union h0 h_q, Ok) #s_mid_p #s_final r_p_framed r_q_framed
   
@@ -1305,7 +1267,7 @@ let cell_merge (c1 c2 : cell) : cell =
   | _ -> c1
 
 let heap_merge (h1 h2 : heap) : heap =
-  FE.on loc (fun l -> cell_merge (h1 l) (h2 l))
+  on loc (fun l -> cell_merge (h1 l) (h2 l))
 
 let cell_meet (c1 c2 : cell) : cell =
   match c1, c2 with
@@ -1314,7 +1276,7 @@ let cell_meet (c1 c2 : cell) : cell =
   | _, _ -> c1
 
 let cross_heap (h1 h2 : heap) : heap =
-  FE.on loc (fun l -> cell_meet (h1 l) (h2 l))
+  on loc (fun l -> cell_meet (h1 l) (h2 l))
 
 let cell_cross_split (c1 c2 c3 c4 : cell)
   : Lemma (requires cell_disjoint c1 c2 /\
@@ -1358,11 +1320,7 @@ type cross_split_witness (h1 h2 h3 h4 : heap) = {
 
 let heap_cross_split (h1 h2 h3 h4 : heap)
   (#_ : squash (heaps_disjoint h1 h2)) (#_ : squash (heaps_disjoint h3 h4))
-  (#_ : squash (
-    forall l.
-      heap_merge h1 h2 l ==
-      heap_merge h3 h4 l
-  ))
+  (#_ : squash (forall l. heap_merge h1 h2 l == heap_merge h3 h4 l))
   : GTot (cross_split_witness h1 h2 h3 h4) =
   let h13 = cross_heap h1 h3 in
   let h14 = cross_heap h1 h4 in
@@ -1510,7 +1468,6 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let ff_q = runsto_decompose r_q in
     let parts_p = flatten_framed ff_p in
     let parts_q = flatten_framed ff_q in
-
     let p0 = parts_p.local_start in
     let p1 = parts_p.local_end in
     let fr_p = parts_p.frame_heap in
@@ -1521,38 +1478,32 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let fr_q = parts_q.frame_heap in
     let fp_q = parts_q.local_footprint in
     let dq0 = parts_q.frame_disjoint_start in
-      let p_mid = (p1._1, heap_union p1._2 fr_p, p1._3) in
-      let q_mid = (q0._1, heap_union q0._2 fr_q, q0._3) in
-      let cs = heap_cross_split p1._2 fr_p q0._2 fr_q #dp1 #dq0 #() in
-      let h_common = cs.h13 in
-      let h_p = cs.h14 in
-      let h_q = cs.h23 in
-      let h_ext = cs.h24 in
-          let st0 = p0._1 in
-          let stm = p1._1 in
-          let st1 = q1._1 in
-          let h0 = p0._2 in
-          let h1 = q1._2 in
-          let m1 = q1._3 in
-          let p0_aligned = (st0, h0, Ok) in
-          let p1_aligned = (stm, heap_union h_common h_p, Ok) in
-          let q0_aligned = (stm, heap_union h_common h_q, Ok) in
-          let q1_aligned = (st1, h1, m1) in
-          state_equiv_eq p0 p0_aligned;
-          state_equiv_eq p1 p1_aligned;
-          state_equiv_eq q0 q0_aligned;
-          state_equiv_eq q1 q1_aligned;
-          let seq0_local = (st0, heap_union h0 h_q, Ok) in
-          let seq1_local = (st1, heap_union h1 h_p, m1) in
-          let fp_seq = F_Seq p q st0 stm st1 h_common h_p h_q h0 h1 m1 fp_p fp_q in
-          let seq0_framed = (st0, heap_union (heap_union h0 h_q) h_ext, Ok) in
-          let seq1_framed = (st1, heap_union (heap_union h1 h_p) h_ext, m1) in
-          let ff_seq = FF_Frame (Seq p q) seq0_local seq1_local h_ext fp_seq () () in
-          let p0_framed = (st0, heap_union h0 fr_p, Ok) in
-          let q1_framed = (st1, heap_union h1 fr_q, m1) in
-          state_equiv_eq seq0_framed s;
-          state_equiv_eq seq1_framed u;
-          ff_seq
+    let p_mid = (p1._1, heap_union p1._2 fr_p, p1._3) in
+    let q_mid = (q0._1, heap_union q0._2 fr_q, q0._3) in
+    let cs = heap_cross_split p1._2 fr_p q0._2 fr_q #dp1 #dq0 #() in
+    let h_common = cs.h13 in
+    let h_p = cs.h14 in
+    let h_q = cs.h23 in
+    let h_ext = cs.h24 in
+    let p0_aligned = (p0._1, p0._2, Ok) in
+    let p1_aligned = (p1._1, heap_union h_common h_p, Ok) in
+    let q0_aligned = (p1._1, heap_union h_common h_q, Ok) in
+    let q1_aligned = (q1._1, q1._2, q1._3) in
+    state_equiv_eq p0 p0_aligned;
+    state_equiv_eq p1 p1_aligned;
+    state_equiv_eq q0 q0_aligned;
+    state_equiv_eq q1 q1_aligned;
+    let seq0_local = (p0._1, heap_union p0._2 h_q, Ok) in
+    let seq1_local = (q1._1, heap_union q1._2 h_p, q1._3) in
+    let fp_seq = F_Seq p q p0._1 p1._1 q1._1 h_common h_p h_q p0._2 q1._2 q1._3 fp_p fp_q in
+    let seq0_framed = (p0._1, heap_union (heap_union p0._2 h_q) h_ext, Ok) in
+    let seq1_framed = (q1._1, heap_union (heap_union q1._2 h_p) h_ext, q1._3) in
+    let ff_seq = FF_Frame (Seq p q) seq0_local seq1_local h_ext fp_seq () () in
+    let p0_framed = (p0._1, heap_union p0._2 fr_p, Ok) in
+    let q1_framed = (q1._1, heap_union q1._2 fr_q, q1._3) in
+    state_equiv_eq seq0_framed s;
+    state_equiv_eq seq1_framed u;
+    ff_seq
   
   | R_ChoiceL #p #q r_p ->
     let ff_p = runsto_decompose r_p in
@@ -1586,7 +1537,6 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h = s._2 in
     let h_fr = heap_without h l in
     let st1 = override st x (Loc l) in
-
     if Unknown? (h l) then
       let s0_local = (st, empty_heap, Ok) in
       let s1_local = (st1, singleton_full_heap l v, Ok) in
@@ -1597,7 +1547,7 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
       state_equiv_eq s0_framed s0;
       state_equiv_eq s1_framed s1;
       ff
-    else (
+    else
       let s0_local = (st, singleton_empty_heap l, Ok) in
       let s1_local = (st1, singleton_full_heap l v, Ok) in
       let s0_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
@@ -1607,7 +1557,6 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
       state_equiv_eq s0_framed s0;
       state_equiv_eq s1_framed s1;
       ff
-    )
   
   | R_Free s e l v ->
     let st = s._1 in

@@ -1,8 +1,7 @@
 module IncLogic
 
 open FStar.FunctionalExtensionality
-module FE = FStar.FunctionalExtensionality
-module ID = FStar.IndefiniteDescription
+open FStar.IndefiniteDescription
 
 // ============================================================
 // 1. Sintaxis y estados
@@ -58,60 +57,58 @@ let rec eval_expr' (s : store) (e : expr) : GTot nat =
 let eval_expr (s : state) (e : expr)
   : GTot nat = eval_expr' s._1 e
 
-let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : (a ^-> b) =
-  FE.on a (fun z -> if z = x then y else f z)
+let override (st : store) (x : var) (v : value) : store =
+  on var (fun y -> if y = x then v else st y)
 
 unfold let state_equiv (s1 s2 : state) : prop =
-  (forall x. s1._1 x == s2._1 x) /\
-  s1._2 == s2._2
+  (forall x. s1._1 x == s2._1 x) /\ s1._2 == s2._2
 
 let state_equiv_eq (s1 s2 : state)
   : Lemma (requires (state_equiv s1 s2))
           (ensures s1 == s2) =
-  FE.extensionality var (fun _ -> value) s1._1 s2._1
+  extensionality var (fun _ -> value) s1._1 s2._1
 
 // ============================================================
 // 2. Semántica operacional
 // ============================================================
 
+type ok_state = s : state { s._2 == Ok }
+type er_state = s : state { s._2 == Er }
+
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
-  | R_Assign : s : state { s._2 == Ok } ->
-    #x : var -> #e : expr ->
+  | R_Assign : s : ok_state -> #x : var -> #e : expr ->
     runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
 
-  | R_Nondet : s : state { s._2 == Ok } -> #x : var -> v : value ->
+  | R_Nondet : s : ok_state -> #x : var -> v : value ->
     runsto (Nondet x) s (override s._1 x v, Ok)
 
-  | R_Skip : s : state { s._2 == Ok } -> runsto Skip s s
+  | R_Skip : s : ok_state -> runsto Skip s s
 
-  | R_Error : s : state { s._2 == Ok } -> runsto Error s (s._1, Er)
+  | R_Error : s : ok_state -> runsto Error s (s._1, Er)
 
-  | R_Assume : s : state { s._2 == Ok } -> #e : expr -> 
+  | R_Assume : s : ok_state -> #e : expr -> 
     squash (eval_expr s e =!= 0) ->
     runsto (Assume e) s s
 
-  | R_SeqEr : #p : stmt -> #q : stmt ->
-    #s : state { s._2 == Ok } -> #t : state { t._2 == Er } ->
+  | R_SeqEr : #p : stmt -> #q : stmt -> #s : ok_state -> #t : er_state ->
     runsto p s t -> runsto (Seq p q) s t
 
   | R_Seq : #p : stmt -> #q : stmt ->
-    #s : state { s._2 == Ok } -> #t : state { t._2 == Ok } -> #u : state ->
+    #s : ok_state -> #t : ok_state -> #u : state ->
     runsto p s t -> runsto q t u ->
     runsto (Seq p q) s u
 
-  | R_ChoiceL : #p : stmt -> #q : stmt ->
-    #s : state { s._2 == Ok } -> #t : state ->
+  | R_ChoiceL : #p : stmt -> #q : stmt -> #s : ok_state -> #t : state ->
     runsto p s t -> runsto (Choice p q) s t
 
-  | R_ChoiceR : #p : stmt -> #q : stmt ->
-    #s: state { s._2 == Ok } -> #t : state ->
+  | R_ChoiceR : #p : stmt -> #q : stmt -> #s: ok_state -> #t : state ->
     runsto q s t -> runsto (Choice p q) s t
 
-  | R_Kleene0 : #p : stmt -> #s : state { s._2 == Ok } -> 
+  | R_Kleene0 : #p : stmt -> #s : ok_state -> 
     runsto (Kleene p) s s
   
-  | R_KleeneS : #p : stmt -> #s : state { s._2 == Ok } -> #t : state ->
+  | R_KleeneS : #p : stmt -> #s : ok_state -> #t : state ->
     runsto (Seq (Kleene p) p) s t ->
     runsto (Kleene p) s t
 
@@ -211,7 +208,7 @@ let rec soundness
   = match pf with
   | I_Assign #pre #x #e ->
     let (st1, m) = s1 in
-    let x_init = ID.indefinite_description_ghost 
+    let x_init = indefinite_description_ghost 
       _ (fun x_init -> pre ((override st1 x x_init), m) 
       /\ (st1 x = eval_expr ((override st1 x x_init), m) e))
     in
@@ -223,7 +220,7 @@ let rec soundness
 
   | I_Nondet #x #pre ->
     let (st1, m) = s1 in
-    let v = ID.indefinite_description_ghost _ (fun v -> pre ((override st1 x v), m)) in
+    let v = indefinite_description_ghost _ (fun v -> pre ((override st1 x v), m)) in
     let st0 = override st1 x v in
     let s0 = (st0, Ok) in
     let pf0 : runsto (Nondet x) s0 ((override st0 x (st1 x)), Ok) =
@@ -287,7 +284,7 @@ let rec soundness
 
   | I_KleeneVariant #variant #p pf_var ->
     let p_n (n : nat) : prop = variant n s1 /\ s1._2 == Ok in
-    let n = ID.indefinite_description_ghost _ p_n in
+    let n = indefinite_description_ghost _ p_n in
     let rec aux (m : nat) (t : state { variant m t /\ t._2 == Ok } )
       : GTot (s0 : state { variant 0 s0 /\ s0._2 == Ok } & runsto (Kleene p) s0 t) (decreases m) =
       if m = 0 then

@@ -3472,6 +3472,7 @@ y puede pertenecer a otro \emph{heap} disjunto agregado mediante un marco.
 \changed{Como se explicó en la \autoref{sec:logincsep},
 esta distinción no aparece en el modelo clásico de \emph{heaps} de la SL,
 pero resulta relevante para el razonamiento de la ISL.}
+\guido{genial}
 %\guido{``En lógicas de correctitud, no se suelen distinguir
 %ambos estados debido a que se comportan similarmente (esa
 %celda no puede usarse). En logicas de incorrectitud la diferencia sí importa,
@@ -3499,6 +3500,10 @@ el fragmento de memoria considerado depende de la precondición de cada tripleta
 Un \emph{heap} que asigna \lstinline|Unknown| a todas las ubicaciones representa un fragmento vacío,
 mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.}
 %\guido{el heap inicial está en Empty o en Unknown?}
+\guido{entiendo.. pero en general hay un estado inicial cuando
+uno define una semántica operacional. supongo que es todo empty,
+si fuera todo unknown no se puede alocar, no?}
+\guido{hmmm la regla no requiere Empty...}
 
 \changed{Sobre este modelo de estado,
 el lenguaje conserva los comandos del \autoref{cap:formalizacion-il} e incorpora cuatro operaciones de memoria:
@@ -3508,7 +3513,7 @@ el lenguaje conserva los comandos del \autoref{cap:formalizacion-il} e incorpora
 
 \begin{lstlisting}
 type stmt =
-  // Se omiten los constructores ya presentados. 
+  ... // Se omiten los constructores ya presentados. 
   | Alloc : var -> stmt
   | Free : expr -> stmt
   | Load : var -> expr -> stmt
@@ -3568,6 +3573,8 @@ let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
 El refinamiento exige una prueba de disjunción antes de construir la unión.
 Por lo tanto,
 \lstinline|heap_union h1 h2| representa la unión disjunta $h_1 \uplus h_2$ definida en la \autoref{sec:logsep}.
+\guido{``Es trivial demostrar que esta operación es conmutativa y asociativa,
+siempre que las expresiones estén bien definidas''?}
 
 Para construir las especificaciones de los programas,
 formalizamos los tres predicados espaciales presentados en las Definiciones \ref{def:heap_vacio},
@@ -3607,10 +3614,13 @@ también no nula,
 marcada como \lstinline|Empty|.}
 %\guido{heap unitario o heaplet? dale un nombre}
 Este predicado representa la aserción de \emph{heap} negativo de la Definición~\ref{def:heap_negativo}.
+\guido{si vas a usar cursiva para ``heap'' también hace falta en heaplet,
+podemos anotarlo y hacer una pasada al final}
 
 A partir del álgebra anterior,
 la conjunción separadora se representa mediante:
 
+\guido{borremos todos los unfold? no importan para esta presentacion}
 \begin{lstlisting}
 unfold
 let sep_conj (p q : cond) : cond =
@@ -3674,7 +3684,9 @@ Analizamos los constructores operacionales que difieren de aquellos vistos en el
 se utiliza \lstinline|ok_state| para representar los estados con modo \lstinline|Ok|.
 En este modelo,
 el refinamiento se aplica a la tercera componente del estado,
-donde se enuentra el modo de terminación.}
+donde se encuentra el modo de terminación.}
+\guido{borraría esta última oración, es obvio, y la primera vez que la lei
+no entendí que estaba hablando de la definicion de okstate}
 Luego,
 la regla operacional de reserva es:
 
@@ -3685,13 +3697,18 @@ la regla operacional de reserva es:
 \end{lstlisting}
 %\guido{realmente la pre es unknown o empty? como puede
 %ser que el caso unknown funcione con el marco?}
+\guido{ahora me acordé que el unknown está bien porque
+después la celda queda ``quemada'' y la regla del marco
+funca. Pero, se pierde algo si requerimos empty? Eso me suena
+MUCHO mas natural}
 
 La ubicación seleccionada debe ser no nula.
 Además,
-debe ser una dirección sobre la cual el \emph{heap} no poseía información o una dirección conocida que no estba asignada.
+debe ser una dirección sobre la cual el \emph{heap} no poseía información o una dirección conocida que no estaba asignada.
 El primer caso representa la reserva de una ubicación nueva respecto del fragmento local.
 El segundo permite reutilizar una ubicación marcada como \lstinline|Empty|.
 \changed{Ambos casos corresponden a la semántica de alocación presentada en la \autoref{fig:semantica-isl}.}
+\guido{estas 3 últimas oraciones no agregan mucho?}
 %\guido{me confunde referenciar a la logica porque estamos hablando
 %de la semantica. por ahi estoy confundido yo}
 
@@ -3701,6 +3718,9 @@ Tras la alocación,
 la ubicación contiene \lstinline|Full v|,
 por lo que no puede pertenecer al marco.
 Esta condición se explicita más adelante en \lstinline|r_frame|.}
+\guido{eso es claro, pero el programa también puede hacer free
+de esa misma celda. Lo que no permite que pertenezca al marco
+es que queda quemada como Empty}
 
 La liberación exitosa se formaliza mediante:
 
@@ -3753,6 +3773,8 @@ Si la dirección contiene \lstinline|Empty|,
 la lectura finaliza en modo \lstinline|Er|.
 Este caso permite representar un acceso posterior a una liberación.
 El acceso a la dirección nula se modela mediante \lstinline|R_LoadNull|.
+\guido{si es la única regla de Load que omitimos por ahí la aregaría...
+abajo en Store me parece bien como está}
 
 La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza su contenido:
 
@@ -3765,6 +3787,7 @@ La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza 
 
 Los constructores \lstinline|R_StoreEr| y \lstinline|R_StoreNull| representan,
 respectivamente, una escritura sobre una celda liberada y una escritura sobre la dirección nula.
+\guido{``Los omitimos por ser análogos.''}
 
 Estos constructores distinguen los accesos a celdas activas,
 los accesos a ubicaciones marcadas como \lstinline|Empty| y los accesos a la dirección nula,
@@ -3793,6 +3816,7 @@ Las dos premisas de disjunción garantizan que el marco no se superponga con los
 Como resultado se obtiene una nueva derivación:
 $$\operatorname{runsto} p \; (s_0 \bullet h_{fr}) \; (s_1 \bullet h_{fr}),$$
 donde el \emph{store} y el modo se conservan, mientras que el mismo marco se agrega a ambos \emph{heaps}.
+\guido{$\bullet$ no era $\uplus$ antes?}
 
 \changed{La disjunción con el \emph{heap} final es especialmente relevante para la alocación.
 Aunque una ubicación sea \lstinline|Unknown| en el \emph{heap} inicial,
@@ -3803,10 +3827,13 @@ Si posteriormente se libera,
 queda marcada como \lstinline|Empty| y continúa siendo conocida.
 Por ello,
 la condición del \emph{heap} final también impide que el marco contenga una ubicación reservada y luego liberada durante la ejecución.}
+\guido{ok bien!!!}
 
 La demostración se hace por inducción estructural sobre \lstinline|r|.
 Para cada constructor \lstinline|runsto| se reconstruye la misma ejecución sobre los \emph{heaps} extendidos.
-
+%
+\guido{``La mayoría se los casos son triviales.''?}
+%
 El caso secuencial requiere conocer que el marco también es disjunto del \emph{heap} intermedio.
 Para obtener esta propiedad se utiliza el lema:
 
@@ -3817,6 +3844,8 @@ let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
         (ensures (let (_, hp0, _) = s0 in heaps_disjoint hp0 h_fr))
         (decreases r)
 \end{lstlisting}
+\guido{podemos usar \lstinline`x._2` en vez de tener el let acá? o
+definir una funcion heapof o algo asi?}
 
 Este lema transporta hacia atrás la disjunción con el marco.
 En el caso de una secuencia,

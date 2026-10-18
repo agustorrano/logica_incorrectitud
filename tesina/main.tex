@@ -3776,9 +3776,24 @@ Afirma que, si tomáramos el estado actual y restauráramos la celda liberada co
         pre (s._1, override s._2 (eval_expr s e) (Full v), s._3)))
 \end{lstlisting}
 \guido{posta es $s_3$ al final o es siempre $Ok$?}
+\guido{no tiene que tener un points-to valido en la pre???}
+\guido{ah, no, por el pre en la posta con el override. No es medio
+raro esto? intuitivamente yo levantaria $v$ como
+otro argumento de la regla, pero tal vez hace falta
+que esté así para poder llevar los existenciales
+dentro de la logica. Es lo que hablamos la otra vez?}
+\guido{en todo caso merece un poco de explicacion, creo}
+\guido{tal vez se pueda evitar diseñar todas
+las reglas así si agregamos una primitiva
+``push'' que meta existenciales hacia adentro
+en una tripleta, algo tipo
+\lstinline`(exists v. isl_triple (pre v) c post)
+==> isl_triple (exists v. pre v) c post`... creo}
 
-Al preservar el \emph{heap} negativo como un recurso, la ISL habilita la detección deductiva de errores espaciales.
+Al preservar el \emph{heap} negativo como un recurso, la ISL habilita la detección deductiva de errores espaciales.\guido{temporales}
 Si el programa intentase liberar un puntero que ya ha sido liberado previamente, la semántica intercepta la violación de tipo \emph{double free}:
+\guido{la semantica capta el error, ok, pero estamos
+hablando de la regla de la logica?}
 
 \begin{lstlisting}
 | ISL_FreeEr : #pre : cond -> e : expr ->
@@ -3788,7 +3803,7 @@ Si el programa intentase liberar un puntero que ya ha sido liberado previamente,
         pre (s._1, s._2, Ok))
 \end{lstlisting}
 
-Finalmente, modelamos la desreferencia de punteros nulos:
+Finalmente, modelamos la dereferencia de punteros nulos:
 
 \begin{lstlisting}
 | ISL_FreeNull : #pre : cond -> e : expr ->
@@ -3800,6 +3815,8 @@ Las familias de \texttt{Load} y \texttt{Store} siguen la misma estructura.
 Las reglas exitosas reconstruyen el \emph{store} o el \emph{heap} anterior mediante valores existenciales, mientras que las reglas de error conservan la celda negativa o la condición de nulidad que explica la transición a \texttt{Er}.
 
 Por otro lado, la Regla del Marco debe preservar no solo el \emph{heap} adicional, sino también la validez de la aserción enmarcada respecto del \emph{store}.
+\guido{explicalo un poco más, creo que más que la validez del frame
+es el \emph{significado} del frame como proposición, que depende del store}
 Para expresar esta condición se calcula el conjunto de variables que un comando puede modificar:
 
 \begin{lstlisting}
@@ -3831,6 +3848,7 @@ let independent_on_vars (vars : string -> prop) (c : cond) : prop =
 La definición exige que la verdad de \texttt{c} no cambie cuando se modifican las variables incluidas en \texttt{vars}.
 Además, exige que la aserción del marco no dependa del modo de terminación, ya que compara su validez para modos arbitrarios \texttt{m1} y \texttt{m2}.
 Esta condición permite preservar el marco incluso cuando una ejecución pasa del canal normal al canal de error.
+\guido{ok genial, está eso que mencionaba arriba}
 
 Con esto, la Regla del Marco se codifica como el siguiente constructor:
 
@@ -3844,9 +3862,10 @@ Con esto, la Regla del Marco se codifica como el siguiente constructor:
 La conjunción separadora protege el \emph{heap} del marco, ya que exige que el fragmento descrito por \texttt{fr} sea disjunto de la memoria local utilizada por la derivación.
 La condición que provee \texttt{independent\_on\_vars} protege el \emph{store}, garantizando que las modificaciones permitidas por \texttt{p} no alteran la validez de \texttt{fr}.
 
-La regla \texttt{ISL\_Frame} actúa como un elevador de contexto y representa la regla deductiva de la ecuación \ref{eq:frame-isl}.
-Toma como premisa implícita una tripleta previamente demostrada que opera sobre un fragmento local de memoria descrito por \texttt{pre} y \texttt{post}.
-Luego, recibe como parámetro lógico un predicado arbitrario \texttt{fr}, el cual describe el conjunto de recursos adicionales.
+La regla \texttt{ISL\_Frame} actúa como un elevador de contexto\guido{?} y representa la regla deductiva de la ecuación \ref{eq:frame-isl}.
+Toma como premisa implícita\guido{?} una tripleta previamente demostrada que opera sobre un fragmento local de memoria descrito por \texttt{pre} y \texttt{post}.
+Luego, recibe como parámetro lógico\guido{?} un predicado arbitrario \texttt{fr}, el cual describe el conjunto de recursos adicionales.
+\guido{no entiendo este párrafo}
 
 \section{El Teorema de Soundness}
 \label{sec:isl-soundness}
@@ -3860,8 +3879,11 @@ $$\vdash_{\mathrm{ISL}} \itriple{pre}{p}{post}$$
 entonces, para todo estado final $s_1$ que satisface $post$, existe un estado inicial $s_0$ que satisface $pre$ y una ejecución operacional de $p$ desde $s_0$ hasta $s_1$:
 $$\forall s_1. \, post \; s_1 \implies \exists s_0. \, pre \; s_0 \land \operatorname{runsto} \; p \; s_0 \; s_1$$
 \end{teorema}
+\guido{me olvidé del término ``presunción'', al final hagamos una
+pasada para usarlo consistentemente en vez de precondicion}
 
 En \fstar{}, el teorema se codifica mediante la siguiente función con tipos dependientes:
+\guido{similarmente a IL? o igual en realidad}
 
 \begin{lstlisting}
 let rec soundness
@@ -3889,6 +3911,7 @@ Luego, usa \texttt{R\_Free} para construir la ejecución operacional y \texttt{R
 Los casos \texttt{ISL\_FreeEr}, \texttt{ISL\_LoadEr} e \texttt{ISL\_StoreEr} son más directos.
 La postcondición ya contiene el recurso \texttt{points\_to\_empty} necesario para construir la regla operacional de error correspondiente.
 Por otro lado, los casos nulos utilizan la prueba de que la expresión evaluada es igual a 0 y construyen directamente \texttt{R\_FreeNull}, \texttt{R\_LoadNull} o \texttt{R\_StoreNull}.
+\guido{demos un ejemplo de alguno?}
 
 Si bien la mayoría de los casos axiomáticos reconstruyen el estado de forma directa, el caso de la Regla del Marco constituye el mayor desafío lógico de la formalización.
 Demostrar que \texttt{ISL\_Frame} no introduce falsos positivos requiere coordinar el razonamiento deductivo de la lógica de separación con las pruebas de simulación semántica que se definieron en \texttt{r\_frame}.
@@ -3897,7 +3920,7 @@ Analicemos cómo el verificador reconstruye esta traza paso a paso.
 Cuando la prueba fue construida mediante el marco, sabemos lógicamente que el estado final \texttt{s1} satisface la conjunción separadora \lstinline{p_post ** fr}.
 Por la Definición~\ref{def:sep-conj} de la conjunción separadora, el \emph{heap} final puede dividirse en dos fragmentos disjuntos:
 $$hp_1 = h_1 \uplus h_2,$$
-donde la postcondición local se satisface sobre $h_1$, que de ahora en más llamaremos \texttt{h\_local}, y la aserción del marco se satisface sobre $h_2$, renombrado a \texttt{h\_fr}.
+donde la postcondición local se satisface sobre $h_1$, que de ahora en más llamaremos \texttt{h\_local}, y la aserción del marco se satisface sobre $h_2$, renombrado a \texttt{h\_fr}.\guido{por que no usar nombres consistentes?}
 
 En la prueba se define esta información mediante un predicado auxiliar:
 
@@ -3911,6 +3934,7 @@ in
 \end{lstlisting}
 La existencia de ambos \emph{heaps} proviene de la definición de \texttt{sep\_conj}.
 El comprobador SMT Z3 no puede instanciar computacionalmente esos sub-\emph{heaps} por sí solo.
+\guido{instanciar qué? no tenemos una prueba de que \emph{existen}?}
 Para materializarlos, se transforman los dos testigos existenciales en una tupla y se selecciona dicha tupla mediante \texttt{indefinite\_description\_ghost}.
 
 Una vez aislado el fragmento local del \emph{heap}, aplicamos la hipótesis inductiva de nuestro teorema.
@@ -4037,12 +4061,16 @@ Una escritura exitosa conserva la dirección, pero reemplaza su contenido:
 | F_Store : st : store -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
   #(squash (eval_expr' st e1 == l)) ->
   footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
-  (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok)
+    (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok)
 \end{lstlisting}
+\guido{indentá los argumentos de footprint así se lee mejor, agregué dos espacios
+arriba, no toco más para no causar conflictos}
 Los accesos a la dirección nula utilizan \texttt{empty\_heap}, dado que el error se produce por el valor evaluado por la expresión y no requiere tener ninguna celda del \emph{heap}.
 
 De esta forma, los constructores básicos de \texttt{footprint} describen solo las celdas que intervienen en cada ejecución.
 Las demás ubicaciones no se eliminan de la semántica global, sino que luego serán incorporadas con un marco.
+\guido{esta bien pensar en \lstinline`footprint` como
+runsto pero sin permitir celdas que no se usan en el heap?}
 
 El caso más complejo de la definición es la composición secuencial.
 Las huellas de dos comandos consecutivos no tienen por qué usar los mismos recursos en el estado intermedio.
@@ -4056,6 +4084,7 @@ El \emph{heap} $h_p$ contiene los recursos exclusivos de \texttt{p}, mientras qu
 
 La estructura principal del constructor es:
 
+\guido{usa un simbolo para heaps-disjoint}
 \begin{lstlisting}
 | F_Seq : p : stmt -> q : stmt -> st0 : store -> stm : store ->
   st1 : store -> h_common : heap ->
@@ -4108,6 +4137,7 @@ Dada una huella entre \texttt{s0} y \texttt{s1}, permite reemplazar esos índice
 La regla resulta necesaria porque los \emph{stores} y los \emph{heaps} se representan como funciones.
 Dos expresiones funcionales pueden coincidir para todos sus argumentos sin tener la misma definición para \fstar{}.
 Esto ocurre especialmente al asociar y reordenar uniones de fragmentos en \texttt{F\_Seq}.
+\guido{esta no es admisible tambien?}
 
 \subsection*{Corrección operacional de las huellas}
 Una vez definida la relación local, el primer resultado consiste en demostrar que toda huella representa una ejecución operacional válida:
@@ -4119,7 +4149,7 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
 \end{lstlisting}
 
 La función establece
-$$\operatorname{footprint} p s_0 s_1 \implies \operatorname{runsto} p s_0 s_1.$$
+$$\operatorname{footprint}~p~s_0~s_1 \implies \operatorname{runsto}~p~s_0~s_1.$$
 La demostración se hace por inducción estructural sobre \texttt{f}.
 Los casos primitivos se traducen al constructor correspondiente de \texttt{runsto}.
 En algunos casos, el \emph{heap} final construido por la semántica operacional usa \texttt{override}, mientras que la huella usa un \emph{heap} singleton definido directamente.

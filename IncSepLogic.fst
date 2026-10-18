@@ -134,97 +134,89 @@ let heap_without (h : heap) (l : loc) : heap =
 // 3. Semántica operacional
 // ============================================================
 
+type ok_state = s : state { s._3 == Ok }
+type er_state = s : state { s._3 == Er }
+
 noeq
 type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
-  | R_Skip : s : state { s._3 == Ok } -> 
-    runsto Skip s s
+  | R_Skip : s : ok_state -> runsto Skip s s
   
-  | R_Error : s : state { s._3 == Ok } -> 
-    runsto Error s (s._1, s._2, Er)
+  | R_Error : s : ok_state -> runsto Error s (s._1, s._2, Er)
   
-  | R_Assign : x : var -> e : expr -> s : state { s._3 == Ok } -> 
+  | R_Assign : x : var -> e : expr -> s : ok_state -> 
     runsto (Assign x e) s (override s._1 x (Nat (eval_expr s e)), s._2, s._3)
   
-  | R_Nondet : s : state { s._3 == Ok } -> #x : var -> v : value ->
+  | R_Nondet : s : ok_state -> #x : var -> v : value ->
     runsto (Nondet x) s (override s._1 x v, s._2, s._3)
   
-  | R_Assume : s : state { s._3 == Ok } -> #e : expr -> 
+  | R_Assume : s : ok_state -> #e : expr -> 
     squash (eval_expr s e =!= 0) ->
     runsto (Assume e) s s
   
-  | R_SeqEr : #p : stmt -> #q : stmt ->
-    #s : state { s._3 == Ok } -> #t : state { t._3 == Er } ->
+  | R_SeqEr : #p : stmt -> #q : stmt -> #s : ok_state -> #t : er_state ->
     runsto p s t -> 
     runsto (Seq p q) s t
   
-  | R_Seq : #p : stmt -> #q : stmt ->
-    #s : state { s._3 == Ok } -> #t : state { t._3 == Ok } -> #u : state ->
+  | R_Seq : #p : stmt -> #q : stmt -> #s : ok_state -> #t : ok_state -> #u : state ->
     runsto p s t -> runsto q t u ->
     runsto (Seq p q) s u
   
-  | R_ChoiceL : #p : stmt -> #q : stmt ->
-    #s : state { s._3 == Ok } -> #t : state ->
+  | R_ChoiceL : #p : stmt -> #q : stmt -> #s : ok_state -> #t : state ->
     runsto p s t -> runsto (Choice p q) s t
   
-  | R_ChoiceR : #p : stmt -> #q : stmt ->
-    #s: state { s._3 == Ok } -> #t : state ->
+  | R_ChoiceR : #p : stmt -> #q : stmt -> #s: ok_state -> #t : state ->
     runsto q s t -> runsto (Choice p q) s t
   
-  | R_Kleene0 : #p : stmt -> #s : state { s._3 == Ok } -> 
+  | R_Kleene0 : #p : stmt -> #s : ok_state -> 
     runsto (Kleene p) s s
   
-  | R_KleeneS : #p : stmt -> #s : state { s._3 == Ok } -> #t : state ->
+  | R_KleeneS : #p : stmt -> #s : ok_state -> #t : state ->
     runsto (Seq (Kleene p) p) s t ->
     runsto (Kleene p) s t
 
-  | R_Alloc : s : state { s._3 == Ok } -> #x : var -> 
-    l : loc { l =!= 0 } -> v : value ->
+  | R_Alloc : s : ok_state -> #x : var -> l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
     runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
   
-  | R_Free : s : state { s._3 == Ok } -> e : expr -> l : loc -> v : value ->
+  | R_Free : s : ok_state -> e : expr -> l : loc -> v : value ->
     #(squash (eval_expr s e == l /\ l =!= 0)) ->
     #(squash (s._2 l == Full v)) ->
     runsto (Free e) s (s._1, override s._2 l Empty, s._3)
 
-  | R_FreeEr : s : state { s._3 == Ok } -> e : expr -> l : loc { l =!= 0 } ->
+  | R_FreeEr : s : ok_state -> e : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr s e == l)) ->
     #(squash (s._2 l == Empty)) ->
     runsto (Free e) s (s._1, s._2, Er)
   
-  | R_FreeNull : s : state { s._3 == Ok } -> e : expr ->
+  | R_FreeNull : s : ok_state -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Free e) s (s._1, s._2, Er)
 
-  | R_Load : s : state { s._3 == Ok } -> x : var -> e : expr ->
-    l : loc { l =!= 0 } -> v : value ->
+  | R_Load : s : ok_state -> x : var -> e : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e == l)) ->
     runsto (Load x e) s (override s._1 x v, s._2, s._3)
 
-  | R_LoadEr : s : state { s._3 == Ok } -> x : var -> 
-    e : expr -> l : loc { l =!= 0 } ->
+  | R_LoadEr : s : ok_state -> x : var -> e : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr s e == l)) ->
     #(squash (s._2 l == Empty)) ->
     runsto (Load x e) s (s._1, s._2, Er)
 
-  | R_LoadNull : s : state { s._3 == Ok } -> x : var -> e : expr ->
+  | R_LoadNull : s : ok_state -> x : var -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Load x e) s (s._1, s._2, Er)
 
-  | R_Store : s : state { s._3 == Ok } -> e1 : expr -> e2 : expr ->
-    l : loc { l =!= 0 } -> v : value ->
+  | R_Store : s : ok_state -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
     runsto (Store e1 e2) s (s._1, override s._2 l (Full (Nat (eval_expr s e2))), s._3)
 
-  | R_StoreEr : s : state { s._3 == Ok } -> e1 : expr ->
-    e2 : expr -> l : loc { l =!= 0 } ->
+  | R_StoreEr : s : ok_state -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr s e1 == l)) ->
     #(squash (s._2 l == Empty)) ->
     runsto (Store e1 e2) s (s._1, s._2, Er)
   
-  | R_StoreNull : s : state { s._3 == Ok } -> e1 : expr -> e2 : expr ->
+  | R_StoreNull : s : ok_state -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr s e1 == 0)) ->
     runsto (Store e1 e2) s (s._1, s._2, Er)
 

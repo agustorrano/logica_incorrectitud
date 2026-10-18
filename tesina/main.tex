@@ -4436,6 +4436,9 @@ La diferencia está en el \emph{heap}, ya que la celda ya no se describe como \t
 
 El fallo ocurre en la tercera instrucción, cuando el programa intenta realizar una mutación de memoria sobre el puntero invalidado.
 Entre las reglas disponibles para la instrucción de escritura está \texttt{ISL\_StoreEr}, la cual exige tener estrictamente el recurso \texttt{points\_to\_empty}, nuestro estado actual.
+\guido{no podemos mostrar primero la derivación a alto nivel,
+en sintaxis matematica? algo como
+$emp \rightarrow x -> algo \rightarrow x -/-> \rightarrow Error$}
 Por lo tanto, la postcondición final se define como:
 
 \begin{lstlisting}
@@ -4485,6 +4488,7 @@ int* x = *v;
 push_back(v); // Puede no hacer nada, o hacer free(*v) y reasignar
 *x = 88;      // Posible uso de puntero colgante
 \end{lstlisting}
+\guido{aclarar que v tiene tipo $int**$?}
 
 En nuestra formalización \fstar{}, modelamos este comportamiento mediante la definición del comando \texttt{client}:
 
@@ -4493,6 +4497,8 @@ let client (ptr : var) : stmt =
   (Load "x" (Var ptr)) `Seq`
   ((push_back ptr) `Seq` (Store (Var "x") (Const 88)))
 \end{lstlisting}
+\guido{aca no estamos modelando realmente el vector, no?
+deberiamos decir algo de que es un ejemplo simplificado}
 
 La secuencia de operaciones del cliente se divide en tres etapas:
 \begin{enumerate}
@@ -4651,6 +4657,9 @@ let post_er_bug : cond =
 Un análisis que enumera todas las secuencias de decisiones podría tener hasta $2^{1000000}$ combinaciones.
 La derivación de este caso no enumera dichas combinaciones.
 Selecciona una rama concreta y usa una familia de aserciones para representar las iteraciones.
+\guido{las dos ultimas oraciones deberian ser una sola, y creo que en este
+parrafo queres justificar que una busqueda exhaustiva tendria dificultad
+para encontrar este error, decilo explicitamente}
 
 \section{Recorrido de una lista enlazada}
 \label{sec:listas}

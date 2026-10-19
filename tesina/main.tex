@@ -3866,11 +3866,12 @@ será reutilizada tanto en la prueba de \emph{soundness} de la Regla del Marco c
 \label{sec:isl-tipoind}
 Estamos en condiciones de mecanizar el sistema deductivo de la ISL.
 Al igual que en el \autoref{cap:formalizacion-il}, representamos la relación de derivabilidad mediante un tipo inductivo en \fstar{}, al que denominaremos \texttt{isl\_triple}.
-Su firma mantiene la estructura fundamental de la subaproximación, separando los canales de éxito y error, pero ahora sus precondiciones y postcondiciones evalúan la forma del \emph{heap}:
+Su firma\guido{signatura} mantiene la estructura fundamental de la subaproximación, separando los canales de éxito y error, pero ahora sus precondiciones y postcondiciones evalúan la forma del \emph{heap}:
 
 \begin{lstlisting}
 noeq type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 \end{lstlisting}
+\guido{saca el noeq, son detalles}
 
 Los constructores correspondientes a la asignación, no determinismo, secuencia, elección, consecuencia, disyunción y estrella de Kleene mantienen la estructura presentada para la IL.
 Las diferencias se centran en las reglas de memoria dinámica y en la incorporación de la Regla del Marco.

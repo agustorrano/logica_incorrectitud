@@ -1782,6 +1782,10 @@ $$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp 
 entonces
 $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
 \end{lema}
+\guido{creo que esto no es cierto. Considera
+estado inicial y final vacio, frame $x \leadsto 1$ y el comando $Read~x$.
+El programa falla y tiene modo de terminacion con error. Si agrego el frame
+ahora no falla.}
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
@@ -1867,7 +1871,7 @@ Esta distinción es la que introducen los \emph{heaps negativos}.
 \label{def:heap_ext}
 Un \emph{heap} de la ISL,
 que denotamos $\mathsf{HeapExt}$,
-es una función parcial finita:
+es una función parcial finita\guido{por qué? hace falta? las otras versiones también son finitas?}:
 $$\mathsf{HeapExt} = \mathsf{Loc} \rightharpoonup (\mathsf{Val} \cup \{\bot\}),$$
 donde si $h \in \mathsf{HeapExt}$:
 \begin{itemize}

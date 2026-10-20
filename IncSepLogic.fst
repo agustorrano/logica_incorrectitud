@@ -144,10 +144,10 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
   | R_Error : s : ok_state -> runsto Error s (s._1, s._2, Er)
   
   | R_Assign : x : var -> e : expr -> s : ok_state -> 
-    runsto (Assign x e) s (override s._1 x (Nat (eval_expr s e)), s._2, s._3)
+    runsto (Assign x e) s (override s._1 x (Nat (eval_expr s e)), s._2, Ok)
   
   | R_Nondet : s : ok_state -> #x : var -> v : value ->
-    runsto (Nondet x) s (override s._1 x v, s._2, s._3)
+    runsto (Nondet x) s (override s._1 x v, s._2, Ok)
   
   | R_Assume : s : ok_state -> #e : expr -> 
     squash (eval_expr s e =!= 0) ->
@@ -176,30 +176,30 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
 
   | R_Alloc : s : ok_state -> #x : var -> l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
-    runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
+    runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), Ok)
   
-  | R_Free : s : ok_state -> e : expr -> l : loc -> v : value ->
-    #(squash (eval_expr s e == l /\ l =!= 0)) ->
-    #(squash (s._2 l == Full v)) ->
-    runsto (Free e) s (s._1, override s._2 l Empty, s._3)
-
-  | R_FreeEr : s : ok_state -> e : expr -> l : loc { l =!= 0 } ->
+  | R_Free : s : ok_state -> e : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (eval_expr s e == l)) ->
-    #(squash (s._2 l == Empty)) ->
+    #(squash (s._2 l == Full v)) ->
+    runsto (Free e) s (s._1, override s._2 l Empty, Ok)
+
+  | R_FreeEr : s : ok_state -> e : expr ->
+    #(squash (eval_expr s e =!= 0)) ->
+    #(squash (s._2 (eval_expr s e) == Empty)) ->
     runsto (Free e) s (s._1, s._2, Er)
   
   | R_FreeNull : s : ok_state -> e : expr ->
     #(squash (eval_expr s e == 0)) ->
     runsto (Free e) s (s._1, s._2, Er)
 
-  | R_Load : s : ok_state -> x : var -> e : expr -> l : loc { l =!= 0 } -> v : value ->
-    #(squash (s._2 l == Full v)) ->
-    #(squash (eval_expr s e == l)) ->
-    runsto (Load x e) s (override s._1 x v, s._2, s._3)
+  | R_Load : s : ok_state -> x : var -> e : expr -> v : value ->
+    #(squash (eval_expr s e =!= 0)) ->
+    #(squash (s._2 (eval_expr s e) == Full v)) ->
+    runsto (Load x e) s (override s._1 x v, s._2, Ok)
 
-  | R_LoadEr : s : ok_state -> x : var -> e : expr -> l : loc { l =!= 0 } ->
-    #(squash (eval_expr s e == l)) ->
-    #(squash (s._2 l == Empty)) ->
+  | R_LoadEr : s : ok_state -> x : var -> e : expr ->
+    #(squash (eval_expr s e =!= 0)) ->
+    #(squash (s._2 (eval_expr s e) == Empty)) ->
     runsto (Load x e) s (s._1, s._2, Er)
 
   | R_LoadNull : s : ok_state -> x : var -> e : expr ->
@@ -209,11 +209,11 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
   | R_Store : s : ok_state -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
-    runsto (Store e1 e2) s (s._1, override s._2 l (Full (Nat (eval_expr s e2))), s._3)
+    runsto (Store e1 e2) s (s._1, override s._2 l (Full (Nat (eval_expr s e2))), Ok)
 
-  | R_StoreEr : s : ok_state -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } ->
-    #(squash (eval_expr s e1 == l)) ->
-    #(squash (s._2 l == Empty)) ->
+  | R_StoreEr : s : ok_state -> e1 : expr -> e2 : expr ->
+    #(squash (eval_expr s e1 =!= 0)) ->
+    #(squash (s._2 (eval_expr s e1) == Empty)) ->
     runsto (Store e1 e2) s (s._1, s._2, Er)
   
   | R_StoreNull : s : ok_state -> e1 : expr -> e2 : expr ->
@@ -239,8 +239,7 @@ let rec modifies (p : stmt) (x : var) : prop =
   | _ -> False
 
 let rec lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1) 
-  : Lemma (ensures match_except_vars (modifies p) s0._1 s1._1)
-          (decreases r)=
+  : Lemma (ensures match_except_vars (modifies p) s0._1 s1._1) (decreases r)=
   match r with
   | R_Seq r_p r_q ->
     lemma_runsto_modifies r_p;
@@ -257,10 +256,9 @@ let rec lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
 
 let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state) 
   (h_fr : heap) (r : runsto p s0 s1) :
-  Lemma (requires (let (_, hp1, _) = s1 in heaps_disjoint hp1 h_fr))
-        (ensures (let (_, hp0, _) = s0 in heaps_disjoint hp0 h_fr))
-        (decreases r) 
-  = match r with
+  Lemma (requires heaps_disjoint s1._2 h_fr)
+        (ensures heaps_disjoint s0._2 h_fr) (decreases r) = 
+  match r with
   | R_SeqEr r_p ->
     lemma_runsto_disjoint h_fr r_p
   | R_Seq r_p r_q ->
@@ -276,16 +274,13 @@ let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
 
 let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   (r : runsto p s0 s1) (h_fr : heap)
-  (#_ : squash (let (_, hp, _) = s0 in heaps_disjoint hp h_fr))
-  (#_ : squash (let (_, hp, _) = s1 in heaps_disjoint hp h_fr)) :
+  (#_ : squash (heaps_disjoint s0._2 h_fr))
+  (#_ : squash (heaps_disjoint s1._2 h_fr)) :
   GTot (runsto p 
-    (let (st, hp, m) = s0 in (st, heap_union hp h_fr, m))
-    (let (st, hp, m) = s1 in (st, heap_union hp h_fr, m)))
-  (decreases r) = 
-  let (st0, hp0, m0) = s0 in
-  let (st1, hp1, m1) = s1 in
-  let s0_fr = (st0, heap_union hp0 h_fr, m0) in
-  let s1_fr = (st1, heap_union hp1 h_fr, m1) in
+    (s0._1, heap_union s0._2 h_fr, s0._3) (s1._1, heap_union s1._2 h_fr, s1._3))
+  (decreases r) =
+  let s0_fr = (s0._1, heap_union s0._2 h_fr, s0._3) in
+  let s1_fr = (s1._1, heap_union s1._2 h_fr, s1._3) in
   match r with
   | R_Skip _ ->
     R_Skip s0_fr
@@ -332,14 +327,14 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
     state_equiv_eq
       (s0_fr._1, override s0_fr._2 l Empty, s0_fr._3) s1_fr;
     R_Free s0_fr e l v
-  | R_FreeEr s e l ->
-    R_FreeEr s0_fr e l
+  | R_FreeEr s e ->
+    R_FreeEr s0_fr e
   | R_FreeNull s e ->
     R_FreeNull s0_fr e
-  | R_Load s x e l v ->
-    R_Load s0_fr x e l v
-  | R_LoadEr s x e l ->
-    R_LoadEr s0_fr x e l
+  | R_Load s x e v ->
+    R_Load s0_fr x e v
+  | R_LoadEr s x e ->
+    R_LoadEr s0_fr x e
   | R_LoadNull s x e ->
     R_LoadNull s0_fr x e
   | R_Store s e1 e2 l v ->
@@ -347,8 +342,8 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
       (s0_fr._1, override s0_fr._2 l (Full (Nat (eval_expr s0_fr e2))), s0_fr._3)
       s1_fr;
     R_Store s0_fr e1 e2 l v
-  | R_StoreEr s e1 e2 l ->
-    R_StoreEr s0_fr e1 e2 l
+  | R_StoreEr s e1 e2 ->
+    R_StoreEr s0_fr e1 e2
   | R_StoreNull s e1 e2 ->
     R_StoreNull s0_fr e1 e2
 
@@ -395,8 +390,7 @@ let points_to (l : loc) (v : value) : cond =
   forall l'. (l' <> l) ==> (hp l' == Unknown)
 
 let emp : cond =
-  fun (st, hp, m) ->
-    forall l. hp l == Unknown
+  fun (st, hp, m) -> forall l. hp l == Unknown
 
 unfold
 let sep_conj (p q : cond) : cond =
@@ -533,8 +527,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
       (post ** fr)
   
   | ISL_Alloc1 : #pre : cond -> x : var ->
-    isl_triple (is_ok pre)
-      (Alloc x)
+    isl_triple (is_ok pre) (Alloc x)
       (is_ok (fun s -> exists l v.
         s._1 x == Loc l /\
         l =!= 0 /\
@@ -542,8 +535,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         (exists x_old. pre (override s._1 x x_old, override s._2 l Unknown, Ok))))
 
   | ISL_Alloc2 : #pre : cond -> x : var -> l : loc ->
-    isl_triple 
-      (is_ok (fun s -> pre s /\ points_to_empty l s))
+    isl_triple (is_ok (fun s -> pre s /\ points_to_empty l s))
       (Alloc x)
       (is_ok (fun s -> exists (v x_old : value).
         s._1 x == Loc l /\
@@ -552,32 +544,24 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         pre (override s._1 x x_old, override s._2 l Empty, Ok)))
   
   | ISL_Free : #pre : cond -> e : expr ->
-    isl_triple
-      (is_ok pre)
-      (Free e)
+    isl_triple (is_ok pre) (Free e)
       (is_ok (fun s -> exists (v : value).
         points_to_empty (eval_expr s e) s /\
-        pre (s._1, override s._2 (eval_expr s e) (Full v), s._3)))
+        pre (s._1, override s._2 (eval_expr s e) (Full v), Ok)))
 
   | ISL_FreeEr : #pre : cond -> e : expr ->
-    isl_triple
-      (is_ok pre)
-      (Free e)
+    isl_triple (is_ok pre) (Free e)
       (fun s ->
         s._3 == Er /\
         points_to_empty (eval_expr s e) s /\
         pre (s._1, s._2, Ok))
 
   | ISL_FreeNull : #pre : cond -> e : expr ->
-    isl_triple
-      (is_ok pre)
-      (Free e)
+    isl_triple (is_ok pre) (Free e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ pre (s._1, s._2, Ok))
   
   | ISL_Load : #pre : cond -> x : var -> e : expr ->
-    isl_triple
-      (is_ok pre)
-      (Load x e)
+    isl_triple (is_ok pre) (Load x e)
       (is_ok (fun s -> exists l v x_old.
         eval_expr (override s._1 x x_old, s._2, Ok) e == l /\
         points_to l v s /\
@@ -585,41 +569,31 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         pre (override s._1 x x_old, s._2, Ok)))
 
   | ISL_LoadEr : #pre : cond -> x : var -> e : expr ->
-    isl_triple
-      (is_ok pre)
-      (Load x e)
+    isl_triple (is_ok pre) (Load x e)
       (fun s ->
         s._3 == Er /\
         points_to_empty (eval_expr s e) s /\
         pre (s._1, s._2, Ok))
 
   | ISL_LoadNull : #pre : cond -> x : var -> e : expr ->
-    isl_triple
-      (is_ok pre)
-      (Load x e)
+    isl_triple (is_ok pre) (Load x e)
       (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ pre (s._1, s._2, Ok))
   
   | ISL_Store : #pre : cond -> e1 : expr -> e2 : expr ->
-    isl_triple
-      (is_ok pre)
-      (Store e1 e2)
+    isl_triple (is_ok pre) (Store e1 e2)
       (is_ok (fun s ->
         points_to (eval_expr s e1) (Nat (eval_expr s e2)) s /\
         (exists v_old. pre (s._1, override s._2 (eval_expr s e1) (Full v_old), Ok))))
 
   | ISL_StoreEr : #pre : cond -> e1 : expr -> e2 : expr ->
-    isl_triple
-      (is_ok pre)
-      (Store e1 e2)
+    isl_triple (is_ok pre) (Store e1 e2)
       (fun s -> 
         s._3 == Er /\ 
         points_to_empty (eval_expr s e1) s /\
         pre (s._1, s._2, Ok))
 
   | ISL_StoreNull : #pre : cond -> e1 : expr -> e2 : expr ->
-    isl_triple
-      (is_ok pre)
-      (Store e1 e2)
+    isl_triple (is_ok pre) (Store e1 e2)
       (fun s -> 
         s._3 == Er /\ 
         eval_expr s e1 == 0 /\
@@ -634,8 +608,7 @@ let set_var (s : state) (x : var) (v : value) : state =
 
 let rec eval_expr_fresh (s : state) (e : expr) (x : var) (v : value)
   : Lemma (requires (~(fv_expr e x)))
-          (ensures (eval_expr (set_var s x v) e == eval_expr s e))
-          (decreases e) =
+          (ensures (eval_expr (set_var s x v) e == eval_expr s e)) (decreases e) =
   match e with
   | Var _ | Const _ -> ()
   | Plus e1 e2 | Minus e1 e2 | Times e1 e2
@@ -686,19 +659,19 @@ let rec r_fresh (#p : stmt) (#s0 #s1 : state)
   | R_Free s e l w ->
     eval_expr_fresh s e x v;
     R_Free s0_f e l w
-  | R_FreeEr s e l ->
+  | R_FreeEr s e ->
     eval_expr_fresh s e x v;
-    R_FreeEr s0_f e l
+    R_FreeEr s0_f e
   | R_FreeNull s e ->
     eval_expr_fresh s e x v;
     R_FreeNull s0_f e
-  | R_Load s y e l w ->
+  | R_Load s y e w ->
     eval_expr_fresh s e x v;
     state_equiv_eq (override s0_f._1 y w, s0_f._2, s0_f._3) s1_f;
-    R_Load s0_f y e l w
-  | R_LoadEr s y e l ->
+    R_Load s0_f y e w
+  | R_LoadEr s y e ->
     eval_expr_fresh s e x v;
-    R_LoadEr s0_f y e l
+    R_LoadEr s0_f y e
   | R_LoadNull s y e ->
     eval_expr_fresh s e x v;
     R_LoadNull s0_f y e
@@ -706,9 +679,9 @@ let rec r_fresh (#p : stmt) (#s0 #s1 : state)
     eval_expr_fresh s e1 x v;
     eval_expr_fresh s e2 x v;
     R_Store s0_f e1 e2 l w
-  | R_StoreEr s e1 e2 l ->
+  | R_StoreEr s e1 e2 ->
     eval_expr_fresh s e1 x v;
-    R_StoreEr s0_f e1 e2 l
+    R_StoreEr s0_f e1 e2
   | R_StoreNull s e1 e2 ->
     eval_expr_fresh s e1 x v;
     R_StoreNull s0_f e1 e2
@@ -748,11 +721,11 @@ let rec soundness
 
   | ISL_Frame #p_pre #p_cmd #p_post fr pf_p _ ->
     let (st1, hp1, m) = s1 in
-    let unfold p_two (h1 : heap) (h2 : heap) : prop = 
-      heaps_disjoint h1 h2 /\ 
-      hp1 == heap_union h1 h2 /\ 
-      p_post (st1, h1, m) /\ 
-      fr (st1, h2, m)
+    let unfold p_two (h_local : heap) (h_fr : heap) : prop = 
+      heaps_disjoint h_local h_fr /\ 
+      hp1 == heap_union h_local h_fr /\ 
+      p_post (st1, h_local, m) /\ 
+      fr (st1, h_fr, m)
     in
     lemma_exists_tuple p_two;
     let logic_parts (hp_tup : heap & heap) : prop = 
@@ -924,20 +897,19 @@ let rec soundness
     let v = indefinite_description_ghost value p_v in
     let st0 = st1 in
     let hp0 = override hp1 l (Full v) in
-    let s0 : state = (st0, hp0, Ok) in
+    let s0 = (st0, hp0, Ok) in
     let r = R_Free s0 e l v in
     state_equiv_eq (st0, override hp0 l Empty, Ok) s1;
     (|s0, r|)
 
-  | ISL_FreeEr #pre #e ->
-    let (st, hp, m1) = s1 in
+  | ISL_FreeEr #pre e ->
+    let (st, hp, _) = s1 in
     let s0 = (st, hp, Ok) in
-    let l = eval_expr s0 e in
-    let r = R_FreeEr s0 e l in
+    let r = R_FreeEr s0 e in
     (|s0, r|)
 
-  | ISL_FreeNull #pre #e ->
-    let (st, hp, m1) = s1 in
+  | ISL_FreeNull #pre e ->
+    let (st, hp, _) = s1 in
     let s0 = (st, hp, Ok) in
     let r = R_FreeNull s0 e in
     (|s0, r|)
@@ -965,7 +937,7 @@ let rec soundness
     let hp0 = hp1 in
     let s0 : state = (st0, hp0, Ok) in
     exists_intro (fun v_i -> points_to l v_i s0) v;
-    let r = R_Load s0 x e l v in
+    let r = R_Load s0 x e v in
     let st1' = override st0 x v in
     state_equiv_eq (st1', hp0, Ok) s1;
     (|s0, r|)
@@ -974,7 +946,7 @@ let rec soundness
     let (st, hp, m1) = s1 in
     let s0 = (st, hp, Ok) in
     let l = eval_expr s0 e in
-    let r = R_LoadEr s0 x e l in
+    let r = R_LoadEr s0 x e in
     (|s0, r|)
 
   | ISL_LoadNull #pre #x #e ->
@@ -1007,7 +979,7 @@ let rec soundness
     let (st, hp, m1) = s1 in
     let s0 = (st, hp, Ok) in
     let l = eval_expr s0 e1 in
-    let r = R_StoreEr s0 e1 e2 l in
+    let r = R_StoreEr s0 e1 e2 in
     (|s0, r|)
 
   | ISL_StoreNull #pre #e1 #e2 ->
@@ -1198,16 +1170,16 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     r
 
   | F_FreeEr st e l ->
-    R_FreeEr (st, singleton_empty_heap l, Ok) e l
+    R_FreeEr (st, singleton_empty_heap l, Ok) e
 
   | F_FreeNull st e ->
     R_FreeNull (st, empty_heap, Ok) e
 
   | F_Load st x e l v -> 
-    R_Load (st, singleton_full_heap l v, Ok) x e l v
+    R_Load (st, singleton_full_heap l v, Ok) x e v
 
   | F_LoadEr st x e l ->
-    R_LoadEr (st, singleton_empty_heap l, Ok) x e l
+    R_LoadEr (st, singleton_empty_heap l, Ok) x e
 
   | F_LoadNull st x e ->
     R_LoadNull (st, empty_heap, Ok) x e
@@ -1220,7 +1192,7 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
     r
 
   | F_StoreEr st e1 e2 l ->
-    R_StoreEr (st, singleton_empty_heap l, Ok) e1 e2 l
+    R_StoreEr (st, singleton_empty_heap l, Ok) e1 e2
 
   | F_StoreNull st e1 e2 ->
     R_StoreNull (st, empty_heap, Ok) e1 e2
@@ -1564,9 +1536,10 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     state_equiv_eq s1_framed s1;
     ff
   
-  | R_FreeEr s e l ->
+  | R_FreeEr s e ->
     let st = s._1 in
     let h = s._2 in
+    let l = eval_expr s e in
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_empty_heap l, Ok) in
     let s1_local = (st, singleton_empty_heap l, Er) in
@@ -1591,9 +1564,10 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     state_equiv_eq s1_framed s1;
     ff
   
-  | R_Load s x e l v ->
+  | R_Load s x e v ->
     let st = s._1 in
     let h = s._2 in
+    let l = eval_expr s e in
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_full_heap l v, Ok) in
     let st1 = override st x v in
@@ -1606,9 +1580,10 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     state_equiv_eq s1_framed s1;
     ff
   
-  | R_LoadEr s x e l ->
+  | R_LoadEr s x e ->
     let st = s._1 in
     let h = s._2 in
+    let l = eval_expr s e in
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_empty_heap l, Ok) in
     let s1_local = (st, singleton_empty_heap l, Er) in
@@ -1648,9 +1623,10 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     state_equiv_eq s1_framed s1;
     ff
 
-  | R_StoreEr s e1 e2 l ->
+  | R_StoreEr s e1 e2 ->
     let st = s._1 in
     let h = s._2 in
+    let l = eval_expr s e1 in
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_empty_heap l, Ok) in
     let s1_local = (st, singleton_empty_heap l, Er) in

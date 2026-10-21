@@ -4951,11 +4951,16 @@ para encontrar este error, decilo explicitamente}
 \section{Recorrido de una lista enlazada}
 \label{sec:listas}
 El último caso combina el razonamiento iterativo de la sección anterior con estructuras de datos almacenadas en memoria dinámica.
-Para este escenario, formalizamos un programa que recorre una lista enlazada representada mediante nodos de dos celdas, acumulando la suma de sus elementos en la variable \texttt{sum} y contando su longitud en la variable \texttt{len}.
-Al finalizar, el programa verifica mediante una aserción que la suma total sea distinta a la longitud calculada.
-Si la suma es igual, la aserción falla y el programa aborta.
+Para este escenario,
+formalizamos un programa que recorre una lista enlazada representada mediante nodos de dos celdas,
+acumulando la suma de sus elementos en la variable \lstinline|sum| y contando su longitud en la variable \lstinline|len|.
+Al finalizar,
+el programa verifica mediante una aserción que la suma total sea distinta a la longitud calculada.
+Si la suma es igual,
+la aserción falla y el programa aborta.
 
-Conceptualmente, el código bajo análisis se describe de la siguiente manera:
+Conceptualmente,
+el código bajo análisis se describe de la siguiente manera:
 
 \begin{lstlisting}
 sum = 0;
@@ -4969,150 +4974,358 @@ while (ptr != 0) {
 assert(sum != len);
 \end{lstlisting}
 
-Para este caso, modelamos una lista enlazada de longitud arbitraria \texttt{n\_target}.
-Aunque en este ejemplo se fija \texttt{n\_target} en diez, la demostración es paramétrica en la longitud de la lista y no requiere desenrollar una iteración por cada nodo.
-Además, se considera como precondición una lista cuyos elementos son todos iguales a 1.
-Esta condición es suficiente para garantizar que, al finalizar el recorrido, la suma de los elementos coincide con la longitud de la lista y la aserción falla.
-No es la única configuración posible que satisface dicha igualdad, pero permite expresar el argumento mediante un predicado espacial paramétrico simple.
+Para este caso,
+modelamos una lista enlazada de longitud arbitraria \lstinline|n|.
+La demostración es paramétrica en esta longitud y no requiere escribir una prueba distinta para cada cantidad de nodos.
+Además,
+se considera como precondición una lista cuyos elementos son todos iguales a 1.
+Esta condición es suficiente para garantizar que,
+al finalizar el recorrido,
+la suma de los elementos coincide con la longitud de la lista y la aserción falla.
+No es la única configuración posible que satisface dicha igualdad,
+pero permite expresar el argumento mediante un predicado espacial paramétrico simple.
 
-En lenguajes de bajo nivel como C, un nodo de una lista enlazada se representa típicamente como una estructura que agrupa datos y referencias.
-En nuestra formalización, modelamos esta estructura desarmándola en sus componentes de memoria fundamentales.
+En lenguajes de bajo nivel como C,
+un nodo de una lista enlazada se representa típicamente como una estructura que agrupa datos y referencias.
+En nuestra formalización,
+modelamos esta estructura desarmándola en sus componentes de memoria fundamentales.
 Un nodo ocupa dos ubicaciones de memoria adyacentes:
 \begin{enumerate}
-  \item la dirección base \texttt{curr\_ptr}, que almacena el valor numérico del nodo y
-  \item la dirección consecutiva \lstinline{curr_ptr + 1}, que almacena el puntero hacia el siguiente nodo de la estructura.
+  \item la dirección base \lstinline|curr_ptr|,
+  que almacena el valor numérico del nodo y
+  \item la dirección consecutiva \lstinline|curr_ptr + 1|,
+  que almacena el puntero hacia el siguiente nodo de la estructura.
 \end{enumerate}
 
-Para describir una lista con una longitud arbitraria se definen los predicados \texttt{list\_seg} y \texttt{prefix\_seg}.
-El caso de \texttt{list\_seg start finish xs} describe un segmento de lista que empieza en \texttt{start}, termina en \texttt{finish} y tiene la secuencia de valores \texttt{xs}.
+Para describir una lista con una longitud arbitraria se define el predicado \lstinline|list_seg|.
+El caso de \lstinline|list_seg start finish xs| describe un segmento de lista que empieza en \lstinline|start|,
+termina en \lstinline|finish| y tiene la secuencia de valores \lstinline|xs|.
 El caso vacío representa un segmento sin nodos.
 El caso inductivo describe las dos celdas del primer nodo y el segmento restante con la conjunción separadora.
-Por otro lado, \texttt{prefix\_seg start current k} describe la porción inicial de una lista que contiene los primeros \texttt{k} nodos y termina inmediatamente antes de \texttt{current}.
-
-Estos predicados permiten expresar la estructura completa sin enumerar cada dirección de forma individual.
-La conjunción separadora garantiza que las celdas de nodos diferentes pertenezcan a fragmentos disjuntos.
-
-Durante cualquier iteración \texttt{k}, el programa debe mantener referencias tanto a lo que ya sumó como a lo que falta sumar.
-En este momento el \emph{heap} se divide en cuatro partes,
-\begin{enumerate}
-  \item el prefijo ya visitado;
-  \item la celda que tiene el valor del nodo actual;
-  \item la celda que tiene el puntero al nodo siguiente;
-  \item el sufijo todavía no visitado.
-\end{enumerate}
-Luego, definimos la aserción de estado intermedio de la siguiente manera:
 
 \begin{lstlisting}
-let post_len_shape (start_ptr curr_ptr next_ptr : loc) (k : nat) : cond =
-  fun s ->
-    k < n_target /\ s._3 == Ok /\ s._1 "sum" == Nat (k + 1) /\
-    s._1 "len" == Nat (k + 1) /\ s._1 "v" == Nat 1 /\
-    s._1 "ptr" == Loc curr_ptr /\ points_to curr_ptr (Nat 1) s /\
-    (prefix_seg start_ptr curr_ptr k **
-    points_to (curr_ptr + 1) (Loc next_ptr) **
-    list_seg next_ptr 0 (ones (n_target - k - 1))) s
+let rec list_seg (i j : loc) (xs : list value) : Tot cond (decreases xs) =
+  match xs with
+  | [] -> fun s -> emp s /\ i == j
+  | x :: xss -> fun s -> 
+    exists (next : loc).
+      (points_to i x ** points_to (i + 1) (Loc next) ** list_seg next j xss) s
+\end{lstlisting}
+Este predicado permite expresar la estructura completa sin enumerar cada dirección de forma individual.
+La conjunción separadora garantiza que las celdas de nodos diferentes pertenezcan a fragmentos disjuntos.
+
+A partir de esta representación,
+se define el predicado \lstinline|history|
+para relacionar la posición actual del puntero con el inicio de la lista,.
+Este predicado describe un recorrido de \lstinline|k| pasos desde \lstinline|start_ptr| hasta \lstinline|curr_ptr| sobre un mismo \emph{heap}.
+La lista de valores utilizada en su caso base se construye mediante \lstinline|ones n|,
+que contiene \lstinline|n| elementos iguales a \lstinline|Nat 1|.
+
+\begin{lstlisting}
+let heap_only (hp : heap) : state = on var (fun _ -> Nat 0), hp, Ok
+
+let rec history (start_ptr curr_ptr : loc) (n : nat) (k : nat) (hp : heap)
+  : GTot prop (decreases k) =
+  let s = heap_only hp in
+  if k = 0 then
+    curr_ptr == start_ptr /\
+    list_seg start_ptr 0 (ones n) s
+  else exists (prev_ptr : loc).
+    points_to_flex prev_ptr (Nat 1) s /\
+    points_to_flex (prev_ptr + 1) (Loc curr_ptr) s /\
+    history start_ptr prev_ptr n (k - 1) hp
 \end{lstlisting}
 
-Los cuatro componentes se encuentran dentro de una única conjunción separadora.
-Por lo tanto, el \emph{heap} completo debe poder dividirse en cuatro fragmentos disjuntos:
-$$h = h_{\mathrm{prefix}} \uplus h_{\mathrm{value}} \uplus h_{\mathrm{next}} \uplus h_{\mathrm{suffix}}.$$
-El prefijo tiene la parte ya recorrida de la lista.
-La celda \texttt{curr\_ptr} tiene el valor 1, que acaba de cargarse en \texttt{v}.
-La celda \lstinline{curr_ptr + 1} guarda la dirección \texttt{next\_ptr}.
-Por último, el sufijo describe los nodos pendientes.
-Esto se puede observar en la \autoref{fig:particion-lista}.
+La función auxiliar \lstinline|heap_only| permite evaluar las aserciones espaciales sobre el
+\emph{heap} usando el \emph{store} fijo,
+cuyos valores no intervienen en ellas.
+El caso base de \lstinline|history| exige una lista de \lstinline|n| unos y ubica el puntero en su inicio.
+El caso recursivo identifica un nodo anterior que contiene el valor uno y apunta a la posición actual.
+Las consultas mediante \lstinline|points_to_flex| se hacen sobre el mismo \emph{heap} completo,
+por lo que se combinan con la conjunción normal ($\land$).
+La separación entre celdas de la lista queda establecida por \lstinline|list_seg| en el caso base.
 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-  cell/.style={rectangle, draw=black, thick, minimum width=0.8cm, minimum height=0.8cm, inner sep=0pt, outer sep=0pt},
+  cell/.style={
+    rectangle,
+    draw=black,
+    thick,
+    minimum width=0.8cm,
+    minimum height=0.8cm,
+    inner sep=0pt,
+    outer sep=0pt
+  },
   ptr/.style={->, thick, >=stealth}
 ]
 
-% 1. Prefijo (Nodos ya visitados)
-\node[cell, fill=green!20] (n1v) at (0, 0) {$1$};
-\node[cell, fill=green!20, below=-\pgflinewidth of n1v] (n1p) {$\bullet$};
-% Nodo 2
-\node[cell, fill=green!20, right=0.8cm of n1v] (n2v) {$1$};
-\node[cell, fill=green!20, below=-\pgflinewidth of n2v] (n2p) {$\bullet$};
+% Primer nodo
+\node[cell] (n1v) at (0,0) {$1$};
+\node[cell, below=-\pgflinewidth of n1v]
+  (n1p) {$\bullet$};
 
-% 2 & 3. Nodo Actual (curr_ptr)
-\node[cell, right=1.8cm of n2v] (currv) {\textbf{$1$}};
-\node[cell, below=-\pgflinewidth of currv] (currp) {$\bullet$};
+% Segundo nodo
+\node[cell, right=0.8cm of n1v] (n2v) {$1$};
+\node[cell, below=-\pgflinewidth of n2v]
+  (n2p) {$\bullet$};
 
-% 4. Sufijo (Nodos por visitar)
-\node[cell, fill=blue!20, right=1.8cm of currv] (n4v) {$1$};
-\node[cell, fill=blue!20, below=-\pgflinewidth of n4v] (n4p) {$\bullet$};
-% Nodo 5
-\node[cell, fill=blue!20, right=0.8cm of n4v] (n5v) {$1$};
-\node[cell, fill=blue!20, below=-\pgflinewidth of n5v] (n5p) {$\varnothing$};
+% Nodo alcanzado después de dos avances
+\node[cell, fill=blue!15, right=0.8cm of n2v]
+  (currv) {$1$};
+\node[cell, fill=blue!15, below=-\pgflinewidth of currv]
+  (currp) {$\bullet$};
 
-% Flechas de los punteros (Diagonales desde el centro del puntero al oeste del valor)
-\draw[ptr] (n1p.center) to[out=0, in=180, looseness=1.2] (n2v.west);
-\draw[ptr, dashed] (n2p.center) to[out=0, in=180, looseness=1.2] node[midway, above, sloped] {\scriptsize \texttt{curr\_ptr}} (currv.west);
-\draw[ptr] (currp.center) to[out=0, in=180, looseness=1.2] node[midway, above, sloped] {\scriptsize \texttt{next\_ptr}} (n4v.west);
-\draw[ptr] (n4p.center) to[out=0, in=180, looseness=1.2] (n5v.west);
+% Cuarto nodo
+\node[cell, right=0.8cm of currv] (n4v) {$1$};
+\node[cell, below=-\pgflinewidth of n4v]
+  (n4p) {$\bullet$};
 
-\draw[decorate,decoration={brace,amplitude=6pt,mirror,raise=5pt}]
-  (n1p.south west) -- (n2p.south east)
-  node[midway,yshift=-25pt, text width=3.5cm, align=center]
-  {\texttt{prefix\_seg} \\ \scriptsize Porción ya iterada};
+% Último nodo: enlace nulo
+\node[cell, right=0.8cm of n4v] (n5v) {$1$};
+\node[cell, below=-\pgflinewidth of n5v]
+  (n5p) {$0$};
 
-\draw[decorate,decoration={brace,amplitude=6pt,mirror,raise=5pt}]
-  (n4p.south west) -- (n5p.south east)
-  node[midway,yshift=-25pt, text width=4cm, align=center]
-  {\texttt{list\_seg} \\ \scriptsize Resto por visitar};
+% Enlaces entre nodos
+\draw[ptr]
+  (n1p.center) to[out=0,in=180] (n2v.west);
+\draw[ptr]
+  (n2p.center) to[out=0,in=180] (currv.west);
+\draw[ptr]
+  (currp.center) to[out=0,in=180] (n4v.west);
+\draw[ptr]
+  (n4p.center) to[out=0,in=180] (n5v.west);
+
+% Direcciones inicial y actual
+\node[above=0.7cm of n1v]
+  (startlabel) {\small\texttt{start\_ptr}};
+\draw[ptr] (startlabel.south) -- (n1v.north);
+
+\node[above=0.7cm of currv]
+  (currlabel) {\small\texttt{curr\_ptr}};
+\draw[ptr] (currlabel.south) -- (currv.north);
+
+% Cantidad de avances desde el inicio
+\draw[
+  decorate,
+  decoration={brace,amplitude=6pt,mirror,raise=5pt}
+]
+  (n1p.south) -- (currp.south)
+  node[midway,yshift=-25pt]
+  {\small $k = 2$ avances};
+
 \end{tikzpicture}
-\caption{Partición espacial de la lista durante la iteración \texttt{k}.}
+\caption{Ejemplo del recorrido descrito por
+\lstinline|history|: desde \lstinline|start_ptr|
+se alcanza \lstinline|curr_ptr| después de dos avances
+en una lista de cinco unos.}
 \label{fig:particion-lista}
 \end{figure}
 
-La definición de la conjunción separadora exige que estos \emph{heaps} sean disjuntos.
-Al avanzar a la iteración \lstinline{k + 1},  se extrae el nodo de la cabeza del sufijo, se evalúa, y se empaqueta lógicamente dentro del prefijo.
-De esta manera, el razonamiento sobre el nodo actual no puede usar accidentalmente una celda que pertenezca al prefijo o al sufijo.
+La \autoref{fig:particion-lista} ilustra un caso de \lstinline|history| con \lstinline|n = 5| y \lstinline|k = 2|:
+el puntero actual se encuentra en el tercer nodo,
+luego de realizar dos avances desde el inicio de la lista.
 
-Si el programa original fuese inicializado con una memoria arbitraria, el verificador deductivo no podría afirmar la relación final entre la suma y la longitud.
-En nuestra demostración, inicializamos la prueba exigiendo en la precondición que el \emph{heap} contenga el predicado \texttt{list\_seg} poblado exactamente con una lista de unos:
-
-\begin{lstlisting}
-let pre_init (start_ptr : loc) : cond =
-  fun s -> let xs = ones n_target in
-    (exists (curr_ptr : loc).
-      s._3 == Ok /\ s._1 "ptr" == Loc curr_ptr /\
-      (prefix_seg start_ptr curr_ptr 0 ** list_seg curr_ptr 0 xs) s)
-\end{lstlisting}
-
-Durante el cuerpo del bucle, la regla de lectura extrae el valor \texttt{v} de la celda actual.
-Gracias al particionamiento de la huella espacial que se definió previamente, el axioma garantiza lógicamente que el valor leído de la variable es 1.
-Luego, el programa incrementa las variables acumuladoras.
-En nuestra mecanización, hemos formalizado este avance lógico mediante lemas de correctitud locales.
-En particular, el avance de \texttt{sum} se respalda con el siguiente lema auxiliar que reconstruye el \emph{store} anterior a la asignación:
+La precondición ubica \lstinline|ptr| al inicio de la lista y exige que el estado tenga modo \lstinline|Ok|.
+Al utilizar \lstinline|history| con cero pasos,
+también establece que el \emph{heap} describe una lista de \lstinline|n| elementos iguales a uno:
 
 \begin{lstlisting}
-let lemma_prove_sum_step (start_ptr : loc) (k : nat) (s : state)
-  : Lemma (requires (post_sum start_ptr k s))
-          (ensures (is_ok (fun s0 -> exists (st_init : var -> value).
-                    post_load_v start_ptr k (st_init, s0._2, s0._3) /\
-                    s._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3)
-                                 (Plus (Var "sum") (Var "v"))) /\
-                    (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) s))
+let pre_init (start_ptr : loc) (n : nat) : cond =
+  fun s -> s._3 == Ok /\
+    s._1 "ptr" == Loc start_ptr /\
+    history start_ptr start_ptr n 0 s._2
 \end{lstlisting}
-El lema correspondiente a \texttt{len} sigue el mismo patrón.
 
-Estas demostraciones no ejecutan el programa para cada valor de \texttt{k}.
-Establecen algebraicamente que, si antes de la asignación se cumple \lstinline{sum = len = k}, entonces después de las actualizaciones se cumple \lstinline{sum = len = k + 1}.
+La familia de aserciones utilizada para el bucle relaciona la cantidad de iteraciones con los acumuladores
+y con la posición alcanzada en la lista:
 
-A partir de este punto, el paso entre una iteración y la siguiente modifica la partición lógica del \emph{heap}.
-El nodo actual deja de formar parte del sufijo y pasa a integrarse al prefijo.
-El nuevo valor de \texttt{ptr} se obtiene de la celda \lstinline{curr_ptr + 1}, por lo que la siguiente iteración empieza en \texttt{next\_ptr}.
+\begin{lstlisting}
+let variant (start_ptr : loc) (n : nat) (k : nat) : cond =
+  fun s ->
+    k <= n /\ s._3 == Ok /\
+    s._1 "sum" == Nat k /\ s._1 "len" == Nat k /\
+    (k > 0 ==> s._1 "v" == Nat 1) /\
+    exists (curr_ptr : loc).
+      s._1 "ptr" == Loc curr_ptr /\
+      history start_ptr curr_ptr n k s._2
+\end{lstlisting}
+La incialización establece que \lstinline|sum| y \lstinline|len| valen cero y conserva el puntero y el \emph{heap} descritos por \lstinline|pre_init|.
+Así se obtiene el caso \lstinline|k = 0| de la variante,
+como demustra \lstinline|proof_init|.
+La condición \lstinline|v == Nat 1| se exige solo cuando \lstinline|k > 0|,
+porque \lstinline|v| recibe su valor durante la primera lectura del cuerpo.
 
-Al igual que en la \autoref{sec:bucle}, el recorrido se demuestra con \texttt{ISL\_KleeneVariant}.
-En este caso, la familia de aserciones relaciona el índice \texttt{k} con la longitud del prefijo ya visitado, los valores de \texttt{sum} y \texttt{len}, la posición actual de \texttt{ptr} y la estructura del sufijo restante.
-El paso inductivo demuestra que una ejecución del cuerpo transforma la aserción correspondiente a \texttt{k} en la correspondiente a \lstinline{k + 1}.
-Cuando \lstinline{k = n_target}, el sufijo es vacío y \texttt{ptr} contiene la dirección nula.
-Además, \lstinline{sum = n_target = len}.
+Para justificar el paso entre dos índices consecutivos de la variante,
+se contruye una derivación para cada instrucción del cuerpo.
+Las dos lecturas requieren acceder a una celda sin perder la informaci+on sobre el resto de la lista.
+Para ello se utiliza la derivación auxiliar \lstinline|framed_load|,
+que combina \lstinline|ISL_Load| con la Regla del Marco.
+Para construir el marco,
+se utilizan variables auxiliares que conservan el valor anterior de la variable modificada,
+la dirección leída y el contenido de la celda.
+Estas variables se ocultan mediante \lstinline|ISL_Exists| y no forman parte del programa.
+La postcondición resultante relaciona el valor leído con un estado anterior obtenido al restablecer la variable modificada:
 
-La aserción se representa como:
+\begin{lstlisting}
+let load_post (pre : cond) (x : var) (e : expr) : cond =
+  fun s -> s._3 == Ok /\
+    exists (x_old : value) (l : loc) (v : value).
+      points_to_flex l v s /\ s._1 x == v /\
+      eval_expr (override s._1 x x_old, s._2, Ok) e == l /\
+      pre (override s._1 x x_old, s._2, Ok)
+\end{lstlisting}
+
+Una vez leído el valor del nodo,
+el programa actualiza los acumuladores mediante dos asignaciones.
+Durante estas actualizaciones,
+el puntero permanece en el mismo nodo y el \emph{heap} no cambia.
+Para describir los estados intermedios,
+se define \lstinline|step_state|,
+cuyos parámetros \lstinline|sum| y \lstinline|len| indican los valores de ambos acumuladores:
+
+\begin{lstlisting}
+let step_state (start_ptr : loc) (n : nat) (k : nat) (sum len : nat) : cond =
+  fun s ->
+    k < n /\ s._3 == Ok /\
+    s._1 "sum" == Nat sum /\ s._1 "len" == Nat len /\
+    s._1 "v" == Nat 1 /\
+    exists (curr_ptr : loc).
+      s._1 "ptr" == Loc curr_ptr /\
+      history start_ptr curr_ptr n k s._2 /\
+      points_to_flex curr_ptr (Nat 1) s
+\end{lstlisting}
+
+El índice \lstinline|k| indica la cantidad de avances del puntero realizados hasta el nodo actual,
+mientras que los acumuladores se actualizan por separado.
+La aserción \lstinline|post_sum| describe el estado posterior a incrementar la suma,
+y \lstinline|post_len|,
+el estado posterior a incrementar también la longitud:
+
+\begin{lstlisting}
+let post_sum (start_ptr : loc) (n : nat) (k : nat) : cond =
+  step_state start_ptr n k (k + 1) k
+
+let post_len (start_ptr : loc) (n : nat) (k : nat) : cond =
+  step_state start_ptr n k (k + 1) (k + 1)
+\end{lstlisting}
+
+Antes de estas asignaciones,
+\lstinline|post_load_v| establece que ambos acumuladores valen \lstinline|Nat k| y que \lstinline|v| contiene \lstinline|Nat 1|,
+junto con las condiciones del recorrido.
+Para justificar la actualización de la suma mediante \lstinline|ISL_Assign|,
+el siguiente lema reconstruye,
+a partir de un estado que satisface \lstinline|post_sum|,
+un \emph{store} anterior que satisface \lstinline|post_load_v|:
+
+\begin{lstlisting}
+let lemma_prove_sum_step (start_ptr : loc) (n : nat) (k : nat) (s : state)
+  : Lemma (requires (post_sum start_ptr n k s))
+          (ensures (is_ok (fun s0 -> exists (st_init : store).
+            post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
+            s0._1 "sum" ==
+              Nat (eval_expr (st_init, s0._2, s0._3)
+              (Plus (Var "sum") (Var "v"))) /\
+            (forall (y : var). y <> "sum" ==> s0._1 y == st_init y)) s)) =
+  let st_init = override s._1 "sum" (Nat k) in
+  exists_intro (fun (st_init : store) ->
+    post_load_v start_ptr n k (st_init, s._2, s._3) /\
+    s._1 "sum" == 
+      Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "sum") (Var "v"))) /\
+    (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
+\end{lstlisting}
+El \emph{store} anterior se obtiene restableciendo únicamente \lstinline|sum| a \lstinline|Nat k|.
+Como \lstinline|v| contiene \lstinline|Nat 1|,
+la expresión de la asignación produce el valor \lstinline|Nat (k + 1)| del estado recibido.
+Las demás variables y el \emph{heap} se conservan.
+La llamada a \lstinline|exists_intro| proporciona este \emph{store} como testigo de la postcondición de \lstinline|ISL_Assign|.
+Omitimos el lema correspondiente a \lstinline|len|,
+ya que sigue el mismo patrón.
+
+Una vez actualizados estos acumuladores,
+el estado satisface \lstinline|post_len|:
+\lstinline|sum| y \lstinline|len| valen \lstinline|Nat (k + 1)|,
+pero el puntero todavía se encuentra en el nodo actual.
+La última instrucción del cuerpo lee la dirección almacenada en \lstinline|ptr + 1| y la asigna a \lstinline|ptr|.
+Este paso permite alcanzar un estado que satisface \lstinline|variant start_ptr n (k + 1)|.
+
+Para justificar esta lectura,
+el lema \lstinline|lemma_prove_load_ptr| parte del estado posterior al avance.
+Al desplegar \lstinline|history| para \lstinline|k + 1| pasos,
+se obtiene un nodo anterior cuya celda de enlace contiene la dirección actual.
+Esta información permite reconstruir el valor previo de \lstinline|ptr| y establecer la postcondición \lstinline|load_post| de la lectura:
+
+\begin{lstlisting}
+let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
+  : Lemma (requires variant start_ptr n (k + 1) s)
+          (ensures load_post (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) s) =
+  let curr_ptr = indefinite_description_ghost
+    loc (fun curr_ptr -> s._1 "ptr" == Loc curr_ptr /\ history start_ptr curr_ptr n (k + 1) s._2)
+  in
+  let hs = heap_only s._2 in
+  let prev_ptr = indefinite_description_ghost loc (fun prev_ptr ->
+    points_to_flex prev_ptr (Nat 1) hs /\
+    points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs /\
+    history start_ptr prev_ptr n k s._2)
+  in
+  lemma_points_to_flex prev_ptr (Nat 1) hs;
+  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs;
+  lemma_points_to_flex prev_ptr (Nat 1) (override s._1 "ptr" (Loc prev_ptr), s._2, Ok);
+  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) s;
+  exists_intro (fun p ->
+    (override s._1 "ptr" (Loc prev_ptr)) "ptr" == Loc p /\
+    history start_ptr p n k s._2 /\
+    points_to_flex p (Nat 1) (override s._1 "ptr" (Loc prev_ptr), s._2, Ok)) prev_ptr;
+  eval_pointer s._1 s._2 prev_ptr;
+  load_post_intro (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) s (Loc prev_ptr) (prev_ptr + 1) (Loc curr_ptr)
+\end{lstlisting}
+
+En este caso,
+el testigo \lstinline|prev_ptr| proporciona el valor anterior del puntero.
+Al restablecerlo en el \emph{store},
+se obtiene un estado que satisface \lstinline|post_len|,
+con los acumuladores ya actualizados y el recorrido todavía en el índice \lstinline|k|.
+Las llamadas a \lstinline|lemma_points_to_flex| permiten utilizar la información de las celdas en los distintos estados,
+que comparten el mismo \emph{heap}.
+El auxiliar \lstinline|eval_pointer| establece que la dirección evaluada antes de la lectura es \lstinline|prev_ptr + 1|,
+y \lstinline|load_post_intro| reúne estos datos para justificar que la lectura produce el valor actual de \lstinline|ptr|.
+
+Con esta última lectura se completa la justificación de una iteración del bucle.
+La derivación \lstinline|proof_loop_step| reúne los pasos anteriores mediante \lstinline|ISL_Seq|,
+comenzando por la comprobación de que \lstinline|ptr| no es nulo y continuando con las lecturas y las asignaciones.
+En cada paso \lstinline|ISL_Consequence| permite ajustar la postcondición de la regla a la aserción intermedia correspondiente.
+De esta manera,
+para cada \lstinline|k| se obtiene una derivación del cuerpo desde \lstinline|is_ok (variant start_ptr n k)|
+hasta \lstinline|variant start_ptr n (k + 1)|.
+A partir de estas derivaciones,
+\lstinline|ISL_KleeneVariant| permite justificar la repetición del cuerpo:
+
+\begin{lstlisting}
+let proof_loop (start_ptr : loc) (n : nat)
+  : isl_triple (kleene_pre (variant start_ptr n))
+  (Kleene loop_body) (kleene_post (variant start_ptr n)) =
+  ISL_KleeneVariant (proof_loop_step start_ptr n)
+\end{lstlisting}
+
+Después del bucle,
+el programa comprueba que \lstinline|ptr| contiene la dirección nula y evalúa la aserción sobre los acumuladores.
+Para justificar la rama de error,
+\lstinline|pre_error| selecciona los estados correspondientes a \lstinline|n| iteraciones en los que el puntero es nulo.
+La aserción \lstinline|post_error| conserva el \emph{store} y el \emph{heap} descritos por esta condición,
+pero exige el modo de terminación \lstinline|Er|:
+
+\begin{lstlisting}
+let pre_error (start_ptr : loc) (n : nat) : cond =
+  fun s ->
+    variant start_ptr n n s /\ s._1 "ptr" == Loc 0 /\
+    eval_expr s (Eq (Var "sum") (Var "len")) <> 0
+
+let post_error (start_ptr : loc) (n : nat) : cond =
+  fun s -> s._3 == Er /\ pre_error start_ptr n (s._1, s._2, Ok)
+\end{lstlisting}
+La igualdad entre los acumuladores se deduce de \lstinline|variant start_ptr n n|,
+que exige que ambos tengan el valor \lstinline|Nat n|.
+Esta igualdad satisface la condición de la rama de error en la representación de la aserción del programa:
 
 \begin{lstlisting}
 let assert_stmt =
@@ -5120,12 +5333,30 @@ let assert_stmt =
   Assume (enot (Eq (Var "sum") (Var "len")))
 \end{lstlisting}
 
-Como la variante final establece \lstinline{sum = len}, la derivación selecciona la rama izquierda con \texttt{ISL\_ChoiceL}.
-El \texttt{Assume} conserva el estado y \texttt{Error} cambia el modo de terminación a \texttt{Er}.
+Como \lstinline|pre_error| establece la igualdad entre \lstinline|sum| y \lstinline|len|,
+la derivación selecciona la rama izquierda mediante \lstinline|ISL_ChoiceL|.
+El \lstinline|Assume| conserva el estado y \lstinline|Error| cambia el modo de terminación a \lstinline|Er|,
+obteniendo así \lstinline|post_error|.
+
+Finalmente,
+\lstinline|proof_prog_list_sum_len| compone las derivaciones de la inicialización,
+el bucle y la comprobación final.
+Su tipo expresa la tripleta demostrada para una dirección inicial y una longitud dadas:
+
+\begin{lstlisting}
+let proof_prog_list_sum_len (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (pre_init start_ptr n)) 
+  prog_list_sum_len (post_error start_ptr n)
+\end{lstlisting}
+La tripleta justifica que cada estado descrito por \lstinline|post_error| es alcanzable mediante el programa desde algún estado que satisface
+\lstinline|is_ok (pre_init start_ptr n)|.
 
 Este caso de estudio combina los principales componentes espaciales e iterativos de la formalización.
-Estos son los \emph{heaps} con muchas celdas, la conjunción separadora, los predicados recursivos, la Regla del Marco, lectura de memoria, asignaciones sobre el \emph{store}, una variante paramétrica de Kleene y la selección de una rama de error.
-La derivación muestra que el sistema puede razonar sobre una estructura enlazada de longitud paramétrica sin escribir manualmente una prueba distinta para cada nodo.
+Estos son los \emph{heaps} con muchas celdas,
+la conjunción separadora, los predicados recursivos, la Regla del Marco,
+lectura de memoria, asignaciones sobre el \emph{store}, una variante paramétrica de Kleene y la selección de una rama de error.
+La derivación muestra que el sistema puede razonar sobre una estructura enlazada de longitud paramétrica
+sin escribir manualmente una prueba distinta para cada nodo.
 
 \section{Resumen de los resultados}
 Los cuatro casos muestran distintas capacidades del núcleo lógico.
@@ -5137,8 +5368,10 @@ La derivación selecciona el comportamiento de reasignación y conserva la direc
 El tercer caso muestra que la subaproximación permite concentrarse en una única secuencia de decisiones.
 La Regla de la Variante de Kleene permite expresar el efecto de una cantidad arbitraria de iteraciones con una familia de aserciones, sin materializar un árbol diferente para cada valor concreto.
 
-Finalmente, el recorrido de la lista enlazada combina el razonamiento paramétrico con predicados espaciales recursivos.
-La conjunción separadora permite dividir el \emph{heap} entre la parte ya visitada, el nodo actual y el resto de la estructura.
+Finalmente,
+el recorrido de la lista enlazada combina el razonamiento paramétrico con predicados espaciales recursivos.
+El predicado \lstinline|history| relaciona las posiciones sucesivas del puntero,
+mientras que la Regla del Marco permite justificar las lecturas conservando la información sobre el resto de la lista.
 
 Esta evaluación no establece completitud respecto de todos los programas posibles, no mide el rendimiento de la verificación y no demuestra que las aserciones puedan sintetizarse automáticamente.
 Su alcance consiste en validar que las construcciones desarrolladas en el \autoref{cap:formalizacion-isl} puedan usarse para demostrar la alcanzabilidad de errores no triviales.

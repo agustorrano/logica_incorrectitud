@@ -113,8 +113,13 @@ let cell_union (c1 c2 : cell { cell_disjoint c1 c2 }) : cell =
 let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
 
-let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
+let (><) (h1 h2 : heap) : prop =
+  heaps_disjoint h1 h2
+
+let heap_union (h1 h2 : heap { h1 >< h2 }) : heap =
   on loc (fun l -> cell_union (h1 l) (h2 l))
+
+let (<+>) = heap_union
 
 let empty_heap : heap =
   on loc (fun _ -> Unknown)
@@ -256,8 +261,8 @@ let rec lemma_runsto_modifies (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
 
 let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state) 
   (h_fr : heap) (r : runsto p s0 s1) :
-  Lemma (requires heaps_disjoint s1._2 h_fr)
-        (ensures heaps_disjoint s0._2 h_fr) (decreases r) = 
+  Lemma (requires s1._2 >< h_fr)
+        (ensures s0._2 >< h_fr) (decreases r) = 
   match r with
   | R_SeqEr r_p ->
     lemma_runsto_disjoint h_fr r_p
@@ -274,13 +279,13 @@ let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
 
 let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   (r : runsto p s0 s1) (h_fr : heap)
-  (#_ : squash (heaps_disjoint s0._2 h_fr))
-  (#_ : squash (heaps_disjoint s1._2 h_fr)) :
+  (#_ : squash (s0._2 >< h_fr))
+  (#_ : squash (s1._2 >< h_fr)) :
   GTot (runsto p 
-    (s0._1, heap_union s0._2 h_fr, s0._3) (s1._1, heap_union s1._2 h_fr, s1._3))
+    (s0._1, s0._2 <+> h_fr, s0._3) (s1._1, s1._2 <+> h_fr, s1._3))
   (decreases r) =
-  let s0_fr = (s0._1, heap_union s0._2 h_fr, s0._3) in
-  let s1_fr = (s1._1, heap_union s1._2 h_fr, s1._3) in
+  let s0_fr = (s0._1, s0._2 <+> h_fr, s0._3) in
+  let s1_fr = (s1._1, s1._2 <+> h_fr, s1._3) in
   match r with
   | R_Skip _ ->
     R_Skip s0_fr
@@ -301,7 +306,7 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
     let r_p_fr = r_frame r_p h_fr #() #() in
     let r_q_fr = r_frame r_q h_fr #() #() in
     let (st_t, hp_t, m_t) = t in
-    let s_mid_fr = (st_t, heap_union hp_t h_fr, m_t) in
+    let s_mid_fr = (st_t, hp_t <+> h_fr, m_t) in
     let r_seq = R_Seq #p #q #s0_fr #s_mid_fr #s1_fr r_p_fr r_q_fr in
     r_seq
   | R_ChoiceL #p #q r_p ->
@@ -396,7 +401,7 @@ unfold
 let sep_conj (p q : cond) : cond =
   fun (st, hp, m) -> 
     exists h1 h2.
-      heaps_disjoint h1 h2 /\
+      h1 >< h2 /\
       hp == heap_union h1 h2 /\
       p (st, h1, m) /\ q (st, h2, m)
 
@@ -409,12 +414,12 @@ let lemma_points_to_flex (l : loc) (v : value) (s : state)
   : Lemma (ensures (points_to_flex l v s <==> (l <> 0 /\ s._2 l == Full v))) =
   if t2b (points_to_flex l v s) then
     let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
-      heaps_disjoint h1 h2 /\
+      h1 >< h2 /\
       s._2 == heap_union h1 h2 /\
       points_to l v (s._1, h1, s._3))
     in
     let h2 = indefinite_description_ghost heap (fun h2 ->
-      heaps_disjoint h1 h2 /\
+      h1 >< h2 /\
       s._2 == heap_union h1 h2 /\
       points_to l v (s._1, h1, s._3))
     in
@@ -422,13 +427,13 @@ let lemma_points_to_flex (l : loc) (v : value) (s : state)
   else if l <> 0 && s._2 l == Full v then
     let h1 = singleton_full_heap l v in
     let h2 = heap_without s._2 l in
-    extensionality loc (fun _ -> cell) s._2 (heap_union h1 h2);
+    extensionality loc (fun _ -> cell) s._2 (h1 <+> h2);
     exists_intro (fun b ->
-      heaps_disjoint h1 b /\
+      h1 >< b /\
       s._2 == heap_union h1 b /\
       points_to l v (s._1, h1, s._3)) h2;
     exists_intro (fun a -> exists b.
-      heaps_disjoint a b /\
+      a >< b /\
       s._2 == heap_union a b /\
       points_to l v (s._1, a, s._3)) h1
 
@@ -722,7 +727,7 @@ let rec soundness
   | ISL_Frame #p_pre #p_cmd #p_post fr pf_p _ ->
     let (st1, hp1, m) = s1 in
     let unfold p_two (h_local : heap) (h_fr : heap) : prop = 
-      heaps_disjoint h_local h_fr /\ 
+      h_local >< h_fr /\ 
       hp1 == heap_union h_local h_fr /\ 
       p_post (st1, h_local, m) /\ 
       fr (st1, h_fr, m)
@@ -738,7 +743,7 @@ let rec soundness
       soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_ok, m) in
     let (st0, hp0, m0) = s0_local in
     lemma_runsto_disjoint h_fr r_local;
-    let s0 : state = (st0, heap_union hp0 h_fr, m0) in
+    let s0 : state = (st0, hp0 <+> h_fr, m0) in
     let r_global = r_frame r_local h_fr #() #() in
     lemma_runsto_modifies r_local;
     (|s0, r_global|)
@@ -1014,13 +1019,13 @@ type footprint : stmt -> state -> state -> Type0 =
   
   | F_Seq : p : stmt -> q : stmt -> st0 : store -> stm : store ->
     st1 : store -> h_common : heap -> 
-    h_p : heap { heaps_disjoint h_common h_p } -> 
-    h_q : heap { heaps_disjoint h_common h_q /\ heaps_disjoint h_p h_q } -> 
-    h0 : heap { heaps_disjoint h0 h_q } -> h1 : heap { heaps_disjoint h1 h_p } -> 
+    h_p : heap { h_common >< h_p } -> 
+    h_q : heap { h_common >< h_q /\ h_p >< h_q } -> 
+    h0 : heap { h0 >< h_q } -> h1 : heap { h1 >< h_p } -> 
     m1 : term_mode ->
-    footprint p (st0, h0, Ok) (stm, heap_union h_common h_p, Ok) ->
-    footprint q (stm, heap_union h_common h_q, Ok) (st1, h1, m1) ->
-    footprint (Seq p q) (st0, heap_union h0 h_q, Ok) (st1, heap_union h1 h_p, m1)
+    footprint p (st0, h0, Ok) (stm, h_common <+> h_p, Ok) ->
+    footprint q (stm, h_common <+> h_q, Ok) (st1, h1, m1) ->
+    footprint (Seq p q) (st0, h0 <+> h_q, Ok) (st1, h1 <+> h_p, m1)
   
   | F_SeqEr : p : stmt -> q : stmt -> 
     s : state { s._3 == Ok } -> t : state { t._3 == Er } ->
@@ -1116,18 +1121,18 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
   
   | F_Seq p q st0 stm st1 h_common h_p h_q h0 h1 m1 f_p f_q ->
     let r_p = 
-      footprint_sound p (st0, h0, Ok) (stm, heap_union h_common h_p, Ok) f_p
+      footprint_sound p (st0, h0, Ok) (stm, h_common <+> h_p, Ok) f_p
     in
     let r_q =
-      footprint_sound q (stm, heap_union h_common h_q, Ok) (st1, h1, m1) f_q
+      footprint_sound q (stm, h_common <+> h_q, Ok) (st1, h1, m1) f_q
     in
     let r_p_framed = r_frame r_p h_q #() #() in
     let r_q_framed = r_frame r_q h_p #() #() in
-    let s_mid_p = (stm, heap_union (heap_union h_common h_p) h_q, Ok) in
-    let s_mid_q = (stm, heap_union (heap_union h_common h_q) h_p, Ok) in
-    let s_final = (st1, heap_union h1 h_p, m1) in
+    let s_mid_p = (stm, (h_common <+> h_p) <+> h_q, Ok) in
+    let s_mid_q = (stm, (h_common <+> h_q) <+> h_p, Ok) in
+    let s_final = (st1, h1 <+> h_p, m1) in
     state_equiv_eq s_mid_q s_mid_p;
-    R_Seq #p #q #(st0, heap_union h0 h_q, Ok) #s_mid_p #s_final r_p_framed r_q_framed
+    R_Seq #p #q #(st0, h0 <+> h_q, Ok) #s_mid_p #s_final r_p_framed r_q_framed
   
   | F_SeqEr p q s t f_p ->
     let r_p = footprint_sound p s t f_p in
@@ -1205,9 +1210,9 @@ noeq
 type framed_footprint : stmt -> state -> state -> Type0 =
   | FF_Frame : p : stmt -> s0 : state -> s1 : state -> h_fr : heap ->
     fp : footprint p s0 s1 -> 
-    d0 : squash (heaps_disjoint s0._2 h_fr) ->
-    d1 : squash (heaps_disjoint s1._2 h_fr) ->
-    framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3) (s1._1, heap_union s1._2 h_fr, s1._3)
+    d0 : squash (s0._2 >< h_fr) ->
+    d1 : squash (s1._2 >< h_fr) ->
+    framed_footprint p (s0._1, s0._2 <+> h_fr, s0._3) (s1._1, s1._2 <+> h_fr, s1._3)
 
 let framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases ff) =
@@ -1265,12 +1270,12 @@ let cell_cross_split (c1 c2 c3 c4 : cell)
   ()
 
 let heaps_pairwise_disjoint (h13 h14 h23 h24 : heap) : prop =
-  heaps_disjoint h13 h14 /\
-  heaps_disjoint h13 h23 /\
-  heaps_disjoint h13 h24 /\
-  heaps_disjoint h14 h23 /\
-  heaps_disjoint h14 h24 /\
-  heaps_disjoint h23 h24
+  h13 >< h14 /\
+  h13 >< h23 /\
+  h13 >< h24 /\
+  h14 >< h23 /\
+  h14 >< h24 /\
+  h23 >< h24
 
 noeq
 type cross_split_witness (h1 h2 h3 h4 : heap) = {
@@ -1283,7 +1288,7 @@ type cross_split_witness (h1 h2 h3 h4 : heap) = {
 }
 
 let heap_cross_split (h1 h2 h3 h4 : heap)
-  (#_ : squash (heaps_disjoint h1 h2)) (#_ : squash (heaps_disjoint h3 h4))
+  (#_ : squash (h1 >< h2)) (#_ : squash (h3 >< h4))
   (#_ : squash (forall l. heap_merge h1 h2 l == heap_merge h3 h4 l))
   : GTot (cross_split_witness h1 h2 h3 h4) =
   let h13 = cross_heap h1 h3 in
@@ -1322,12 +1327,12 @@ noeq
 type frame_parts (p : stmt) (s0 : state) (s1 : state) = {
   local_start : state; local_end : state; frame_heap : heap;
   local_footprint : footprint p local_start local_end;
-  frame_disjoint_start : squash (heaps_disjoint local_start._2 frame_heap);
-  frame_disjoint_end : squash (heaps_disjoint local_end._2 frame_heap);
+  frame_disjoint_start : squash (local_start._2 >< frame_heap);
+  frame_disjoint_end : squash (local_end._2 >< frame_heap);
   rebuild_start : squash (state_equiv
-    (local_start._1, heap_union local_start._2 frame_heap, local_start._3) s0);
+    (local_start._1, local_start._2 <+> frame_heap, local_start._3) s0);
   rebuild_end : squash (state_equiv
-    (local_end._1, heap_union local_end._2 frame_heap, local_end._3) s1)
+    (local_end._1, local_end._2 <+> frame_heap, local_end._3) s1)
 }
 
 let flatten_framed (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
@@ -1371,7 +1376,7 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let st = s._1 in
     let h = s._2 in
     let s_local = (st, empty_heap, Ok) in
-    let s_framed = (st, heap_union empty_heap h, Ok) in
+    let s_framed = (st, empty_heap <+> h, Ok) in
     let ff = FF_Frame Skip s_local s_local h (F_Skip st) () () in
     state_equiv_eq s_framed s;
     ff
@@ -1381,8 +1386,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h = s._2 in
     let s0_local = (st, empty_heap, Ok) in
     let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, heap_union empty_heap h, Ok) in
-    let s1_framed = (st, heap_union empty_heap h, Er) in
+    let s0_framed = (st, empty_heap <+> h, Ok) in
+    let s1_framed = (st, empty_heap <+> h, Er) in
     let ff = FF_Frame Error s0_local s1_local h (F_Error st) () () in
     state_equiv_eq s0_framed s;
     state_equiv_eq s1_framed (st, h, Er);
@@ -1394,8 +1399,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_local = (st, empty_heap, Ok) in
     let st1 = override st x (Nat (eval_expr' st e)) in
     let s1_local = (st1, empty_heap, Ok) in
-    let s0_framed = (st, heap_union empty_heap h, Ok) in
-    let s1_framed = (st1, heap_union empty_heap h, Ok) in
+    let s0_framed = (st, empty_heap <+> h, Ok) in
+    let s1_framed = (st1, empty_heap <+> h, Ok) in
     let ff = FF_Frame (Assign x e) s0_local s1_local h (F_Assign st x e) () () in
     state_equiv_eq s0_framed s;
     state_equiv_eq s1_framed (st1, h, Ok);
@@ -1407,8 +1412,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_local = (st, empty_heap, Ok) in
     let st1 = override st x v in
     let s1_local = (st1, empty_heap, Ok) in
-    let s0_framed = (st, heap_union empty_heap h, Ok) in
-    let s1_framed = (st1, heap_union empty_heap h, Ok) in
+    let s0_framed = (st, empty_heap <+> h, Ok) in
+    let s1_framed = (st1, empty_heap <+> h, Ok) in
     let ff = FF_Frame (Nondet x) s0_local s1_local h (F_Nondet st x v) () () in
     state_equiv_eq s0_framed s;
     state_equiv_eq s1_framed (st1, h, Ok);
@@ -1418,7 +1423,7 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let st = s._1 in
     let h = s._2 in
     let s_local = (st, empty_heap, Ok) in
-    let s_framed = (st, heap_union empty_heap h, Ok) in
+    let s_framed = (st, empty_heap <+> h, Ok) in
     let ff = FF_Frame (Assume e) s_local s_local h (F_Assume st e) () () in
     state_equiv_eq s_framed s;
     ff
@@ -1442,29 +1447,29 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let fr_q = parts_q.frame_heap in
     let fp_q = parts_q.local_footprint in
     let dq0 = parts_q.frame_disjoint_start in
-    let p_mid = (p1._1, heap_union p1._2 fr_p, p1._3) in
-    let q_mid = (q0._1, heap_union q0._2 fr_q, q0._3) in
+    let p_mid = (p1._1, p1._2 <+> fr_p, p1._3) in
+    let q_mid = (q0._1, q0._2 <+> fr_q, q0._3) in
     let cs = heap_cross_split p1._2 fr_p q0._2 fr_q #dp1 #dq0 #() in
     let h_common = cs.h13 in
     let h_p = cs.h14 in
     let h_q = cs.h23 in
     let h_ext = cs.h24 in
     let p0_aligned = (p0._1, p0._2, Ok) in
-    let p1_aligned = (p1._1, heap_union h_common h_p, Ok) in
-    let q0_aligned = (p1._1, heap_union h_common h_q, Ok) in
+    let p1_aligned = (p1._1, h_common <+> h_p, Ok) in
+    let q0_aligned = (p1._1, h_common <+> h_q, Ok) in
     let q1_aligned = (q1._1, q1._2, q1._3) in
     state_equiv_eq p0 p0_aligned;
     state_equiv_eq p1 p1_aligned;
     state_equiv_eq q0 q0_aligned;
     state_equiv_eq q1 q1_aligned;
-    let seq0_local = (p0._1, heap_union p0._2 h_q, Ok) in
-    let seq1_local = (q1._1, heap_union q1._2 h_p, q1._3) in
+    let seq0_local = (p0._1, p0._2 <+> h_q, Ok) in
+    let seq1_local = (q1._1, q1._2 <+> h_p, q1._3) in
     let fp_seq = F_Seq p q p0._1 p1._1 q1._1 h_common h_p h_q p0._2 q1._2 q1._3 fp_p fp_q in
-    let seq0_framed = (p0._1, heap_union (heap_union p0._2 h_q) h_ext, Ok) in
-    let seq1_framed = (q1._1, heap_union (heap_union q1._2 h_p) h_ext, q1._3) in
+    let seq0_framed = (p0._1, (p0._2 <+> h_q) <+> h_ext, Ok) in
+    let seq1_framed = (q1._1, (q1._2 <+> h_p) <+> h_ext, q1._3) in
     let ff_seq = FF_Frame (Seq p q) seq0_local seq1_local h_ext fp_seq () () in
-    let p0_framed = (p0._1, heap_union p0._2 fr_p, Ok) in
-    let q1_framed = (q1._1, heap_union q1._2 fr_q, q1._3) in
+    let p0_framed = (p0._1, p0._2 <+> fr_p, Ok) in
+    let q1_framed = (q1._1, q1._2 <+> fr_q, q1._3) in
     state_equiv_eq seq0_framed s;
     state_equiv_eq seq1_framed u;
     ff_seq
@@ -1485,7 +1490,7 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let st = s._1 in
     let h = s._2 in
     let s_local = (st, empty_heap, Ok) in
-    let s_framed = (st, heap_union empty_heap h, Ok) in
+    let s_framed = (st, empty_heap <+> h, Ok) in
     let ff = FF_Frame (Kleene p) s_local s_local h (F_Kleene0 st p) () () in
     state_equiv_eq s_framed s;
     ff
@@ -1504,8 +1509,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     if Unknown? (h l) then
       let s0_local = (st, empty_heap, Ok) in
       let s1_local = (st1, singleton_full_heap l v, Ok) in
-      let s0_framed = (st, heap_union empty_heap h_fr, Ok) in
-      let s1_framed = (st1, heap_union (singleton_full_heap l v) h_fr, Ok) in
+      let s0_framed = (st, empty_heap <+> h_fr, Ok) in
+      let s1_framed = (st1, (singleton_full_heap l v) <+> h_fr, Ok) in
       let fp_alloc = F_AllocFresh st x l v in
       let ff = FF_Frame (Alloc x) s0_local s1_local h_fr fp_alloc () () in
       state_equiv_eq s0_framed s0;
@@ -1514,8 +1519,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     else
       let s0_local = (st, singleton_empty_heap l, Ok) in
       let s1_local = (st1, singleton_full_heap l v, Ok) in
-      let s0_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
-      let s1_framed = (st1, heap_union (singleton_full_heap l v) h_fr, Ok) in
+      let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
+      let s1_framed = (st1, (singleton_full_heap l v) <+> h_fr, Ok) in
       let fp_alloc = F_AllocReuse st x l v in
       let ff = FF_Frame (Alloc x) s0_local s1_local h_fr fp_alloc () () in
       state_equiv_eq s0_framed s0;
@@ -1528,8 +1533,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_full_heap l v, Ok) in
     let s1_local = (st, singleton_empty_heap l, Ok) in
-    let s0_framed = (st, heap_union (singleton_full_heap l v) h_fr, Ok) in
-    let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
+    let s0_framed = (st, (singleton_full_heap l v) <+> h_fr, Ok) in
+    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
     let fp_free = F_Free st e l v in
     let ff = FF_Frame (Free e) s0_local s1_local h_fr fp_free () () in
     state_equiv_eq s0_framed s0;
@@ -1543,8 +1548,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_empty_heap l, Ok) in
     let s1_local = (st, singleton_empty_heap l, Er) in
-    let s0_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
-    let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Er) in
+    let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
+    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Er) in
     let f_free = F_FreeEr st e l #() in
     let ff = FF_Frame (Free e) s0_local s1_local h_fr f_free () () in
     state_equiv_eq s0_framed s0;
@@ -1556,8 +1561,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h = s._2 in
     let s0_local = (st, empty_heap, Ok) in
     let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, heap_union empty_heap h, Ok) in
-    let s1_framed = (st, heap_union empty_heap h, Er) in
+    let s0_framed = (st, empty_heap <+> h, Ok) in
+    let s1_framed = (st, empty_heap <+> h, Er) in
     let f_free = F_FreeNull st e #() in
     let ff = FF_Frame (Free e) s0_local s1_local h f_free () () in
     state_equiv_eq s0_framed s0;
@@ -1572,8 +1577,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_local = (st, singleton_full_heap l v, Ok) in
     let st1 = override st x v in
     let s1_local = (st1, singleton_full_heap l v, Ok) in
-    let s0_framed = (st, heap_union (singleton_full_heap l v) h_fr, Ok) in
-    let s1_framed = (st1, heap_union (singleton_full_heap l v) h_fr, Ok) in
+    let s0_framed = (st, (singleton_full_heap l v) <+> h_fr, Ok) in
+    let s1_framed = (st1, (singleton_full_heap l v) <+> h_fr, Ok) in
     let fp_load = F_Load st x e l v #() in
     let ff = FF_Frame (Load x e) s0_local s1_local h_fr fp_load () () in
     state_equiv_eq s0_framed s0;
@@ -1587,8 +1592,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_empty_heap l, Ok) in
     let s1_local = (st, singleton_empty_heap l, Er) in
-    let s0_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
-    let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Er) in
+    let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
+    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Er) in
     let f_load = F_LoadEr st x e l #() in
     let ff = FF_Frame (Load x e) s0_local s1_local h_fr f_load () () in
     state_equiv_eq s0_framed s0;
@@ -1600,8 +1605,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h = s._2 in
     let s0_local = (st, empty_heap, Ok) in
     let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, heap_union empty_heap h, Ok) in
-    let s1_framed = (st, heap_union empty_heap h, Er) in
+    let s0_framed = (st, empty_heap <+> h, Ok) in
+    let s1_framed = (st, empty_heap <+> h, Er) in
     let f_load = F_LoadNull st x e #() in
     let ff = FF_Frame (Load x e) s0_local s1_local h f_load () () in
     state_equiv_eq s0_framed s0;
@@ -1615,8 +1620,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let s0_local = (st, singleton_full_heap l v, Ok) in
     let h1 = singleton_full_heap l (Nat (eval_expr' st e2)) in
     let s1_local = (st, h1, Ok) in
-    let s0_framed = (st, heap_union (singleton_full_heap l v) h_fr, Ok) in
-    let s1_framed = (st, heap_union h1 h_fr, Ok) in
+    let s0_framed = (st, (singleton_full_heap l v) <+> h_fr, Ok) in
+    let s1_framed = (st, h1 <+> h_fr, Ok) in
     let fp_store = F_Store st e1 e2 l v in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h_fr fp_store () () in
     state_equiv_eq s0_framed s0;
@@ -1630,8 +1635,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h_fr = heap_without h l in
     let s0_local = (st, singleton_empty_heap l, Ok) in
     let s1_local = (st, singleton_empty_heap l, Er) in
-    let s0_framed = (st, heap_union (singleton_empty_heap l) h_fr, Ok) in
-    let s1_framed = (st, heap_union (singleton_empty_heap l) h_fr, Er) in
+    let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
+    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Er) in
     let f_store = F_StoreEr st e1 e2 l #() in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h_fr f_store () () in
     state_equiv_eq s0_framed s0;
@@ -1643,8 +1648,8 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
     let h = s._2 in
     let s0_local = (st, empty_heap, Ok) in
     let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, heap_union empty_heap h, Ok) in
-    let s1_framed = (st, heap_union empty_heap h, Er) in
+    let s0_framed = (st, empty_heap <+> h, Ok) in
+    let s1_framed = (st, empty_heap <+> h, Er) in
     let f_store = F_StoreNull st e1 e2 #() in
     let ff = FF_Frame (Store e1 e2) s0_local s1_local h f_store () () in
     state_equiv_eq s0_framed s0;

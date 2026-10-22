@@ -1790,6 +1790,8 @@ ahora no falla.}
 la presentación es distinta: para que el Load falle,
 pide que la dirección no esté en el dominio,
 y no que esté en Empty. Así que está mal.}
+\agustina{Entiendo, esto vale en la ISL pero no en la SL porque en la ISL tenemos el heap extendido con $\bot$
+y cambia la semantica para este caso. Mañana lo cambio.}
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
@@ -3498,10 +3500,10 @@ el fragmento de memoria considerado depende de la precondición de cada tripleta
 Un \emph{heap} que asigna \lstinline|Unknown| a todas las ubicaciones representa un fragmento vacío,
 mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.}
 %\guido{el heap inicial está en Empty o en Unknown?}
-\guido{entiendo.. pero en general hay un estado inicial cuando
-uno define una semántica operacional. supongo que es todo empty,
-si fuera todo unknown no se puede alocar, no?}
-\guido{hmmm la regla no requiere Empty...}
+%\guido{entiendo.. pero en general hay un estado inicial cuando
+%uno define una semántica operacional. supongo que es todo empty,
+%si fuera todo unknown no se puede alocar, no?}
+%\guido{hmmm la regla no requiere Empty...}
 
 \changed{Sobre este modelo de estado,
 el lenguaje conserva los comandos del \autoref{cap:formalizacion-il} e incorpora cuatro operaciones de memoria:
@@ -3546,6 +3548,9 @@ En la representación de \fstar{},
 donde estas funciones se han totalizado,
 se exige que no exista una ubicación conocida simultáneamente por ambos \emph{heaps}.
 
+Definimos además el operador infijo \texttt{><} como abreviatura de \lstinline|heaps_disjoint|,
+que en los fragmentos de código representamos mediante $\perp$.
+
 Si dos celdas son disjuntas, su unión selecciona la celda que contiene información:
 
 \begin{lstlisting}
@@ -3564,7 +3569,7 @@ Luego,
 la unión de \emph{heaps} se define punto a punto:
 
 \begin{lstlisting}
-let heap_union (h1 h2 : heap { heaps_disjoint h1 h2 }) : heap =
+let heap_union (h1 h2 : heap { h1 >< h2 }) : heap =
   on loc (fun l -> cell_union (h1 l) (h2 l))
 \end{lstlisting}
 
@@ -3573,6 +3578,9 @@ Por lo tanto,
 \lstinline|heap_union h1 h2| representa la unión disjunta $h_1 \uplus h_2$ definida en la \autoref{sec:logsep}.
 \changed{Es trivial demostrar que esta operación es conmutativa y asociativa,
 siempre que las expresiones estén bien definidas.}
+
+De manera análoga que para \lstinline|heaps_disjoint|,
+definimos el operador infijo \texttt{<+>} como abreviatura de \lstinline|heap_union| y lo representamos mediante $\uplus$ en los fragmentos de código.
 
 Para construir las especificaciones de los programas,
 formalizamos los tres predicados espaciales presentados en las Definiciones \ref{def:heap_vacio},
@@ -3592,7 +3600,7 @@ Para esto definimos los predicados \lstinline|points_to| y \lstinline|points_to_
 
 \begin{lstlisting}
 let points_to (l : loc) (v : value) : cond =
-  fun (st, hp, m) -> l =!=0 /\ hp l == Full v /\
+  fun (st, hp, m) -> l =!= 0 /\ hp l == Full v /\
                      forall l'. (l' <> l) ==> (hp l' == Unknown)
 
 let points_to_empty (l : loc) : cond =
@@ -3621,8 +3629,8 @@ la conjunción separadora se representa mediante:
 \begin{lstlisting}
 let sep_conj (p q : cond) : cond =
   fun (st, hp, m) -> exists h1 h2.
-    heaps_disjoint h1 h2 /\
-    hp == heap_union h1 h2 /\
+    h1 >< h2 /\
+    hp == (h1 <+> h2) /\
     p (st, h1, m) /\ q (st, h2, m)
 
 let ( ** ) = sep_conj
@@ -3690,10 +3698,10 @@ la regla operacional de reserva es:
 \end{lstlisting}
 %\guido{realmente la pre es unknown o empty? como puede
 %ser que el caso unknown funcione con el marco?}
-\guido{ahora me acordé que el unknown está bien porque
-después la celda queda ``quemada'' y la regla del marco
-funca. Pero, se pierde algo si requerimos empty? Eso me suena
-MUCHO mas natural}
+%\guido{ahora me acordé que el unknown está bien porque
+%después la celda queda ``quemada'' y la regla del marco
+%funca. Pero, se pierde algo si requerimos empty? Eso me suena
+%MUCHO mas natural}
 
 La ubicación seleccionada debe ser no nula.
 Además,
@@ -3803,10 +3811,9 @@ En la formalización se mecaniza con la función \lstinline|r_frame|:
 \begin{lstlisting}
 let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   (r : runsto p s0 s1) (h_fr : heap)
-  (#_ : squash (heaps_disjoint s0._2 h_fr))
-  (#_ : squash (heaps_disjoint s1._2 h_fr)) :
-  GTot (runsto p
-    (s0._1, heap_union s0._2 h_fr, s0._3) (s1._1, heap_union s1._2 h_fr, s1._3))
+  (#_ : squash (s0._2 >< h_fr)) (#_ : squash (s1._2 >< h_fr)) :
+  GTot (runsto p 
+    (s0._1, s0._2 <+> h_fr, s0._3) (s1._1, s1._2 <+> h_fr, s1._3))
   (decreases r)
 \end{lstlisting}
 
@@ -3843,8 +3850,8 @@ Para obtener esta propiedad se utiliza el lema:
 \begin{lstlisting}
 let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
   (h_fr : heap) (r : runsto p s0 s1) :
-  Lemma (requires (heaps_disjoint s1._2 h_fr))
-        (ensures (heaps_disjoint s0._2 h_fr)) (decreases r)
+  Lemma (requires (s1._2 >< h_fr))
+        (ensures (s0._2 >< h_fr)) (decreases r)
 \end{lstlisting}
 %\guido{podemos usar \lstinline`x._2` en vez de tener el let acá? o
 %definir una funcion heapof o algo asi?}
@@ -3857,11 +3864,11 @@ la condición de disjunción inicial de \lstinline|r_frame| es derivable,
 aunque se mantiene explícita en su signatura.
 %\guido{si tenes este lema no podes borrar una de las
 %precondiciones de disjoint en r\_frame?}
-\guido{esta es la parte que me confunde de poder alocar
-en una direcciion que esta en Unknown, por cierto, porque el programa
-p podria alocar y liberarla, y en ese caso podria poner de marco
-algo que tambien contiene a esa direccion \textbf{pero} en realidad no
-porque queda en Empty... debe estar bien (la prueba anda) pero me suena raro}
+%\guido{esta es la parte que me confunde de poder alocar
+%en una direcciion que esta en Unknown, por cierto, porque el programa
+%p podria alocar y liberarla, y en ese caso podria poner de marco
+%algo que tambien contiene a esa direccion \textbf{pero} en realidad no
+%porque queda en Empty... debe estar bien (la prueba anda) pero me suena raro}
 
 La función \lstinline|r_frame| demuestra la dirección local a global de la propiedad de localidad.
 Luego,
@@ -4172,7 +4179,9 @@ Cuando la prueba fue construida mediante el marco,
 sabemos lógicamente que el estado final \lstinline|s1| satisface la conjunción separadora \lstinline|p_post ** fr|.
 Por la Definición~\ref{def:sep-conj} de la conjunción separadora,
 el \emph{heap} final puede dividirse en dos fragmentos disjuntos:
-$$hp_1 = h_{local} \uplus h_{fr},$$
+\begin{center}
+\lstinline|hp_1 = h_local <+> h_fr|,
+\end{center}
 \changed{donde \lstinline|p_post| se satisface sobre \lstinline|h_local| y \lstinline|fr| sobre \lstinline|h_fr|.}
 %\guido{por que no usar nombres consistentes?}
 
@@ -4180,8 +4189,8 @@ En la prueba se define esta información mediante un predicado auxiliar:
 
 \begin{lstlisting}
 let p_two (h_local : heap) (h_fr : heap) : prop =
-  heaps_disjoint h_local h_fr /\
-  hp1 == heap_union h_local h_fr /\
+  h_local >< h_fr /\
+  hp1 == (h_local <+> h_fr) /\
   p_post (st1, h_local, m) /\ fr (st1, h_fr, m)
 in
 \end{lstlisting}
@@ -4250,14 +4259,16 @@ entonces ese \emph{heap} puede agregarse a ambos estados y se obtiene una nueva 
 Sin embargo,
 esta propiedad por sí sola no identifica qué parte de una ejecución es local ni demuestra que toda ejecución global admita una descomposición parecida.
 
-Para obtener una caracterización completa se introducen dos nuevas relaciones.
-La primera de estas es \lstinline|footprint|,
-que describe ejecuciones sobre fragmentos locales del \emph{heap}.
+Siguiendo este esquema de descomposición,
+se introducen dos relaciones.
+La primera es \lstinline|footprint|,
+que describe inductivamente ejecuciones sobre fragmentos locales del \emph{heap}.
 La segunda,
 \lstinline|framed_footprint|,
-representa la clausura de esas ejecuciones con la incorporación de marcos disjuntos.
+representa su clausura por marcos disjuntos.
 Finalmente,
-se demuestra que \lstinline|framed_footprint| y \lstinline|runsto| contienen las mismas transiciones.
+se demuestra que esta clausura coincide con \lstinline|runsto|,
+sin establecer la minimalidad de las transiciones de \lstinline|footprint|.
 
 \subsection*{La relación de huellas}
 La relación \lstinline|runsto| permite que los estados inicial y final tengan memoria adicional que no participa de la ejecución.
@@ -4307,6 +4318,23 @@ let singleton_full_heap (l : loc) (v : value) : heap =
 La primera describe exactamente una celda negativa,
 mientras que la segunda describe exactamente una celda activa en una dirección específica.
 Todas las demás direcciones quedan fuera del fragmento local.
+
+La alocación distingue dos situaciones iniciales.
+El constructor \lstinline|F_AllocFresh| reserva una ubicación que no estaba descrita por el fragmento local,
+por lo que parte de \lstinline|empty_heap|.
+En cambio,
+\lstinline|F_AllocReuse| reutiliza una ubicación conocida y marcada como \lstinline|Empty|.
+Ambos casos producen una celda activa:
+
+\begin{lstlisting}
+| F_AllocFresh : st : store -> x : var -> l : loc { l =!= 0 } -> v : value ->
+  footprint (Alloc x) (st, empty_heap, Ok) 
+  (override st x (Loc l), singleton_full_heap l v, Ok)
+
+| F_AllocReuse : st : store -> x : var -> l : loc { l =!= 0 } -> v : value ->
+  footprint (Alloc x) (st, singleton_empty_heap l, Ok)
+  (override st x (Loc l), singleton_full_heap l v, Ok)
+\end{lstlisting}
 
 Una lectura exitosa requiere únicamente la celda que será consultada:
 
@@ -4375,45 +4403,55 @@ no sería suficiente exigir que el \emph{heap} final de la huella del primer com
 
 Para representar esta situación,
 el constructor \lstinline|F_Seq| divide la memoria del estado intermedio en tres componentes,
-$h_{common}$, $h_p$ y $h_q$.
-El \emph{heap} $h_{common}$ contiene los recursos utilizados por los dos comandos.
-El \emph{heap} $h_p$ contiene los recursos exclusivos de \lstinline|p|,
-mientras que $h_q$ contiene los recursos exclusivos de \lstinline|q|.
+\lstinline|h_common|, \lstinline|h_p| y \lstinline|h_q|.
+El \emph{heap} \lstinline|h_common| contiene los recursos utilizados por los dos comandos.
+El \emph{heap} \lstinline|h_p| contiene los recursos exclusivos de \lstinline|p|,
+mientras que \lstinline|h_q| contiene los recursos exclusivos de \lstinline|q|.
 
 La estructura principal del constructor es:
 
-\guido{usa un simbolo para heaps-disjoint}
+%\guido{usa un simbolo para heaps-disjoint}
 \begin{lstlisting}
 | F_Seq : p : stmt -> q : stmt -> st0 : store -> stm : store ->
   st1 : store -> h_common : heap ->
-  h_p : heap { heaps_disjoint h_common h_p } ->
-  h_q : heap { heaps_disjoint h_common h_q /\ heaps_disjoint h_p h_q } ->
-  h0 : heap { heaps_disjoint h0 h_q } ->
-  h1 : heap { heaps_disjoint h1 h_p } ->
+  h_p : heap { h_common >< h_p } ->
+  h_q : heap { h_common >< h_q /\ h_p >< h_q } ->
+  h0 : heap { h0 >< h_q } ->
+  h1 : heap { h1 >< h_p } ->
   m1 : term_mode ->
-  footprint p (st0, h0, Ok) (stm, heap_union h_common h_p, Ok) ->
-  footprint q (stm, heap_union h_common h_q, Ok) (st1, h1, m1) ->
-  footprint (Seq p q) (st0, heap_union h0 h_q, Ok)
-                      (st1, heap_union h1 h_p, m1)
+  footprint p (st0, h0, Ok) (stm, h_common <+> h_p, Ok) ->
+  footprint q (stm, h_common <+> h_q, Ok) (st1, h1, m1) ->
+  footprint (Seq p q) (st0, h0 <+> h_q, Ok)
+                      (st1, h1 <+> h_p, m1)
 \end{lstlisting}
 
 La huella local de \lstinline|p| comienza con \lstinline|h0| y termina usando los recursos comunes y los exclusivos del primer comando,
-$$h_0 \xrightarrow{p} h_{common} \uplus h_p.$$
+\begin{center}
+\lstinline|h0| $\xrightarrow{p}$ \lstinline|h_common <+> h_p|.
+\end{center}
 Sin embargo,
 para construir la ejecución completa de la secuencia,
 los recursos exclusivos de \lstinline|q| deben estar presentes durante la ejecución de \lstinline|p|,
 aunque este no los utilice.
 Por eso,
 \lstinline|h_q| se agrega como marco,
-$$h_0 \uplus h_q \xrightarrow{p} (h_{common} \uplus h_p) \uplus h_q.$$
+\begin{center}
+\lstinline|h0 <+> h_q| $\xrightarrow{p}$ \lstinline|(h_common <+> h_p) <+> h_q|.
+\end{center}
 De manera simétrica,
 la huella de \lstinline|q| usa los recursos comunes y sus recursos exclusivos,
-$$ h_{common} \uplus h_q \xrightarrow{q} h_1.$$
+\begin{center}
+\lstinline|h_common <+> h_q| $\xrightarrow{q}$ \lstinline|h1|.
+\end{center}
 Durante esta segunda ejecución,
 \lstinline|h_p| permanece como marco,
-$$ (h_{common} \uplus h_q) \uplus h_p \xrightarrow{q} h_1 \uplus h_p.$$
+\begin{center}
+\lstinline|(h_common <+> h_q) <+> h_p| $\xrightarrow{q}$ \lstinline|h1 <+> h_p|.
+\end{center}
 Las condiciones de disjunción permiten demostrar que los dos estados intermedios globales son equivalentes,
-$$(h_{common} \uplus h_p) \uplus h_q = (h_{common} \uplus h_q) \uplus h_p.$$
+\begin{center}
+\lstinline|(h_common <+> h_p) <+> h_q = (h_common <+> h_q) <+> h_p|.
+\end{center}
 Por lo tanto,
 las dos ejecuciones pueden componerse mediante la regla operacional \lstinline|R_Seq|.
 
@@ -4433,7 +4471,8 @@ se utiliza \lstinline|state_equiv_eq| para reutilizar una derivación de \lstinl
 %\guido{esta no es admisible tambien?}
 
 \subsection*{Corrección operacional de las huellas}
-Una vez definida la relación local, el primer resultado consiste en demostrar que toda huella representa una ejecución operacional válida:
+Una vez definida la relación local,
+el primer resultado consiste en demostrar que toda huella representa una ejecución operacional válida:
 
 \begin{lstlisting}
 let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
@@ -4442,76 +4481,85 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
 \end{lstlisting}
 
 La función establece
-$$\operatorname{footprint}~p~s_0~s_1 \implies \operatorname{runsto}~p~s_0~s_1.$$
-La demostración se hace por inducción estructural sobre \texttt{f}.
-Los casos primitivos se traducen al constructor correspondiente de \texttt{runsto}.
-En algunos casos, el \emph{heap} final construido por la semántica operacional usa \texttt{override}, mientras que la huella usa un \emph{heap} singleton definido directamente.
-Ambos \emph{heaps} coinciden en todas sus ubicaciones, pero no están definidos de la misma manera.
-La prueba construye primero la regla operacional correspondiente y luego usa \texttt{R\_Ext} para transportar la derivación al estado final indicado por la huella.
+\begin{center}
+\lstinline|footprint p s0 s1| $\implies$ \lstinline|runsto p s0 s1|.
+\end{center}
 
-El caso \texttt{F\_Ext} refleja la relación entre los dos niveles:
+La demostración se hace por inducción estructural sobre \lstinline|f|.
+Los casos primitivos se traducen al constructor correspondiente de \lstinline|runsto|.
+En algunos de ellos es necesario identificar estados cuyos \emph{heaps} se construyen mediante expresiones distintas.
+Por ejemplo,
+en el caso \lstinline|F_Free|,
+la regla operacional actualiza la celda liberada mediante \lstinline|override|,
+mientras que la huella describe el \emph{heap} final mediante \lstinline|singleton_empty_heap|:
 
 \begin{lstlisting}
-| F_Ext p s0 s1 fp s0' s1' e0 e1 ->
-  let r = footprint_sound p s0 s1 fp in
-  R_Ext r s0' s1' e0 e1
+| F_Free st e l v ->
+  let s0 = (st, singleton_full_heap l v, Ok) in
+  let s1 = (st, override (singleton_full_heap l v) l Empty, Ok) in
+  let r = R_Free s0 e l v in
+  state_equiv_eq s1 (st, singleton_empty_heap l, Ok);
+  r
 \end{lstlisting}
-La hipótesis inductiva transforma la huella original en una ejecución de \texttt{runsto}.
-Luego, \texttt{R\_Ext} transporta esa ejecución a los estados equivalentes.
+Ambas expresiones describen el mismo \emph{heap}:
+la ubicación \lstinline|l| está marcada como \lstinline|Empty| y las demás permanecen como \lstinline|Unknown|.
+El lema \lstinline|state_equiv_eq| establece la igualdad de los estados,
+lo que permite reutilizar la derivación \lstinline|r| con el estado final requerido por la huella.
 
-El caso \texttt{F\_Seq} requiere usar la propiedad operacional del marco.
-La hipótesis inductiva aplicada a la primera huella produce una ejecución local de \texttt{p}, a la cual se agrega \texttt{h\_q} mediante \texttt{r\_frame}.
-De manera análoga, la ejecución local de \texttt{q} se extiende con \texttt{h\_p}.
-Después de ajustar los estados intermedios mediante la equivalencia, las dos derivaciones se componen con \texttt{R\_Seq}.
+En el caso \lstinline|F_Seq|,
+además de identificar los estados intermedios,
+es necesario extender las ejecuciones locales con los recursos que utiliza el otro comando.
+Las hipótesis inductivas proporcionan una ejecución de \lstinline|p| y otra de \lstinline|q|.
+Mediante \lstinline|r_frame|,
+la primera se extiende con \lstinline|h_q| y la segunda con \lstinline|h_p|,
+de acuerdo con la distribución de recursos descrita anteriormente.
+Los \emph{heaps} intermedios resultantes son \lstinline|(h_common| $\uplus$ \lstinline|h_p)| $\uplus$ \lstinline|h_q| y
+\lstinline|(h_common| $\uplus$ \lstinline|h_q)| $\uplus$ \lstinline|h_p|.
+La asociatividad y la conmutatividad de la unión disjunta permiten establecer su equivalencia.
+Luego,
+\lstinline|state_equiv_eq| identifica ambos estados y las ejecuciones se componen mediante \lstinline|R_Seq|.
 
 \subsection*{Clausura por marcos}
-El Teorema de la Huella no relaciona directamente \texttt{footprint} con \texttt{runsto}, sino la semántica global con la clausura por marcos de las ejecuciones locales.
-Para representar dicha clausura se define:
+El resultado anterior permite convertir una huella local en una ejecución operacional.
+Para caracterizar también las ejecuciones que contienen memoria adicional,
+se define la clausura por marcos de \lstinline|footprint|:
 
 \begin{lstlisting}
 type framed_footprint : stmt -> state -> state -> Type0 =
   | FF_Frame : p : stmt -> s0 : state -> s1 : state ->
     h_fr : heap -> fp : footprint p s0 s1 ->
-    d0 : squash (heaps_disjoint s0._2 h_fr) ->
-    d1 : squash (heaps_disjoint s1._2 h_fr) ->
-    framed_footprint p (s0._1, heap_union s0._2 h_fr, s0._3)
-                       (s1._1, heap_union s1._2 h_fr, s1._3)
-
-  | FF_Ext : p : stmt -> s0 : state -> s1 : state ->
-    framed_footprint p s0 s1 -> s0' : state -> s1' : state ->
-    squash (state_equiv s0 s0') -> squash (state_equiv s1 s1') ->
-    framed_footprint p s0' s1'
+    d0 : squash (s0._2 >< h_fr) ->
+    d1 : squash (s1._2 >< h_fr) ->
+    framed_footprint p (s0._1, s0._2 <+> h_fr, s0._3)
+                       (s1._1, s1._2 <+> h_fr, s1._3)
 \end{lstlisting}
-\texttt{FF\_Frame} recibe una huella local y agrega el mismo \emph{heap} \texttt{h\_fr} a sus estados inicial y final.
+\lstinline|FF_Frame| recibe una huella local y agrega el mismo \emph{heap} \lstinline|h_fr| a sus estados inicial y final.
 Las dos premisas de disjunción garantizan que el marco no se superponga con los recursos locales de ninguno de los estados.
-Por otro lado, \texttt{FF\_Ext} aplica al nivel de \texttt{framed\_footprint} el mismo principio de equivalencia que \texttt{R\_Ext} aplica a \texttt{runsto} y \texttt{F\_Ext} a \texttt{footprint}.
 
-La corrección operacional de la clausura se demuestra mediante:
+La corrección operacional de esta clausura se obtiene al convertir la huella local en una ejecución mediante
+\lstinline|footprint_sound| y extenderla con el marco mediante \lstinline|r_frame|:
 
 \begin{lstlisting}
-let rec framed_footprint_sound (p : stmt) (s0 : state) (s1 : state)
+let framed_footprint_sound (p : stmt) (s0 : state) (s1 : state) 
   (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases ff) =
   match ff with
   | FF_Frame p s0 s1 h_fr f_p _ _ ->
     let r_p = footprint_sound p s0 s1 f_p in
     r_frame r_p h_fr #() #()
-  | FF_Ext p s0 s1 f_p s0' s1' _ _ ->
-    let r_p = framed_footprint_sound p s0 s1 f_p in
-    R_Ext r_p s0' s1' _ _
 \end{lstlisting}
-En el caso \texttt{FF\_Frame}, la función aplica primero \texttt{footprint\_sound} para obtener una ejecución local y luego utiliza \texttt{r\_frame} para agregar el marco.
-En el caso \texttt{FF\_Ext}, aplica recursivamente la hipótesis inductiva y transporta la ejecución mediante \texttt{R\_Ext}.
 
 Por lo tanto,
-$$\operatorname{framed\_footprint} p \; s_0 \; s_1 \implies \operatorname{runsto} p \; s_0 \; s_1.$$
-Esta función mecaniza la dirección local a global del Teorema~\ref{teo:huella},
-$$\operatorname{frame}(\operatorname{footprint}(C)_\epsilon) \subseteq [\![C]\!]_\epsilon.$$
+\begin{center}
+\lstinline|framed_footprint p s0 s1| $\implies$ \lstinline|runsto p s0 s1|.
+\end{center}
+Esta función establece la dirección local a global para la relación inductiva \lstinline|footprint|.
 Toda ejecución local sigue siendo una ejecución operacional válida cuando se le agrega un marco compatible que permanece inalterado.
 
 \subsection*{Descomposición de ejecuciones globales}
 Para completar la caracterización es necesario demostrar la dirección inversa.
-Dada una derivación operacional, debe ser posible separar los recursos utilizados localmente por el comando de aquellos que permanecen como marco.
+Dada una derivación operacional,
+debe ser posible separar los recursos utilizados localmente por el comando de aquellos que permanecen como marco.
 Esta propiedad se mecaniza con:
 
 \begin{lstlisting}
@@ -4519,35 +4567,36 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) (decreases r)
 \end{lstlisting}
 La función establece,
-$$\operatorname{runsto} p \; s_0 \; s_1 \implies \operatorname{framed\_footprint} p \; s_0 \; s_1$$
-La demostración procede por inducción estructural sobre \texttt{r}.
+\begin{center}
+\lstinline|runsto p s0 s1| $\implies$ \lstinline|framed_footprint p s0 s1|.
+\end{center}
+La demostración procede por inducción estructural sobre \lstinline|r|.
 
-Cuando la derivación operacional comienza con \texttt{R\_Ext}, la hipótesis inductiva descompone la ejecución original y \texttt{FF\_Ext} transporta el resultado:
-
-\begin{lstlisting}
-| R_Ext #p #s0 #s1 r_base s0' s1' eq0 eq1 ->
-  let ff = runsto_decompose r_base in
-  FF_Ext p s0 s1 ff s0' s1' eq0 eq1
-\end{lstlisting}
-
-Para los comandos que no acceden al \emph{heap}, la huella local usa \texttt{empty\_heap} y el \emph{heap} completo de la ejecución se coloca en el marco.
+Para los comandos que no acceden al \emph{heap},
+la huella local usa \lstinline|empty_heap| y el \emph{heap} completo de la ejecución se coloca en el marco.
 Por ejemplo, una ejecución global
-$$(st, h, Ok) \xrightarrow{\texttt{skip}} (st, h, Ok)$$
+\begin{center}
+\lstinline|(st, h, Ok)| $\xrightarrow{\texttt{skip}}$ \lstinline|(st, h, Ok)|
+\end{center}
 se descompone en la huella local
-$$(st, \text{\texttt{empty\_heap}}, Ok) \xrightarrow{\texttt{skip}} (st, \text{\texttt{empty\_heap}}, Ok)$$
-a la que se agrega el marco $h$ con \texttt{FF\_Frame}.
-Como \texttt{heap\_union empty\_heap h} puede no ser igual que \texttt{h}, se termina usando \texttt{FF\_Ext}:
+\begin{center}
+\lstinline|(st, empty_heap, Ok)| $\xrightarrow{\texttt{skip}}$ \lstinline|(st, empty_heap, Ok)|
+\end{center}
+a la que se agrega el marco \lstinline|h| con \lstinline|FF_Frame|.
+La unión de \lstinline|empty_heap| con el marco reconstruye el \emph{heap} original.
+Para identificar explícitamente el estado reconstruido con el estado de la derivación operacional,
+se utiliza \lstinline|state_equiv_eq|:
 
 \begin{lstlisting}
 | R_Skip s ->
   let st = s._1 in
   let h = s._2 in
   let s_local = (st, empty_heap, Ok) in
-  let s_framed = (st, heap_union empty_heap h, Ok) in
+  let s_framed = (st, empty_heap <+> h, Ok) in
   let ff = FF_Frame Skip s_local s_local h (F_Skip st) () () in
-  FF_Ext Skip s_framed s_framed ff s s () ()
+  state_equiv_eq s_framed s;
+  ff
 \end{lstlisting}
-En esta construcción, \texttt{FF\_Frame} agrega los recursos globales, mientras que \texttt{FF\_Ext} ajusta la representación funcional del estado resultante.
 
 Las operaciones de memoria requieren separar del \emph{heap} global la celda utilizada.
 Para ello se define:
@@ -4556,57 +4605,95 @@ Para ello se define:
 let heap_without (h : heap) (l : loc) : heap =
   fun l' -> if l' = l then Unknown else h l'
 \end{lstlisting}
-Si una ejecución de liberación, lectura o escritura usa la dirección \texttt{l}, su huella local tiene el \emph{heap} singleton correspondiente, mientras que \texttt{heap\_without h l} se usa como marco.
+En los casos de liberación,
+lectura o escritura sobre una dirección no nula \lstinline|l|,
+la huella local utiliza el \emph{heap} singleton correspondiente,
+mientras que \lstinline|heap_without h l| se usa como marco.
+Los casos de acceso nulo utilizan \lstinline|empty_heap| como \emph{heap} local y conservan todo el \emph{heap} global en el marco.
 
 Los lemas auxiliares demuestran que ambos fragmentos son disjuntos y que su unión reconstruye el \emph{heap} original.
-Por ejemplo, si $h(l) = Full(v)$, entonces:
-$$\operatorname{singleton\_full\_heap} l \; v \perp \operatorname{heap\_without} h \; l \quad \text{y}$$
-$$\operatorname{singleton\_full\_heap} l \; v \uplus \operatorname{heap\_without} h \; l = h$$
+Por ejemplo,
+si \lstinline|h l = Full v|, entonces:
+\begin{center}
+\lstinline|singleton_full_heap l v >< heap_without h l|, y
+
+\lstinline|singleton_full_heap l v <+> heap_without h l == h|.
+\end{center}
 El caso de una operación sobre una celda negativa se realiza de manera análoga.
 
-Las reglas de elección no determinista y estrella de Kleene reutilizan la descomposición obtenida por la hipótesis inductiva y transforman únicamente la huella local.
-Para preservar las capas de marco y equivalencia se usa la función auxiliar \texttt{map\_framed\_footprint}.
-La estructura es la siguiente:
+Las reglas de elección no determinista y el caso inductivo de Kleene reutilizan el marco obtenido por la hipótesis inductiva
+y transforman únicamente la huella local.
+Esta transformación se expresa mediante \lstinline|map_framed_footprint|:
 
 \begin{lstlisting}
-let rec map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
+let map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
   (transform : (#sl0 : state -> #sl1 : state -> footprint p sl0 sl1 ->
-                GTot (footprint q sl0 sl1)))
+    GTot (footprint q sl0 sl1)))
   (ff : framed_footprint p s0 s1)
   : GTot (framed_footprint q s0 s1) (decreases ff) =
   match ff with
   | FF_Frame _ s0_local s1_local h_fr fp d0 d1 ->
     let fp' = transform fp in
     FF_Frame q s0_local s1_local h_fr fp' d0 d1
-  | FF_Ext _ s0_base s1_base ff_base s0' s1' e0 e1 ->
-    let ff_base' = map_framed_footprint transform ff_base in
-    FF_Ext q s0_base s1_base ff_base' s0' s1' e0 e1
 \end{lstlisting}
-La función no agrega ni elimina marcos, solo transforma la huella local ubicada dentro de la estructura.
+La función no agrega ni elimina marcos,
+solo transforma la huella local ubicada dentro de la estructura.
 
-Si el primer comando de una secuencia termina en error, \texttt{framed\_seq\_er} transforma una huella enmarcada de \texttt{p} en una huella enmarcada de \texttt{Seq p q}.
-Como el estado final está en modo \texttt{Er}, no es necesario construir una huella para \texttt{q}.
+Si el primer comando de una secuencia termina en error,
+\lstinline|framed_seq_er| transforma una huella enmarcada de \lstinline|p| en una huella enmarcada de \lstinline|Seq p q|.
+Como el estado final está en modo \lstinline|Er|,
+no es necesario construir una huella para \lstinline|q|.
 
-El caso de \texttt{R\_Seq} es la parte central de la prueba.
-Supongamos una ejecución operacional $s_0 \xrightarrow{p} t \xrightarrow{q} s_1$.
-Las llamadas recursivas producen descomposiciones de ambas subejecuciones \texttt{framed\_footprint p s0 t} y \texttt{framed\_footprint q t s1}.
-Cada una divide el \emph{heap} intermedio de manera diferente.
-La primera como
-$$h_t = h_p^{local} \uplus h_p^{frame},$$
-mientras que la segunda como
-$$h_t = h_q^{local} \uplus h_q^{frame}.$$
-Para construir \texttt{F\_Seq} es necesario reconciliar estas dos particiones del mismo \emph{heap}.
+El caso de \lstinline|R_Seq| es la parte central de la prueba.
+Supongamos una ejecución operacional \lstinline|s0| $\xrightarrow{p}$ \lstinline|t| $\xrightarrow{q}$ \lstinline|s1|.
+Las llamadas recursivas producen descomposiciones de ambas subejecuciones \lstinline|framed_footprint p s0 t| y \lstinline|framed_footprint q t s1|.
+Cada descomposición divide el \emph{heap} del estado intermedio \lstinline|t| en un fragmento local y un marco.
 
-En primer lugar, una función auxiliar elimina las capas de \texttt{FF\_Ext} y expone los componentes fundamentales de cada descomposición.
-Estos componentes serían los estados locales, el marco, la huella local y las equivalencias con los estado globales.
-La equivalencia entre las dos reconstrucciones del \emph{heap} intermedio permite aplicar una partición cruzada, denominada \emph{cross split}.
-Dadas dos descomposiciones,
-$$h_1 \uplus h_2 = h_3 \uplus h_4,$$
-la partición cruzada construye cuatro capas $h_{13}$, $h_{14}$, $h_{23}$ y $h_{24}$, disjuntos dos a dos y tales que
-$$h_1 = h_{13} \uplus h_{14},$$
-$$h_2 = h_{23} \uplus h_{24},$$
-$$h_3 = h_{13} \uplus h_{23},$$
-$$h_4 = h_{14} \uplus h_{24}.$$
+Para acceder a estos componentes,
+\lstinline|flatten_framed| extrae los estados locales,
+el marco,
+la huella local y las propiedades que relacionan su reconstrucción con los estados globales.
+En el caso de \lstinline|p|,
+llamamos \lstinline|p1| al estado local final y \lstinline|fr_p| a su marco.
+Para \lstinline|q|,
+llamamos \lstinline|q0| al estado local inicial y \lstinline|fr_q| a su marco.
+Así,
+ambas descomposiciones reconstruyen el mismo \emph{heap} intermedio:
+
+\begin{center}
+\lstinline|t._2 == (p1._2 <+> fr_p)|,
+
+\lstinline|t._2 == (q0._2 <+> fr_q)|.
+\end{center}
+
+Para construir \lstinline|F_Seq| es necesario reconciliar estas dos particiones.
+Como ambas reconstruyen el \emph{heap} de \lstinline|t|,
+se obtiene:
+\begin{center}
+\lstinline|(p1._2 <+> fr_p) == (q0._2 <+> fr_q)|.
+\end{center}
+
+Para reconciliar estas particiones se utiliza una partición cruzada,
+denominada \emph{cross split}.
+Esta construcción subdivide los fragmentos de ambas particiones en cuatro componentes compatibles.
+En general,
+dados \emph{heaps} \lstinline|h1|,
+\lstinline|h2|, \lstinline|h3| y \lstinline|h4| tales que
+\begin{center}
+\lstinline|(h1 <+> h2) == (h3 <+> h4)|,
+\end{center}
+la partición cruzada construye cuatro \emph{heaps} \lstinline|h13|,
+\lstinline|h14|, \lstinline|h23| y \lstinline|h24|,
+disjuntos dos a dos y tales que
+\begin{center}
+\lstinline|h1 == (h13 <+> h14)|,
+
+\lstinline|h2 == (h23 <+> h24)|,
+
+\lstinline|h3 == (h13 <+> h23)|,
+
+\lstinline|h4 == (h14 <+> h24)|.
+\end{center}
 La estructura que almacena estos componentes se define mediante:
 
 \begin{lstlisting}
@@ -4619,29 +4706,49 @@ type cross_split_witness (h1 h2 h3 h4 : heap) = {
   split_h4 : squash (forall l. heap_merge h14 h24 l == h4 l)
 }
 \end{lstlisting}
+En este registro se usa el auxiliar \lstinline|heap_merge|,
+definido punto a punto sin exigir previamente la disjunción de sus argumentos.
+Bajo las condiciones de disjunción del registro,
+su resultado coincide con \lstinline|heap_union|.
 
-En la composición secuencial, estos cuatro componentes se interpretan como $h_{13} = h_{common}$, $h_{14} = h_p$, $h_{23} = h_q$ y $h_{24} = h_{ext}$.
-El \emph{heap} $h_{common}$ sería el de las huellas locales de ambos comandos.
-El \emph{heap} $h_p$ pertenece a la huella del primer comando, mientras que $h_q$ a la del segundo.
-Por último, $h_{ext}$ representa a los marcos de ambas subejecuciones y puede usarse como marco exterior de toda la secuencia.
+En la composición secuencial,
+la partición cruzada se obtiene aplicando \lstinline|heap_cross_split| a los \emph{heaps} anteriores:
 
-A partir de esta partición, las huellas obtenidas por las hipótesis inductivas se transportan con \texttt{F\_Ext} a los estados que necesita \texttt{F\_Seq}.
-Luego, se construye una huella local de \texttt{Seq p q} con \texttt{F\_Seq}.
-El marco exterior se agrega con \texttt{FF\_Frame}, y por último \texttt{FF\_Ext} ajusta los estados reconstruidos a los estados originales de la derivación \texttt{R\_Seq}.
+\begin{lstlisting}
+let cs = heap_cross_split p1._2 fr_p q0._2 fr_q #dp1 #dq0 #() in
+let h_common = cs.h13 in
+let h_p = cs.h14 in
+let h_q = cs.h23 in
+let h_ext = cs.h24 in
+\end{lstlisting}
+Esta elección recupera la distribución de los recursos utilizada por \lstinline|F_Seq|:
+en el estado intermedio,
+\lstinline|h_common| contiene los recursos compartidos por ambas huellas locales,
+mientras que \lstinline|h_p| y \lstinline|h_q| contienen los exclusivos de cada una.
+El cuarto componente,
+\lstinline|h_ext|,
+pertenece a ambos marcos y se conserva como marco exterior de toda la secuencia.
 
-La partición cruzada es necesaria porque el \emph{heap} local del primer comando y el del segundo no tienen por qué ser
- iguales.
-El resultado identifica qué recursos son comunes, cuáles son exclusivos de cada comando y cuáles están fuera de la ejecución de la secuencia.
+A partir de esta partición,
+\lstinline|state_equiv_eq| permite identificar los estados de las huellas locales con los requeridos por \lstinline|F_Seq|.
+Este constructor combina ambas huellas,
+y \lstinline|FF_Frame| incorpora \lstinline|h_ext| como marco exterior de la secuencia.
+Finalmente,
+se vuelve a utilizar \lstinline|state_equiv_eq| para identificar los estados reconstruidos con los de la derivación operacional original.
 
 \subsection*{Resultado mecanizado}
-Las funciones \texttt{framed\_footprint\_sound} y \texttt{runsto\_decompose} establecen las dos direcciones de la caracterización.
-Por lo tanto, se obtiene el siguiente resultado:
+Las funciones \lstinline|framed_footprint_sound| y \lstinline|runsto_decompose| establecen las dos direcciones de la caracterización.
+Por lo tanto,
+se obtiene el siguiente resultado:
 
 \begin{teorema}
-Para todo comando $p$ y estados $s_0$ y $s_1$,
-$$\operatorname{runsto} \; p \; s_0 \; s_1 \iff \operatorname{framed\_footprint} \; p \; s_0 \; s_1$$
+Para todo comando \lstinline|p| y estados \lstinline|s0| y \lstinline|s1|,
+\begin{center}
+\lstinline|runsto p s0 s1| $\iff$ \lstinline|framed_footprint p s0 s1|.
+\end{center}
 \end{teorema}
-En \fstar{}, las dos expresiones se expresan como:
+En \fstar{},
+ambas direcciones se expresan mediante funciones que transforman una derivación de una relación en una derivación de la otra:
 
 \begin{lstlisting}
 let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state)
@@ -4654,9 +4761,13 @@ let footprint_theorem_complete (#p : stmt) (#s0 #s1 : state)
 \end{lstlisting}
 La primera función demuestra que toda huella local extendida con un marco compatible constituye una ejecución operacional válida.
 La segunda demuestra que toda ejecución operacional puede descomponerse en una huella local y un marco que permanece inalterado.
+En consecuencia,
+la clausura por marcos de la relación inductiva \lstinline|footprint| coincide con \lstinline|runsto|.
 
-En consecuencia, la clausura por marcos de la relación inductiva \texttt{footprint} coincide con \texttt{runsto}:
-$$[\![C]\!]_\epsilon = \operatorname{frame}(\operatorname{foot}(C)_\epsilon).$$
+Esta caracterización establece la descomposición en ejecuciones locales y marcos.
+Sin embargo,
+no demuestra que las transiciones de \lstinline|footprint| sean mínimas respecto de la extensión por marcos,
+como exige la Definición~\ref{def:huella-minima}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

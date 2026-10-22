@@ -402,7 +402,7 @@ let sep_conj (p q : cond) : cond =
   fun (st, hp, m) -> 
     exists h1 h2.
       h1 >< h2 /\
-      hp == heap_union h1 h2 /\
+      hp == (h1 <+> h2) /\
       p (st, h1, m) /\ q (st, h2, m)
 
 unfold let ( ** ) = sep_conj
@@ -415,12 +415,12 @@ let lemma_points_to_flex (l : loc) (v : value) (s : state)
   if t2b (points_to_flex l v s) then
     let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
       h1 >< h2 /\
-      s._2 == heap_union h1 h2 /\
+      s._2 == (h1 <+> h2) /\
       points_to l v (s._1, h1, s._3))
     in
     let h2 = indefinite_description_ghost heap (fun h2 ->
       h1 >< h2 /\
-      s._2 == heap_union h1 h2 /\
+      s._2 == (h1 <+> h2) /\
       points_to l v (s._1, h1, s._3))
     in
     assert (l <> 0 /\ s._2 l == Full v)
@@ -430,11 +430,11 @@ let lemma_points_to_flex (l : loc) (v : value) (s : state)
     extensionality loc (fun _ -> cell) s._2 (h1 <+> h2);
     exists_intro (fun b ->
       h1 >< b /\
-      s._2 == heap_union h1 b /\
+      s._2 == (h1 <+> b) /\
       points_to l v (s._1, h1, s._3)) h2;
     exists_intro (fun a -> exists b.
       a >< b /\
-      s._2 == heap_union a b /\
+      s._2 == (a <+> b) /\
       points_to l v (s._1, a, s._3)) h1
 
 let independent_on_vars (vars : string -> prop) (c : cond) : prop =
@@ -728,7 +728,7 @@ let rec soundness
     let (st1, hp1, m) = s1 in
     let unfold p_two (h_local : heap) (h_fr : heap) : prop = 
       h_local >< h_fr /\ 
-      hp1 == heap_union h_local h_fr /\ 
+      hp1 == (h_local <+> h_fr) /\ 
       p_post (st1, h_local, m) /\ 
       fr (st1, h_fr, m)
     in

@@ -1786,6 +1786,10 @@ $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
 estado inicial y final vacio, frame $x \leadsto 1$ y el comando $Read~x$.
 El programa falla y tiene modo de terminacion con error. Si agrego el frame
 ahora no falla.}
+\guido{update: si bien en la mecanizacion esto está bien,
+la presentación es distinta: para que el Load falle,
+pide que la dirección no esté en el dominio,
+y no que esté en Empty. Así que está mal.}
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$

@@ -148,18 +148,21 @@ Por ejemplo, si un error depende del resultado de una elección aleatoria o no p
 ejecutar el programa varias veces con la misma entrada puede no revelar el fallo.
 La IL permite construir una demostración de que existe una ejecución que alcanza el error,
 aunque otras ejecuciones puedan terminar normalmente.
-Esta demostración puede comporbarse sin ejecutar el programa ni depender de que se repitan las elecciones que producen el fallo.
+Esta demostración puede comprobarse sin ejecutar el programa ni depender de que se repitan las elecciones que producen el fallo.
 
-La versión original de la Lógica de Incorrectitud (IL) presentada por O'Hearn es análoga a la HL clásica,
-ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
-pero sin un \emph{heap}.
-\guido{al final no estaba mal esto?}
-Por lo tanto, no permite operaciones sobre memoria dinámica y estructuras de datos mutables.
+La Lógica de Incorrectitud (IL) presentada por O'Hearn es análoga a la HL clásica,
+\changed{pero se orienta a demostrar que ciertos resultados pueden alcanzarse,
+en particular aquellos que corresponden a errores.}
+%ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
+%pero sin un \emph{heap}.
+%\guido{al final no estaba mal esto?}
+%Por lo tanto, no permite operaciones sobre memoria dinámica y estructuras de datos mutables.
 En el ámbito de la correctitud,
 la SL fue desarrollada como una extensión a la HL que soporta razonamiento composicional sobre programas con estados complejos.
-A diferencia de la HL, su modelo de estado incorpora,
-además del \emph{store}, un \emph{heap},
-y sus aserciones permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
+%A diferencia de la HL, su modelo de estado incorpora,
+%además del \emph{store}, un \emph{heap},
+%y sus aserciones permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
+\changed{La SL incorpora aserciones espaciales que permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.}
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL),
 cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
@@ -167,17 +170,17 @@ Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \centering
 \small
 \begin{tabularx}{\textwidth}{
+    >{\centering\arraybackslash}X
   | >{\centering\arraybackslash}X
   | >{\centering\arraybackslash}X
-  | >{\centering\arraybackslash}X |
 }
+  %\hline
+   & \textbf{Correctitud} & \textbf{Incorrectitud} \\
   \hline
-  \textbf{Memoria modelada} & \textbf{Correctitud} & \textbf{Incorrectitud} \\
+  Lógica base & Lógica de Hoare (HL) & Lógica de Incorrectitud (IL) \\
   \hline
-  Variables del programa (\emph{store}) & Lógica de Hoare (HL) & Lógica de Incorrectitud (IL) \\
-  \hline
-  Variables y memoria dinámica (\emph{store} y \emph{heap}) & Lógica de Separación (SL) & Lógica de Incorrectitud de Separación (ISL) \\
-  \hline
+  Extensión con razonamiento espacial & Lógica de Separación (SL) & Lógica de Incorrectitud de Separación (ISL) \\
+  %\hline
 \end{tabularx}
 \caption{Relación entre las lógicas.}
 \label{tab:relacion-logicas}
@@ -1769,38 +1772,6 @@ $R$ puede dejar de cumplirse porque $x$ ya no tiene la dirección de la celda de
 La condición lateral impide esta aplicación de la Regla del Marco,
 ya que $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
 
-El siguiente lema expresa formalmente la propiedad de localidad asociada a la Regla del Marco en la semántica relacional del lenguaje.
-
-\begin{lema}[Localidad semántica]
-\label{lem:localidad}
-Sean $C$ un comando, $\varepsilon$ un modo de terminación,
-$s$ y $s'$ los \emph{stores} inicial y final,
-$h$ y $h'$ los \emph{heaps} inicial y final de una ejecución,
-y $h_f \in \mathsf{Heap}$ un fragmento adicional.
-Si
-$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f$$
-entonces
-$$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
-\end{lema}
-\guido{creo que esto no es cierto. Considera
-estado inicial y final vacio, frame $x \leadsto 1$ y el comando $Read~x$.
-El programa falla y tiene modo de terminacion con error. Si agrego el frame
-ahora no falla.}
-\guido{update: si bien en la mecanizacion esto está bien,
-la presentación es distinta: para que el Load falle,
-pide que la dirección no esté en el dominio,
-y no que esté en Empty. Así que está mal.}
-\agustina{Entiendo, esto vale en la ISL pero no en la SL porque en la ISL tenemos el heap extendido con $\bot$
-y cambia la semantica para este caso. Mañana lo cambio.}
-
-El lema establece que,
-si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
-y el fragmento adicional $h_f$ es disjunto de ambos,
-la ejecución puede extenderse al \emph{heap} inicial $h \uplus h_f$.
-En ese caso,
-el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
-mientras que $h_f$ permanece sin modificaciones.
-
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
 A continuación,
 consideramos cómo combinar este razonamiento con la interpretación subaprximada de la IL.
@@ -1877,7 +1848,8 @@ Esta distinción es la que introducen los \emph{heaps negativos}.
 \label{def:heap_ext}
 Un \emph{heap} de la ISL,
 que denotamos $\mathsf{HeapExt}$,
-es una función parcial finita\guido{por qué? hace falta? las otras versiones también son finitas?}:
+es una función parcial finita
+%\guido{por qué? hace falta? las otras versiones también son finitas?}:
 $$\mathsf{HeapExt} = \mathsf{Loc} \rightharpoonup (\mathsf{Val} \cup \{\bot\}),$$
 donde si $h \in \mathsf{HeapExt}$:
 \begin{itemize}
@@ -1886,6 +1858,10 @@ donde si $h \in \mathsf{HeapExt}$:
   \item $\ell \notin \operatorname{dom}(h)$ indica que el \emph{heap} no posee información sobre esa dirección.
 \end{itemize}
 \end{definicion}
+\changed{Al igual que en el modelo de \emph{heaps} de la SL,
+la finitud se refiere al dominio de cada \emph{heap}.
+En este caso,
+dicho dominio incluye tanto las celdas activas como las marcadas como liberadas.}
 
 A partir de este punto,
 los estados de la ISL se interpretan sobre el \emph{heap} extendido
@@ -1929,12 +1905,12 @@ es necesario describir formalmente la semántica relacional sobre el espacio de 
 
 \subsection*{Semántica relacional de la ISL}
 La semántica presentada en la SL se adapta al espacio de estados extendido
-$\Sigma_{\mathrm{ISL}} = \mathsf{Store} \times \mathsf{HeapExt}$
+$\Sigma_{\mathrm{ISL}} = \mathsf{Store} \times \mathsf{HeapExt}$.
 Los comandos que no manipulan directamente el \emph{heap} conservan la semántica presentada para la IL,
 interpretada ahora sobre estos estados.
 En cambio,
 las operaciones de memoria deben distinguir entre celdas activas,
-celdas liberadas y la direcciones sobre las cuales el \emph{heap} no tiene información.
+celdas liberadas y las direcciones sobre las cuales el \emph{heap} no tiene información.
 
 La \autoref{fig:semantica-isl} presenta las definiciones correspondientes a las operaciones de memoria sobre el \emph{heap} extendido.
 En ellas,
@@ -1983,7 +1959,7 @@ escritura y liberación se justifican mediante un puntero nulo o una celda marca
 En el razonamiento subaproximado,
 los resultados erróneos descritos por una postcondición deben estar respaldados por ejecuciones reales.
 Para justificar estos errores localmente,
-la ausencia de una dirección en el dominio del \emph{heap} no es suficient,
+la ausencia de una dirección en el dominio del \emph{heap} no es suficiente,
 ya que esa dirección podría corresponder a una celda activa de un fragmento de memoria adicional.
 En cambio,
 un puntero nulo no representa una dirección válida,
@@ -2036,6 +2012,41 @@ La monotonía puede observarse en las operaciones básicas:
 \end{itemize}
 Por lo tanto, el dominio puede crecer o permanecer igual,
 pero nunca disminuir.
+
+\changed{Sobre esta semántica,
+una ejecución puede extenderse con un fragmento de memoria disjunto de sus \emph{heaps} inicial y final,
+conservando el modo de terminación.
+Esta propiedad se expresa mediante el siguiente lema.}
+
+\begin{lema}[Localidad semántica]
+\label{lem:localidad}
+Sean $C$ un comando, $\varepsilon$ un modo de terminación,
+$s$ y $s'$ los \emph{stores} inicial y final,
+$h, h', h_f \in \mathsf{HeapExt}$ los \emph{heaps} inicial, final y adicional,
+respectivamente.
+Si
+$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f$$
+entonces
+$$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
+\end{lema}
+%\guido{creo que esto no es cierto. Considera
+%estado inicial y final vacio, frame $x \leadsto 1$ y el comando $Read~x$.
+%El programa falla y tiene modo de terminacion con error. Si agrego el frame
+%ahora no falla.}
+%\guido{update: si bien en la mecanizacion esto está bien,
+%la presentación es distinta: para que el Load falle,
+%pide que la dirección no esté en el dominio,
+%y no que esté en Empty. Así que está mal.}
+%\agustina{Entiendo, esto vale en la ISL pero no en la SL porque en la ISL tenemos el heap extendido con $\bot$
+%y cambia la semantica para este caso. Mañana lo cambio.}
+
+El lema establece que,
+si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
+y el fragmento adicional $h_f$ es disjunto de ambos,
+la ejecución puede extenderse al \emph{heap} inicial $h \uplus h_f$.
+En ese caso,
+el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
+conservando el modo de terminación y dejando $h_f$ sin modificaciones.
 
 \subsection*{Reglas de inferencia de la ISL}
 Las reglas de la IL que no manipulan la memoria se mantienen en la ISL.
@@ -2227,10 +2238,9 @@ es necesario caracterizar cómo se relacionan las ejecuciones locales con las ej
 Esta caracterización se presenta en el Teorema de la Huella.
 
 \subsection*{El Teorema de la Huella (\textit{Footprint Theorem})}
-El Lema~\ref{lem:localidad} establece la propiedad de localidad para la semántica sobre \emph{heaps}:
-una ejecución que utiliza un fragmento de memoria puede extenderse con un fragmento disjunto que permanece sin modificaciones.
-En la ISL, esta propiedad se interpreta sobre el $\mathsf{HeapExt}$,
-cuyos fragmentos pueden contener tanto celdas activas como celdas liberadas.
+El Lema~\ref{lem:localidad} de localidad semántica establece que una ejecución sobre un \emph{heap} extendido
+puede ampliarse con un marco disjunto de sus \emph{heaps} inicial y final,
+sin modificar dicho marco ni el modo de terminación.
 
 El Teorema de la Huella completa esta propiedad en la dirección opuesta.
 Mientras que la localidad permite extender una ejecución local con memoria adicional,
@@ -3579,7 +3589,7 @@ Por lo tanto,
 \changed{Es trivial demostrar que esta operación es conmutativa y asociativa,
 siempre que las expresiones estén bien definidas.}
 
-De manera análoga que para \lstinline|heaps_disjoint|,
+De manera análoga a lo hecho para \lstinline|heaps_disjoint|,
 definimos el operador infijo \texttt{<+>} como abreviatura de \lstinline|heap_union| y lo representamos mediante $\uplus$ en los fragmentos de código.
 
 Para construir las especificaciones de los programas,
@@ -4780,22 +4790,49 @@ como exige la Definición~\ref{def:huella-minima}.
 \raggedleft --- Richard W. Hamming
 \end{quote}
 
-En el \autoref{cap:formalizacion-isl} pudimos construir, mecanizar y demostrar la solidez matemática de la ISL utilizando \fstar{}.
+En el \autoref{cap:formalizacion-isl} pudimos construir,
+mecanizar y demostrar la solidez matemática de la ISL utilizando \fstar{}.
 El objetivo de este capítulo es evaluar la expresividad de la formalización mediante una serie de casos de estudio representativos.
 
-En particular, se estudian un error de uso de memoria después de su liberación, un puntero colgante generado por una reasignación, un bucle con elecciones no deterministas y el recorrido de una lista enlazada.
+En particular,
+se estudian un error de uso de memoria después de su liberación,
+un puntero colgante generado por una reasignación,
+un bucle con elecciones no deterministas y el recorrido de una lista enlazada.
 Estos casos muestran que la formalización puede expresar y verificar derivaciones no triviales.
 
 \section{Detección de errores temporales básicos (\emph{Use After Free})}
 \label{sec:uaf}
-Para el primer caso de evaluación, analizaremos la capacidad del sistema para detectar el error espacial por excelencia en lenguajes de bajo nivel, el \emph{use after free}.
+Para el primer caso de evaluación,
+analizaremos la capacidad del sistema para detectar el error espacial por excelencia en lenguajes de bajo nivel,
+el \emph{use after free}.
 Este error ocurre cuando un programa intenta leer o escribir en una dirección de memoria después de que esta fue liberada y dejó de estar activa para el programa.
 
-En la formalización, una ubicación liberada no desaparece del \emph{heap}.
-Como se mencionó en el \autoref{cap:formalizacion-isl}, la operación \texttt{Free} transforma una celda \texttt{Full v} en una celda \texttt{Empty}.
+En la formalización,
+una ubicación liberada no desaparece del \emph{heap}.
+Como se mencionó en el \autoref{cap:formalizacion-isl},
+la operación \lstinline|Free| transforma una celda \lstinline|Full v| en una celda \lstinline|Empty|.
 Este recurso negativo permite conservar la información de que la dirección fue liberada y usarla después para justificar una ejecución errónea.
 
-Consideramos el siguiente programa a verificar escrito en nuestra sintaxis:
+\changed{El ejemplo consiste en reservar una celda,
+liberarla y luego intentar escribir sobre ella.
+En la notación matemática de la ISL,
+estos pasos se describen mediante las siguientes tripletas:}
+
+\[
+\begin{array}{c}
+  \itriple{\mathsf{emp}}{x := \texttt{alloc()}}{ok : x \mapsto -}, \\[2pt]
+
+  \itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto}, \\[2pt]
+  
+  \itriple{x \nmapsto}{[x] := 1}{er : x \nmapsto}.
+\end{array}
+\]
+\changed{La alocación produce una celda activa y la liberación la transforma en una celda negativa.
+Esta última permite justificar que la escritura posterior termina con error,
+conservando la información de que la dirección fue liberada.}
+
+En nuestra sintaxis,
+este programa se representa mediante:
 
 \begin{lstlisting}
 let prog_uaf =
@@ -4804,14 +4841,16 @@ let prog_uaf =
   (Store (Var "x") (Const 1)))
 \end{lstlisting}
 
-La presunción inicial es \texttt{is\_ok emp}.
+La presunción inicial es \lstinline|is_ok emp|.
 Esta aserción describe un estado en el modo exitoso cuyo fragmento local del \emph{heap} no contiene ubicaciones conocidas.
 La propiedad que se busca verificar tiene la forma
-$$\vdash_\mathrm{ISL} \itriple{\operatorname{is\_ok} \; emp}{\operatorname{prog\_uaf}}{\operatorname{prog\_uaf\_err}}.$$
-En este caso, la postcondición final describe un estado con el modo erróneo en el que la dirección almacenada en \texttt{x} continúa representada con un \emph{heap} negativo.
+$$\vdash_\mathrm{ISL} \itriple{\operatorname{is\_ok} \; emp}{\operatorname{prog\_uaf}}{\operatorname{post\_uaf\_err}}.$$
+En este caso,
+la postcondición final describe un estado con el modo erróneo en el que la dirección almacenada en \lstinline|x| continúa representada con un \emph{heap} negativo.
 
-La primera instrucción que se invoca es \texttt{ISL\_Alloc1}, la cual reserva una dirección de memoria nueva respecto del fragmento local.
-Luego de su ejecución, la aserción final del comando garantiza que la memoria aloja un valor válido en el canal de éxito:
+El primer paso se justifica mediante la regla \lstinline|ISL_Alloc1|,
+que permite reservar una dirección nueva respecto del fragmento local.
+La postcondición elegida para este paso es:
 
 \begin{lstlisting}
 let post_alloc (s : state) : prop =
@@ -4820,11 +4859,12 @@ let post_alloc (s : state) : prop =
     l =!= 0 /\ points_to l v s /\
     (exists x_old. emp (override s._1 "x" x_old, override s._2 l Unknown, Ok))
 \end{lstlisting}
-Esta postcondición garantiza que la variable \texttt{x} contiene una dirección no nula y que el fragmento local tiene una celda activa en esa ubicación.
-El cuantificador sobre \texttt{x\_old} conserva la información necesaria para reconstruir el \emph{store} anterior a la asignación.
+Esta postcondición garantiza que la variable \lstinline|x| contiene una dirección no nula y que el fragmento local tiene una celda activa en esa ubicación.
+El cuantificador sobre \lstinline|x_old| conserva la información necesaria para reconstruir el \emph{store} anterior a la asignación.
 
-El segundo paso del programa es la liberación de la memoria apuntada por \texttt{x}.
-Al evaluar el axioma \texttt{ISL\_Free}, la semántica consume el recurso activo y lo transforma en una aserción negativa.
+El segundo paso del programa es la liberación de la memoria apuntada por \lstinline|x|.
+Al evaluar el axioma \lstinline|ISL_Free|,
+la semántica consume el recurso activo y lo transforma en una aserción negativa.
 El estado resultante refleja la transición:
 
 \begin{lstlisting}
@@ -4833,25 +4873,34 @@ let post_free (s : state) : prop =
     s._3 == Ok /\ points_to_empty (eval_expr s (Var "x")) s /\
     post_alloc (s._1, override s._2 (eval_expr s (Var "x")) (Full v), Ok)
 \end{lstlisting}
-En este punto, la variable \texttt{x} sigue apuntando a la misma dirección física.
-La diferencia está en el \emph{heap}, ya que la celda ya no se describe como \texttt{Full v}, sino como \texttt{Empty}.
+En este punto,
+la variable \lstinline|x| sigue apuntando a la misma dirección física.
+La diferencia está en el \emph{heap}, ya que la celda ya no se describe como \lstinline|Full v|, sino como \lstinline|Empty|.
 
-El fallo ocurre en la tercera instrucción, cuando el programa intenta realizar una mutación de memoria sobre el puntero invalidado.
-Entre las reglas disponibles para la instrucción de escritura está \texttt{ISL\_StoreEr}, la cual exige tener estrictamente el recurso \texttt{points\_to\_empty}, nuestro estado actual.
-\guido{no podemos mostrar primero la derivación a alto nivel,
-en sintaxis matematica? algo como
-$emp \rightarrow x -> algo \rightarrow x -/-> \rightarrow Error$}
-Por lo tanto, la postcondición final se define como:
+El fallo ocurre en la tercera instrucción,
+cuando el programa intenta realizar una mutación de memoria sobre el puntero invalidado.
+Entre las reglas disponibles para la instrucción de escritura está \lstinline|ISL_StoreEr|,
+la cual exige tener estrictamente el recurso \lstinline|points_to_empty|,
+nuestro estado actual.
+%\guido{no podemos mostrar primero la derivación a alto nivel,
+%en sintaxis matematica? algo como
+%$emp \rightarrow x -> algo \rightarrow x -/-> \rightarrow Error$}
+Por lo tanto,
+la postcondición final se define como:
 
 \begin{lstlisting}
 let post_uaf_err (s : state) : prop =
   s._3 == Er /\ points_to_empty (eval_expr s (Var "x")) s /\
   post_free (s._1, s._2, Ok)
 \end{lstlisting}
-La ejecución cambia al modo \texttt{Er}, pero conserva el \emph{heap} negativo que justifica el error.
-De esta manera, la derivación no solo afirma que hubo un fallo, sino que contiene la información espacial necesaria para mostrar que se debe a una escritura sobre una ubicación liberada.
+La ejecución cambia al modo \lstinline|Er|,
+pero conserva el \emph{heap} negativo que justifica el error.
+De esta manera,
+la derivación no solo afirma que hubo un fallo,
+sino que contiene la información espacial necesaria para mostrar que se debe a una escritura sobre una ubicación liberada.
 
-La construcción de esta demostración en \fstar{} se realiza componiendo los axiomas de nuestra lógica mediante constructores secuenciales y la regla de consecuencia.
+La construcción de esta demostración en \fstar{} se realiza componiendo los axiomas de nuestra lógica
+mediante constructores secuenciales y la regla de consecuencia.
 El árbol de prueba completo para este programa se codifica de la siguiente manera:
 
 \begin{lstlisting}
@@ -4865,48 +4914,73 @@ let proof_uaf : isl_triple (is_ok emp) prog_uaf post_uaf_err =
   let p_seq2 = ISL_Seq p_alloc p_seq1 in
   ISL_Consequence emp post_uaf_err p_seq2 () ()
 \end{lstlisting}
-Las reglas \texttt{ISL\_Alloc1}, \texttt{ISL\_Free} e \texttt{ISL\_StoreEr} devuelven las derivaciones correspondientes a las operaciones primitivas.
-\texttt{ISL\_Seq} las compone de acuerdo con la estructura del programa.
-Las aplicaciones de \texttt{ISL\_Consequence} adaptan las postcondiciones generadas directamente por las reglas a las aserciones intermedias elegidas para este caso.
+Las reglas \lstinline|ISL_Alloc1|,
+\lstinline|ISL_Free| e \lstinline|ISL_StoreEr| devuelven las derivaciones correspondientes a las operaciones primitivas.
+\lstinline|ISL_Seq| las compone de acuerdo con la estructura del programa.
+Las aplicaciones de \lstinline|ISL_Consequence| adaptan las postcondiciones generadas directamente por las reglas
+a las aserciones intermedias elegidas para este caso.
 
-La aceptación de \texttt{proof\_uaf} por \fstar{} demuestra que la tripleta es derivable.
-Por el Teorema de Soundness~\ref{teo:soundness-isl}, todo estado que satisface \texttt{post\_uaf\_err} tiene un estado inicial que satisface \texttt{is\_ok emp} y una ejecución \texttt{prog\_uaf} que lo alcanza.
-Como \texttt{prog\_uaf\_err} describe estados en modo de error y conserva la celda negativa, el caso muestra que la formalización puede representar y verificar una ejecución concreta de \emph{use after free} mediante un estado con respaldo operacional.
+La aceptación de \lstinline|proof_uaf| por \fstar{} demuestra que la tripleta es derivable.
+Por el Teorema de Soundness~\ref{teo:soundness-isl},
+todo estado que satisface \lstinline|post_uaf_err| tiene un estado inicial
+que satisface \lstinline|is_ok emp| y una ejecución \lstinline|prog_uaf| que lo alcanza.
+Como \lstinline|post_uaf_err| describe estados en modo de error y conserva la celda negativa,
+el caso muestra que la formalización puede representar y verificar una ejecución concreta de \emph{use after free} mediante un estado con respaldo operacional.
 
 \section{Reasignación de memoria y punteros colgantes}
 \label{sec:pushback}
-Un desafío en el análisis estático de software de bajo nivel, como C o C++, es el manejo de estructuras de datos dinámicas, tales como los vectores elásticos (\texttt{std::vector}).
-Cuando un programa agrega un elemento a una colección mediante una función como \texttt{push\_back}, la biblioteca subyacente decide en tiempo de ejecución si posee capacidad suficiente o si debe reasignar el bloque de memoria para acomodar los nuevos elementos.
+Un desafío en el análisis estático de software de bajo nivel,
+como C o C++,
+es el manejo de estructuras de datos dinámicas,
+tales como los vectores elásticos (\lstinline|std::vector|).
+Cuando un programa agrega un elemento a una colección mediante una función como \lstinline|push_back|,
+la biblioteca subyacente decide en tiempo de ejecución si posee capacidad suficiente o si debe reasignar el bloque de memoria para acomodar los nuevos elementos.
 Esta reasignación implica alojar un nuevo bloque y liberar la memoria original.
 
-El problema surge si un cliente del código conserva un puntero hacia un elemento de la estructura original y luego invoca la función de agregado, ya que corre el riesgo de que la memoria sea reasignada.
+El problema surge si un cliente del código conserva un puntero hacia un elemento de la estructura original y luego invoca la función de agregado,
+ya que corre el riesgo de que la memoria sea reasignada.
 En ese escenario, su puntero local se convierte en un puntero colgante.
 Este fue un caso de estudio motivacional para el diseño de la ISL original.
 
-El siguiente fragmento de código abstrae conceptualmente este comportamiento en un lenguaje similar a C:
+El siguiente fragmento,
+escrito en un lenguaje similar a C,
+presenta una versión simplificada de este comportamiento:
 
 \begin{lstlisting}
 int* x = *v;
 push_back(v); // Puede no hacer nada, o hacer free(*v) y reasignar
 *x = 88;      // Posible uso de puntero colgante
 \end{lstlisting}
-\guido{aclarar que v tiene tipo $int**$?}
+%\guido{aclarar que v tiene tipo $int**$?}
+\changed{Aquí,
+\lstinline|v| tiene tipo \lstinline|int**| y apunta a una celda que almacena el puntero a la memoria de la estructura.
+El cliente guarda una copia de ese puntero en \lstinline|x|,
+que no se actualiza si \lstinline|push_back| modifica el contenido de \lstinline|*v|.
+El ejemplo se centra en este cambio de referencia,
+sin modelar los elementos,
+la longitud ni la capacidad de un vector.}
 
-En nuestra formalización \fstar{}, modelamos este comportamiento mediante la definición del comando \texttt{client}:
+\changed{En nuestra formalización,
+la memoria referenciada se representa mediante una única celda.
+El parámetro \lstinline|ptr| identifica la variable del programa que cumple el papel de \lstinline|v|.
+El comportamiento del cliente se codifica mediante:}
 
 \begin{lstlisting}
 let client (ptr : var) : stmt =
   (Load "x" (Var ptr)) `Seq`
   ((push_back ptr) `Seq` (Store (Var "x") (Const 88)))
 \end{lstlisting}
-\guido{aca no estamos modelando realmente el vector, no?
-deberiamos decir algo de que es un ejemplo simplificado}
+%\guido{aca no estamos modelando realmente el vector, no?
+%deberiamos decir algo de que es un ejemplo simplificado}
 
 La secuencia de operaciones del cliente se divide en tres etapas:
 \begin{enumerate}
-  \item \textbf{Captura de la referencia:} El cliente accede a la estructura original para guardar un puntero directo a su memoria activa mediante la instrucción de lectura \texttt{Load}.
-  \item \textbf{Interacción con la biblioteca:} El programa cliente invoca la función de agregado llamando a \texttt{push\_back}.
-  Esta función de biblioteca encapsula un comportamiento no determinista interno, por lo que el cliente desconoce si la estructura mantendrá su bloque de memoria original o si será movida y reasignada en un bloque nuevo:
+  \item \textbf{Captura de la referencia:}
+  el cliente accede a la estructura original para guardar un puntero directo a su memoria activa mediante la instrucción de lectura \lstinline|Load|.
+  \item \textbf{Interacción con la biblioteca:}
+  el programa cliente invoca la función de agregado llamando a \lstinline|push_back|.
+  Esta función de biblioteca encapsula un comportamiento no determinista interno,
+  por lo que el cliente desconoce si la estructura mantendrá su bloque de memoria original o si será movida y reasignada en un bloque nuevo:
 \begin{lstlisting}
 let push_back (ptr : var) : stmt =
   Choice
@@ -4916,19 +4990,28 @@ let push_back (ptr : var) : stmt =
     (Store (Var ptr) (Var "y")))))
     Skip
 \end{lstlisting}
-  \item \textbf{Mutación sobre el alias:} Asumiendo erróneamente que su puntero local sigue siendo válido, el cliente intenta realizar una mutación sobre él mediante la instrucción de escritura \texttt{Store}.
+  \item \textbf{Mutación sobre el alias:}
+  asumiendo erróneamente que su puntero local sigue siendo válido,
+  el cliente intenta realizar una mutación sobre él mediante la instrucción de escritura \lstinline|Store|.
 \end{enumerate}
 
-La primera lectura almacena en \texttt{x} la dirección original de la estructura.
-La postcondición correspondiente registra el valor cargado en \texttt{x}, la celda que contiene la referencia de la estructura y la memoria activa a la que apunta dicha referencia.
+La primera lectura almacena en \lstinline|x| la dirección original de la estructura.
+La postcondición correspondiente registra el valor cargado en \lstinline|x|,
+la celda que contiene la referencia de la estructura y la memoria activa a la que apunta dicha referencia.
 
-Para demostrar el error no es necesario analizar las dos ramas de \texttt{push\_back}.
+Para demostrar el error no es necesario analizar las dos ramas de \lstinline|push_back|.
 La interpretación subaproximada permite seleccionar la rama que conduce al estado de interés.
-En este caso, la derivación usa \lstinline{p_push_back_raw = ISL_ChoiceL p_seq_pb1}.
-Esto no afirma que la rama derecha sea imposible, sino que la rama izquierda tiene una ejecución válida que alcanza la postcondición buscada.
+En este caso,
+la derivación usa \lstinline|p_push_back_raw = ISL_ChoiceL p_seq_pb1|.
+Esto no afirma que la rama derecha sea imposible,
+sino que la rama izquierda tiene una ejecución válida que alcanza la postcondición buscada.
 
-La postcondición de esa rama describe que la estructura apunta a una nueva ubicación.
-El recurso negativo correspondiente a la dirección anterior se conserva dentro de una cadena de aserciones históricas producidas por las reglas de liberación y asignación.
+Para justificar el error,
+se consideran las ejecuciones de esta rama en las que la alocación elige una dirección distinta de la liberada.
+Así,
+la estructura pasa a referenciar la nueva celda,
+mientras que la dirección conservada en \lstinline|x| permanece marcada como liberada.
+Esta información se conserva mediante las aserciones históricas producidas por las reglas.
 Por ejemplo, la aserción posterior a la liberación contiene:
 
 \begin{lstlisting}
@@ -4939,12 +5022,14 @@ let post_free_y (ptr : var) (s : state) : prop =
     post_load_y ptr
       (s._1, override s._2 (eval_expr s (Var "y")) (Full v), s._3)
 \end{lstlisting}
-La dirección histórica está representada por \texttt{points\_to\_empty}.
+La dirección histórica está representada por \lstinline|points_to_empty|.
 
-Después de la reasignación, el cliente intenta una mutación.
-La variable \texttt{x} sigue almacenando la dirección original.
-Esta forma encaja en el axioma de fallo \texttt{ISL\_StoreEr}.
-En nuestro código, la postcondición de error tiene la forma:
+Después de la reasignación,
+el cliente intenta una mutación.
+La variable \lstinline|x| sigue almacenando la dirección original.
+Esta forma encaja en el axioma de fallo \lstinline|ISL_StoreEr|.
+En nuestro código,
+la postcondición de error tiene la forma:
 
 \begin{lstlisting}
 let post_err (ptr : var) (s : state) : prop =
@@ -4952,29 +5037,36 @@ let post_err (ptr : var) (s : state) : prop =
   points_to_empty (eval_expr s (Var "x")) s /\
   post_store_v ptr (s._1, s._2, Ok)
 \end{lstlisting}
-Esta postcondición describe una ejecución que termina en el modo de error y conserva la evidencia espacial de que la dirección utilizada mediante \texttt{x} fue liberada.
+Esta postcondición describe una ejecución que termina en el modo de error
+y conserva la evidencia espacial de que la dirección utilizada mediante \lstinline|x| fue liberada.
 
 Desde el comienzo se mencionó que la prueba iba a abarcar solo una de las ramas posibles de ejecución.
-En particular, la aplicación de la regla de elección es:
+En particular,
+la aplicación de la regla de elección es:
 
 \begin{lstlisting}
 let p_push_back_raw = ISL_ChoiceL p_seq_pb1 in
 let p_push_back = ISL_Consequence (post_load_x ptr) (post_store_v ptr)
                   p_push_back_raw () () in
 \end{lstlisting}
-Luego, la derivación de \texttt{push\_back} se compone con la lectura inicial y la escritura final.
+Luego,
+la derivación de \lstinline|push_back| se compone con la lectura inicial y la escritura final.
 
-La rama \texttt{Skip}, en la que el bloque no se reasigna, no forma parte de este árbol de prueba.
+La rama \lstinline|Skip|,
+en la que el bloque no se reasigna, no forma parte de este árbol de prueba.
 Esto no implica que se la considere errónea o imposible.
 La subaproximación permite omitirla porque el objetivo consiste en justificar la existencia de una ejecución que produzca un fallo.
 
 Este caso muestra que la formalización puede relacionar un error espacial con una modificación intermedia realizada a través de otro alias.
-La celda negativa conserva la historia del bloque original, mientras que el no determinismo permite seleccionar la ejecución de reasignación.
+La celda negativa conserva la historia del bloque original,
+mientras que el no determinismo permite seleccionar la ejecución de reasignación.
 
 \section{No determinismo y razonamiento paramétrico sobre bucles}
 \label{sec:bucle}
-A lo largo del desarrollo de software, la presencia de bucles combinados con comportamientos no deterministas supone una barrera para las técnicas de verificación tradicionales.
-Para comprender los límites prácticos de dichas metodologías frente a la subaproximación, evaluaremos un programa semi-realista con una alta cantidad de iteraciones y decisiones no deterministas.
+A lo largo del desarrollo de software,
+la presencia de bucles combinados con comportamientos no deterministas supone una barrera para las técnicas de verificación tradicionales.
+Para comprender los límites prácticos de dichas metodologías frente a la subaproximación,
+evaluaremos un programa semi-realista con una alta cantidad de iteraciones y decisiones no deterministas.
 El caso busca mostrar dos propiedades del sistema deductivo:
 \begin{enumerate}
   \item una derivación subaproximada puede seleccionar un único camino entre varias alternativas (en la \autoref{sec:pushback} se vio en menor magnitud);
@@ -4993,28 +5085,39 @@ while (i < n){
 assert  (j != n);
 \end{lstlisting}
 El bucle ejecuta un millón de veces.
-En cada iteración, \texttt{i} se incrementa siempre, mientras que el incremento de \texttt{j} depende de una decisión no determinista.
-Si la rama de incremento se selecciona en todas las iteraciones, al finalizar se cumple que tanto \texttt{i} como \texttt{j} son iguales a un millón.
-En ese estado, la aserción \texttt{j != n} falla.
+En cada iteración,
+\lstinline|i| se incrementa siempre,
+mientras que el incremento de \lstinline|j| depende de una decisión no determinista.
+Si la rama de incremento se selecciona en todas las iteraciones,
+al finalizar se cumple que tanto \lstinline|i| como \lstinline|j| son iguales a un millón.
+En ese estado,
+la aserción \lstinline|j != n| falla.
 
-En la semántica formalizada, la llamada \texttt{random()} se representa con un \texttt{Choice}.
-No se modelan probabilidades, independencia estadística ni distribuciones.
-Si lo interpretamos bajo la visión de un programa ejecutable en la que cada decisión es independiente y equiprobable, la probabilidad de incrementar \texttt{j} en el millón de iteraciones sería de $2^{-1000000}$.
+En la semántica formalizada,
+la llamada \lstinline|random()| se representa con un \lstinline|Choice|.
+No se modelan probabilidades,
+independencia estadística ni distribuciones.
+Si lo interpretamos bajo la visión de un programa ejecutable en la que cada decisión es independiente y equiprobable,
+la probabilidad de incrementar \lstinline|j| en el millón de iteraciones sería de $2^{-1000000}$.
 Este cálculo no interviene en la demostración mecanizada.
 La lógica solo necesita establecer que la secuencia de elecciones existe.
 
 El primer paso es modelar la aleatoriedad de forma que podamos controlarla lógicamente.
-En nuestra sintaxis abstracta, la condición se modela mediante el operador de elección no determinista \texttt{Choice}, codificado con el operador \lstinline{|||}:
+En nuestra sintaxis abstracta,
+la condición se modela mediante el operador de elección no determinista \lstinline|Choice|,
+codificado con el operador \lstinline{|||}:
 
 \begin{lstlisting}
 Assign "j" (Plus (Var "j") (Const 1)) ||| Skip
 \end{lstlisting}
 
-Para construir la ejecución que lleva al error, la derivación usa \texttt{ISL\_ChoiceL} y selecciona la rama de incremento en el cuerpo del bucle.
-En una teoría de sobreaproximación, el axioma de esta instrucción nos obligaría a arrastrar una disyunción en la postcondición, ramificando el estado lógico en cada iteración.
+Para construir la ejecución que lleva al error,
+la derivación usa \lstinline|ISL_ChoiceL| y selecciona la rama de incremento en el cuerpo del bucle.
+Una exploración que mantuviera por separado cada alternativa de ejecución duplicaría el número de caminos en cada iteración.
 
-A pesar de poder elegir una sola rama, construir un millón de aplicaciones de la regla de Kleene produciría una derivación enorme.
-Para evitar ese desenrollado se usa \texttt{ISL\_KleeneVariant}.
+A pesar de poder elegir una sola rama,
+construir un millón de aplicaciones de la regla de Kleene produciría una derivación enorme.
+Para evitar ese desenrollado se usa \lstinline|ISL_KleeneVariant|.
 
 La familia de aserciones se define como sigue:
 
@@ -5024,14 +5127,19 @@ let variant (k : nat) : cond =
     k <= 1000000 /\ st "n" == Nat 1000000 /\
     st "i" == Nat k /\ st "j" == Nat k /\ m == Ok
 \end{lstlisting}
-Este predicado asocia el número de iteración lógica \texttt{k} con los valores concretos del \textit{store}.
-Afirma que, después de \texttt{k} iteraciones del camino seleccionado, tanto \texttt{i} como \texttt{j} son iguales a \texttt{k}.
+Este predicado asocia el número de iteración lógica \lstinline|k| con los valores concretos del \emph{store}.
+Afirma que,
+después de \lstinline|k| iteraciones del camino seleccionado,
+tanto \lstinline|i| como \lstinline|j| son iguales a \lstinline|k|.
 
-Para aplicar \texttt{ISL\_KleeneVariant} debe demostrarse paramétricamente que el cuerpo transforma \texttt{variant k} en \texttt{variant k+1}.
-La demostración de este paso se hace para un \texttt{k} arbitrario.
-La rama izquierda de \texttt{Choice} incrementa \texttt{j}, mientras que las asignaciones restantes incrementan \texttt{i}.
+Para aplicar \lstinline|ISL_KleeneVariant| debe demostrarse paramétricamente que el cuerpo transforma \lstinline|variant k| en \lstinline|variant (k + 1)|.
+La demostración de este paso se hace para un \lstinline|k| arbitrario.
+La rama izquierda de \lstinline|Choice| incrementa \lstinline|j|,
+mientras que las asignaciones restantes incrementan \lstinline|i|.
 Las obligaciones aritméticas locales son verificadas por el \emph{solver}.
-Una vez demostrado el paso general, la regla permite obtener estados correspondientes a una cantidad finita de iteraciones sin construir manualmente una derivación diferente para cada valor del índice.
+Una vez demostrado el paso general,
+la regla permite obtener estados correspondientes a una cantidad finita de iteraciones
+sin construir manualmente una derivación diferente para cada valor del índice.
 
 La instrucción de aserción se codifica como una elección entre el camino de error y el exitoso:
 
@@ -5040,12 +5148,15 @@ let assert_stmt =
   Seq (Assume (Eq (Var "j") (Var "n"))) Error |||
   Assume (enot (Eq (Var "j") (Var "n")))
 \end{lstlisting}
-La rama izquierda representa el caso de \texttt{j} y \texttt{n} iguales, donde el \texttt{Assume} permite continuar y luego \texttt{Error} cambia el modo de terminación.
-La rama derecha representa el caso en que \texttt{j} y \texttt{n} son distintos.
+La rama izquierda representa el caso de \lstinline|j| y \lstinline|n| iguales,
+donde el \lstinline|Assume| permite continuar y luego \lstinline|Error| cambia el modo de terminación.
+La rama derecha representa el caso en que \lstinline|j| y \lstinline|n| son distintos.
 
-La variante construida para el camino seleccionado permite alcanzar el estado en el que tanto \texttt{i} como \texttt{j} como \texttt{n} son iguales a un millón.
-Por lo tanto, la igualdad evaluada por el primer \texttt{Assume} es verdadera.
-La derivación vuelve a usar \texttt{ISL\_ChoiceL} para seleccionar la rama que lleva a \texttt{Error}.
+La variante construida para el camino seleccionado permite alcanzar el estado
+en el que tanto \lstinline|i| como \lstinline|j| como \lstinline|n| son iguales a un millón.
+Por lo tanto,
+la igualdad evaluada por el primer \lstinline|Assume| es verdadera.
+La derivación vuelve a usar \lstinline|ISL_ChoiceL| para seleccionar la rama que lleva a \lstinline|Error|.
 
 La postcondición final es:
 
@@ -5056,12 +5167,14 @@ let post_er_bug : cond =
     st "j" == Nat 1000000 /\ m == Er
 \end{lstlisting}
 
-Un análisis que enumera todas las secuencias de decisiones podría tener hasta $2^{1000000}$ combinaciones.
-La derivación de este caso no enumera dichas combinaciones.
-Selecciona una rama concreta y usa una familia de aserciones para representar las iteraciones.
-\guido{las dos ultimas oraciones deberian ser una sola, y creo que en este
-parrafo queres justificar que una busqueda exhaustiva tendria dificultad
-para encontrar este error, decilo explicitamente}
+\changed{Una búsqueda exhaustiva que enumere las secuencias de decisiones tendría que considerar hasta $2^{1000000}$ combinaciones,
+lo que hace inviable explorar por completo este espacio para localizar el error.
+La derivación presentada selecciona el camino que incrementa \lstinline|j| en todas las iteraciones
+y utiliza una familia de aserciones para justificarlo paramétricamente,
+sin enumerar las demás combinaciones.}
+%\guido{las dos ultimas oraciones deberian ser una sola, y creo que en este
+%parrafo queres justificar que una busqueda exhaustiva tendria dificultad
+%para encontrar este error, decilo explicitamente}
 
 \section{Recorrido de una lista enlazada}
 \label{sec:listas}
@@ -5530,10 +5643,14 @@ Sobre esta formalización se mecanizó el Teorema de Soundness de la ISL.
 Al igual que en el caso anterior, el resultado relaciona cada estado final descrito por su derivación con un estado inicial y una ejecución operacional concreta.
 La demostración del caso de la Regla del Marco requirió probar que una ejecución local puede extenderse con un \emph{heap} disjunto que no es modificado.
 
-También se formalizó una relación inductiva denominada \texttt{footprint}, cuyos constructores describen ejecuciones sobre los fragmentos locales de memoria requeridos por cada comando.
-A partir de esta definición se introdujo la relación \texttt{framed\_footprint}, que representa la clausura de las huellas locales con marcos disjuntos y equivalencias.
+También se formalizó una relación inductiva denominada \lstinline|footprint|,
+cuyos constructores describen ejecuciones sobre los fragmentos locales de memoria requeridos por cada comando.
+A partir de esta definición se introdujo la relación \lstinline|framed_footprint|,
+que representa la clausura de las huellas locales por marcos disjuntos.
 Sobre estas relaciones se demostró:
-$$\operatorname{framed\_footprint} \; p \; s_0 \; s_1 \iff \operatorname{runsto} \; p \; s_0 \; s_1.$$
+\begin{center}
+\lstinline|framed_footprint p s0 s1| $\iff$ \lstinline|runsto p s0 s1|.
+\end{center}
 La implicación de izquierda a derecha demuestra que toda huella extendida con un marco compatible constituye una ejecución operacional válida.
 El otro lado establece que toda ejecución operacional puede descomponerse en una huella local y un marco que no es modificado.
 

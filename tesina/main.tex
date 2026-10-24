@@ -93,7 +93,7 @@ La magnitud de este esfuerzo puede observarse en proyectos como seL4~\citep{sel4
 Aunque se trata de un microkernel de aproximadamente 10.000 líneas de código,
 su prueba de correctitud demandó cerca de veinte años-persona.
 Al momento de la publicación,
-el conjunto de pruebas y especificaciones formales alcanzaba unas 480,000 líneas.
+el conjunto de pruebas y especificaciones formales alcanzaba unas 480.000 líneas.
 Por otro lado, el Project Everest~\citep{everest} reunió un equipo numeroso de
 investigadores e ingenieros para desarrollar una implementación completamente
 verificada del ecosistema HTTPS, incluidos TLS, sus varios algoritmos
@@ -114,7 +114,7 @@ Los analizadores estáticos son una familia de buscadores de bugs
 que ha
 tenido una adopción mucho más amplia que la verificación formal.
 %
-Éstos son herramientas automatizadas que
+Estos son herramientas automatizadas que
 examinan un
 programa sin necesidad de ejecutarlo sobre entradas concretas,
 con el objetivo de encontrar posibles errores comunes.
@@ -187,11 +187,11 @@ Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \label{tab:relacion-logicas}
 \end{table}
 
-La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL,
+La ISL combina, entonces, el razonamiento sobre errores alcanzables de la IL
 con el razonamiento local sobre memoria dinámica de la SL.
 
 Sin embargo, para confiar en las conclusiones obtenidas con este sistema,
-no basta con definir sus aserciones y reglas de inferencia,
+no basta con definir sus aserciones y reglas de inferencia;
 también es necesario demostrar sus \emph{metapropiedades}, es decir,
 propiedades del propio sistema lógico y de su relación con la semántica de los programas.
 Una de las más importantes es la \emph{solidez} (\emph{soundness}),
@@ -199,7 +199,7 @@ que garantiza, en este caso, que toda conclusión obtenida mediante las reglas d
 un comportamiento admitido por la semántica.
 
 Estas propiedades pueden demostrarse matemáticamente sobre un papel.
-Sin embargo, este tipo de razonamientos pueden contener errores u omisiones difíciles de identificar.
+Sin embargo, este tipo de razonamiento puede contener errores u omisiones difíciles de identificar.
 Una forma de incrementar la confianza en estos resultados consiste en mecanizarlos dentro de un asistente de pruebas,
 de modo que cada definición y cada paso de una demostración sean comprobados por el sistema.
 En esta tesina se usa \fstar{}, un lenguaje de programación orientado a pruebas que combina tipos dependientes,
@@ -291,7 +291,7 @@ Una aserción sobre estados es un predicado $p : \Sigma \rightarrow \mathsf{Prop
 donde $\mathsf{Prop}$ representa el universo de las proposiciones lógicas.
 Por lo tanto, para cada estado $\sigma$, la expresión $p(\sigma)$ afirma una propiedad que puede ser verdadera o falsa.
 En particular, una aserción puede identificarse con el conjunto de estados que la satisfacen:
-$$\llbracket p \rrbracket = \{\sigma \in \Sigma \mid p(\sigma)\}$$
+$$\llbracket p \rrbracket = \{\sigma \in \Sigma \mid p(\sigma)\}.$$
 En lo que sigue se utilizará esta identificación de manera implícita.
 Por lo tanto, las expresiones $\sigma \in \llbracket p \rrbracket$ y $p(\sigma)$ se considerarán equivalentes.
 Cuando no haya ambigüedad,
@@ -313,12 +313,12 @@ Sea $R \subseteq \Sigma \times \Sigma$ una relación entre estados y sea $p \sub
 El operador de postimagen $\operatorname{post}(R) : \mathcal{P}(\Sigma) \rightarrow \mathcal{P}(\Sigma)$
 asocia a cada aserción $p$ el conjunto:
 
-$$\operatorname{post}(R)(p) = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}$$
+$$\operatorname{post}(R)(p) = \{\sigma' \mid \exists \sigma \in p. \; (\sigma, \sigma') \in R\}.$$
 
 Este conjunto contiene exactamente los estados relacionados mediante $R$ con algún estado perteneciente a $p$.
 \end{definicion}
 
-\begin{lema}(Monotonía y distributividad de la postimagen)
+\begin{lema}[Monotonía y distributividad de la postimagen]
 \label{lem:prop-pi}
 Sea $R \subseteq \Sigma \times \Sigma$ una relación y sean $p_1, p_2 \subseteq \Sigma$.
 Entonces:
@@ -344,7 +344,7 @@ Sin embargo, además del estado final, es interesante distinguir la manera en qu
 Para ello, consideramos los \emph{modos de terminación} $\varepsilon \in \{ok, er\}$,
 donde $ok$ representa una terminación normal y $er$, una terminación provocada por un error.
 Para cada comando $C$ y modo de terminación $\varepsilon$, se define una relación semántica:
-$$[\![C]\!]_\varepsilon \subseteq \Sigma \times \Sigma$$
+$$[\![C]\!]_\varepsilon \subseteq \Sigma \times \Sigma.$$
 La pertenencia $(\sigma, \sigma') \in [\![C]\!]_\varepsilon$ indica que existe una ejecución completa de $C$ que empieza en el estado
 $\sigma$ y termina en el estado $\sigma'$ con modo de terminación $\varepsilon$.
 En este sentido, $[\![C]\!]_\varepsilon$ constituye una representación relacional de una semántica de estilo \emph{big-step},
@@ -390,7 +390,7 @@ por ejemplo, cuando todas las ejecuciones divergen y continúan indefinidamente.
 Esta sección presenta un recordatorio de los conceptos de la Lógica de Hoare
 que se utilizarán posteriormente para contrastarla con la Lógica de Incorrectitud.
 Se supone que el lector posee cierta familiaridad con los fundamentos de esta lógica,
-por lo que no se desarrolla sus sistema deductivo completo.
+por lo que no se desarrolla su sistema deductivo completo.
 
 La HL, introducida por \citet{hoare}, es un sistema formal para mostrar la correctitud de programas respecto de una especificación.
 Su unidad básica es la \emph{tripleta de Hoare}:
@@ -590,7 +590,7 @@ Con la sintaxis anterior,
 podemos ahora explicitar la semántica relacional de cada comando.
 Para cada comando $C$ y modo de terminación $\varepsilon \in \{ok, er\}$,
 la relación $[\![C]\!]_\varepsilon$ describe los pares de estados inicial y final
-conectados por una ejecución $C$ que termina con el modo $\varepsilon$.
+conectados por una ejecución de $C$ que termina con el modo $\varepsilon$.
 
 En esta sección,
 los estados se representan mediante funciones $\sigma : \mathsf{Var} \to \mathsf{Val}$,
@@ -600,8 +600,7 @@ La actualización $\sigma[x \mapsto v]$ coincide con $\sigma$ en todas las varia
 a la que se asigna el valor $v$.
 
 Para definir la semántica de $C^\star$,
-utilizamos la notación auxiliar $C^n$,
-para denotar $n$ repeticiones de $C$:
+utilizamos la notación auxiliar $C^n$ para denotar $n$ repeticiones de $C$:
 $$C^0 \equiv \texttt{skip}, \qquad C^{n + 1} \equiv C^n; C.$$
 La \autoref{fig:semantica-il} reúne las definiciones semánticas;
 en particular,
@@ -761,7 +760,7 @@ Si se observa en términos de conjuntos,
 para un mismo comando $C$ y una misma precondición $p$,
 si $q_{\mathrm{IL}}$ es una postcondición elegida como subaproximación de los resultados alcanzables y
 $q_{\mathrm{HL}}$ es una postcondición elegida como sobreaproximación,
-entonces,
+entonces se cumple
 $$q_{\mathrm{IL}} \subseteq \operatorname{post}_{ok}(C)(p) \subseteq q_{\mathrm{HL}}.$$
 Por transitividad, también se cumple
 $$q_{\mathrm{IL}} \subseteq q_{\mathrm{HL}}.$$
@@ -828,7 +827,7 @@ Habiendo considerado ambos modos de terminación,
 la definición de validez semántica puede expresarse de manera equivalente en términos de ejecuciones concretas.
 La siguiente caracterización hace explícito que cada estado descrito por la postcondición debe estar respaldado por una ejecución real.
 
-\begin{lema}(Caracterización)
+\begin{lema}[Caracterización]
 \label{lem:caracterizacion}
 Los siguientes son equivalentes:
 \begin{enumerate}
@@ -862,7 +861,7 @@ un sistema deductivo compuesto por reglas de inferencia.
 Estas reglas permiten construir derivaciones a partir de la estructura de los comandos y de las relaciones entre aserciones.
 Antes de presentarlas, definimos formalmente la noción de derivabilidad.
 
-\begin{definicion}(Derivabilidad en la IL)
+\begin{definicion}[Derivabilidad en la IL]
 \label{def:derivabilidad}
 Escribimos
 $$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$$
@@ -993,7 +992,7 @@ Esto significa que el nuevo valor de $x$ puede ser cualquiera y no depende del v
 El análisis de $C^\star$ se realiza mediante tres reglas.
 La regla \textsc{Kleene (base)} representa la ejecución de cero iteraciones.
 Si $p$ describe el estado inicial,
-entonces ese mismo estado también describe el estado final de una ejecución de $C^\star$ que no ejecuta $C$.
+entonces ese mismo estado también es el estado final de una ejecución de $C^\star$ que no ejecuta $C$.
 
 La regla \textsc{Kleene (paso)} permite agregar una iteración a una ejecución ya establecida.
 La regla parte de una derivación para la secuencia $C^\star; C$,
@@ -1102,7 +1101,7 @@ y la precondición inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$.
 es una subaproximación de los estados alcanzables por este código partiendo de la precondición?
 
 Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida se exige:
-$$q \subseteq post_{ok}(C)(p)$$
+$$q \subseteq post_{ok}(C)(p).$$
 Sin embargo, el estado $\sigma = [z \mapsto 42, x \mapsto 1, y \mapsto 2] \in q$,
 pero no pertenece a $post_{ok}(C)(p)$.
 En efecto, como el programa no modifica $x$ ni $y$,
@@ -1117,14 +1116,14 @@ y la tripleta no es válida.
 
 Una postcondición subaproximada válida debe conservar las condiciones que justifican la ejecución de la asignación.
 Por ejemplo:
-$$\itriple{z = 11}{C}{ok: z = 42 \land (x \bmod 2 = 0) \land (y \bmod 2 \ne 0)}$$
+$$\itriple{z = 11}{C}{ok: z = 42 \land (x \bmod 2 = 0) \land (y \bmod 2 \ne 0)}.$$
 \end{ejemplo}
 
 \subsection*{Razonamiento sobre bucles}
 El análisis de los bucles iterativos constituye uno de los principales desafíos de la verificación formal de software.
 En la HL,
 razonar sobre un bucle requiere encontrar un invariante
-que se preserve entre iteraciones y sea sufiencientemente fuerte para demostrar la propiedad buscada.
+que se preserve entre iteraciones y sea suficientemente fuerte para demostrar la propiedad buscada.
 Esta tarea no es trivial y a menudo requiere invención humana,
 lo que dificulta la escalabilidad y automatización de las herramientas.
 Aunque existen técnicas automáticas,
@@ -1144,13 +1143,13 @@ sin necesidad de describir los demás comportamientos posibles del bucle.
 Para los casos en que se requiere un razonamiento paramétrico,
 la regla \textsc{Kleene (variante)} puede interpretarse hacia atrás.
 La regla parte de una derivación de la forma:
-$$\vdash_{\mathrm{IL}} \itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}$$
+$$\vdash_{\mathrm{IL}} \itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}.$$
 Semánticamente, si la tripleta $\itriple{p(n) \land \operatorname{nat}(n)}{C}{ok : p(n + 1) \land \operatorname{nat}(n)}$ es válida,
 entonces cada estado que satisface $p(n + 1)$ posee algún estado predecesor que satisface $p(n)$.
 Repitiendo este razonamiento,
 puede reconstruirse una traza finita hasta un estado inicial descrito por $p(0)$.
 De esta forma, la regla permite obtener:
-$$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \operatorname{nat}(n)}$$
+$$\vdash_{\mathrm{IL}} \itriple{p(0)}{C^\star}{ok : \exists n. p(n) \land \operatorname{nat}(n)}.$$
 
 La denominación ``variante hacia atrás'' se refiere a esta reconstrucción de los estados predecesores
 exigida por la interpretación subaproximada de las tripletas.
@@ -1161,10 +1160,10 @@ que realiza una cantidad arbitraria de iteraciones normales y luego termina con 
 La relación entre las reglas deductivas y la semántica relacional se establece mediante el Teorema de Soundness.
 Este resultado garantiza que toda tripleta derivable en la IL es semánticamente válida.
 
-\begin{teorema}(Teorema de Soundness de la IL)
+\begin{teorema}[Teorema de Soundness de la IL]
 \label{teo:sound-il}
 Para todo comando $C$, aserciones $p, q \subseteq \Sigma$ y modo de terminación $\varepsilon$:
-$$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}$$
+$$\vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q}.$$
 \end{teorema}
 
 El teorema garantiza que toda tripleta construida mediante las reglas del sistema
@@ -1193,7 +1192,7 @@ $\ensuremath{\blacksquare}$
 
 El corolario explicita,
 para el caso de terminación con error,
-la garantía de ausencia de falsos positivos que se desprende del Torema de Soundness~\ref{teo:sound-il}:
+la garantía de ausencia de falsos positivos que se desprende del Teorema de Soundness~\ref{teo:sound-il}:
 todo estado descrito por la postcondición de una tripleta de error derivable
 está respaldado por una ejecución real.
 Además, si $q \neq \varnothing$,
@@ -1281,7 +1280,7 @@ una modificación realizada a través de una de las expresiones puede afectar el
 \begin{ejemplo}
 Consideremos el comando $C \equiv [x] := 2$,
 que escribe el valor 2 en la celda cuya dirección está almacenada en $x$.
-Saber que las cedas referenciadas por $x$ e $y$ contienen inicialmente el valor 1
+Saber que las celdas referenciadas por $x$ e $y$ contienen inicialmente el valor 1
 no basta para garantizar que la segunda conserve su contenido.
 En particular,
 si $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$,
@@ -1289,7 +1288,7 @@ la siguiente tripleta no es válida:
 $$\triple{h(s(x)) = 1 \land h(s(y)) = 1}{[x] := 2}{h(s(x)) = 2 \land h(s(y)) = 1}.$$
 
 Para observar por qué falla,
-supongamos que ambas varaiables apuntan a una misma dirección $\ell$:
+supongamos que ambas variables apuntan a una misma dirección $\ell$:
 $$s(x) = s(y) = \ell, \qquad h(\ell) = 1.$$
 Este estado satisface la precondición de la tripleta.
 Sin embargo,
@@ -1299,7 +1298,7 @@ por lo que la postcondición no se cumple.
 Aunque la escritura se realiza mediante $x$,
 también cambia el valor que se obtiene al leer mediante $y$.
 
-Si se agrega a la precondición que ambas direcciónes son distintas,
+Si se agrega a la precondición que ambas direcciones son distintas,
 se obtiene una tripleta válida:
 $$\triple{h(s(x)) = 1 \land h(s(y)) = 1 \land s(x) \neq s(y)}{[x] := 2}{h(s(x)) = 2 \land h(s(y)) = 1}.$$
 En este caso,
@@ -1314,9 +1313,9 @@ lo que también puede limitar la escalabilidad del análisis~\citep{bttf}.
 
 \subsection*{La conjunción separadora y aserciones espaciales}
 Una contribución central de la SL es la conjunción separadora,
-un conectivo que permite combinar aserciones sobre fragmantos disjuntos de memoria.
+un conectivo que permite combinar aserciones sobre fragmentos disjuntos de memoria.
 De este modo,
-la separación se expresa madiante la estructura de las aserciones,
+la separación se expresa mediante la estructura de las aserciones,
 sin enumerar individualmente las desigualdades entre las direcciones involucradas.
 Para definir este conectivo,
 primero introducimos
@@ -1328,7 +1327,7 @@ Sean $h_1, h_2 \in \mathsf{Heap}$.
 Decimos que $h_1$ y $h_2$ son disjuntos,
 lo que denotamos mediante $h_1 \perp h_2$,
 si sus dominios no comparten ninguna dirección:
-$$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing$$
+$$\operatorname{dom}(h_1) \cap \operatorname{dom}(h_2) = \varnothing.$$
 \end{definicion}
 
 Que los \emph{heaps} sean disjuntos garantiza que cada dirección de memoria pertenece, a lo sumo,
@@ -1359,7 +1358,7 @@ Entre las más importantes se encuentran $\mathsf{emp}$, \emph{points-to} y la c
 \label{def:heap_vacio}
 Sean $s \in \mathsf{Store}$ y $h \in \mathsf{Heap}$.
 La aserción $\mathsf{emp}$ se satisface cuando $h$ no contiene ninguna celda:
-$$\mathsf{emp}(s,h) \iff \operatorname{dom}(h) = \varnothing$$
+$$\mathsf{emp}(s,h) \iff \operatorname{dom}(h) = \varnothing.$$
 \end{definicion}
 
 La aserción $\mathsf{emp}$ no afirma que toda la memoria física del programa se encuentra vacía,
@@ -1376,8 +1375,8 @@ $$e_1 \mapsto e_2$$
 se satisface cuando $h \in \mathsf{Heap}$ contiene exactamente una celda,
 cuya dirección es el resultado de evaluar $e_1$ en $s$ y cuyo contenido es el resultado de evaluar $e_2$ en $s$.
 Formalmente:
-$$(e_1 \mapsto e_2)(s, h) \iff \exists \ell \in \mathsf{Loc}. \;
-\ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s$$
+$$(e_1 \mapsto e_2)(s, h) \iff \exists \ell \in \mathsf{Loc}. \
+\ell = [\![e_1]\!]_s \land \operatorname{dom}(h) = \{\ell\} \land h(\ell) = [\![e_2]\!]_s.$$
 \end{definicion}
 
 Por ejemplo,
@@ -1396,7 +1395,7 @@ El estado $(s, h)$ satisface la conjunción separadora
 $$P * Q$$
 si $h$ puede dividirse en dos fragmentos disjuntos $h_1$ y $h_2$, de modo que $P$ se satisface sobre $h_1$ y $Q$ se satisface sobre $h_2$.
 Formalmente:
-$$(P * Q)(s, h) \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land P(s, h_1) \land Q(s, h_2)$$
+$$(P * Q)(s, h) \iff \exists h_1, h_2 \in \mathsf{Heap}. \; h_1 \perp h_2 \land h = h_1 \uplus h_2 \land P(s, h_1) \land Q(s, h_2).$$
 \end{definicion}
 
 En la fórmula anterior,
@@ -1409,14 +1408,14 @@ Por lo tanto, la separación se aplica solo al \emph{heap},
 cuyas celdas se distribuyen entre fragmentos disjuntos.
 
 La conjunción separadora satisface las siguientes propiedades algebraicas,
-que permite reorganizar las aserciones sin cambiar su significado.
+que permiten reorganizar las aserciones sin cambiar su significado.
 
 \begin{lema}[Propiedades de la conjunción separadora]
 Para todas las aserciones espaciales $P$, $Q$ y $R$:
 \begin{enumerate}
-  \item $P * Q \iff Q * P$
-  \item $(P * Q) * R \iff P * (Q * R)$
-  \item $P * \mathsf{emp} \iff P$
+  \item $P * Q \iff Q * P$.
+  \item $(P * Q) * R \iff P * (Q * R)$.
+  \item $P * \mathsf{emp} \iff P$.
 \end{enumerate}
 \end{lema}
 
@@ -1429,7 +1428,7 @@ sin imponer restricciones sobre el \emph{store} ni sobre el \emph{heap}.
 A partir de esta aserción y la conjunción separadora,
 definimos la siguiente variante de \emph{points-to}:
 $$e_1 \hookrightarrow e_2 \equiv (e_1 \mapsto e_2) * \mathsf{true}.$$
-Esta aserción indica el \emph{heap} contiene una celda cuya dirección es
+Esta aserción indica que el \emph{heap} contiene una celda cuya dirección es
 el resultado de evaluar $e_1$ y cuyo contenido es el resultado de evaluar $e_2$,
 pero permite que existan otras celdas.
 
@@ -1532,7 +1531,7 @@ cada uno de los cuales almacena un puntero hacia el otro.
 
 Por último,
 consideremos qué ocurre al utilizar la variante que permite memoria adicional.
-Extendemos la notación,
+Extendemos la notación de la siguiente manera:
 $$x \hookrightarrow [e_1, e_2] \equiv (x \mapsto [e_1, e_2]) * \mathsf{true}.$$
 Con esta notación,
 la aserción $(x \hookrightarrow [3, y]) \land (y \hookrightarrow [3, x])$
@@ -1682,7 +1681,7 @@ Por ello,
 las operaciones de lectura,
 escritura y liberación requieren que la dirección obtenida al evaluar la expresión pertenezca a dicho dominio;
 en caso contrario,
-termina con un error.
+terminan con un error.
 Una liberación exitosa elimina la celda del \emph{heap},
 por lo que este modelo no distingue una dirección previamente liberada de otra que tampoco pertenece al dominio.
 
@@ -1695,7 +1694,7 @@ pero ahora $P$ y $Q$ son aserciones espaciales interpretadas sobre estados compu
 Antes de presentar las reglas,
 definimos la noción de derivabilidad en la SL.
 
-\begin{definicion}(Derivabilidad en la SL)
+\begin{definicion}[Derivabilidad en la SL]
 \label{def:derivabilidad-sl}
 Escribimos
 $$\vdash_{\mathrm{SL}} \triple{P}{C}{Q}$$
@@ -1802,16 +1801,16 @@ Por ejemplo,
 sean $R \equiv x \mapsto 1$ y $C \equiv x := 3$,
 donde $x$ es una variable del \emph{store}.
 La aserción $R$ describe una celda del \emph{heap} ubicada en la dirección almacenada en $x$,
-mientra que el comando modifica el valor de la propia variable.
+mientras que el comando modifica el valor de la propia variable.
 Por lo tanto,
-aunque el \emph{heap} premanezca intacto,
+aunque el \emph{heap} permanezca intacto,
 $R$ puede dejar de cumplirse porque $x$ ya no tiene la dirección de la celda descrita.
 La condición lateral impide esta aplicación de la Regla del Marco,
 ya que $x \in \operatorname{fv}(R)$ y $x \in \operatorname{mod}(C)$.
 
 La SL proporciona las herramientas necesarias para razonar localmente sobre memoria mutable.
 A continuación,
-consideramos cómo combinar este razonamiento con la interpretación subaprximada de la IL.
+consideramos cómo combinar este razonamiento con la interpretación subaproximada de la IL.
 
 \section{Lógica de Incorrectitud de Separación (ISL)}
 \label{sec:logincsep}
@@ -1831,7 +1830,7 @@ con el modo de terminación $\varepsilon$.
 Al igual que en las lógicas anteriores,
 distinguimos esta interpretación semántica de la derivabilidad de una tripleta mediante reglas de inferencia.
 
-\begin{definicion}(Derivabilidad en la ISL)
+\begin{definicion}[Derivabilidad en la ISL]
 \label{def:derivabilidad-isl}
 Escribimos
 $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}$$
@@ -2031,7 +2030,7 @@ Esta propiedad se formaliza en el siguiente lema.
 Para todo comando $C$,
 modo de terminación $\varepsilon$ y transición $((s, h), (s', h')) \in [\![C]\!]_\varepsilon$,
 se cumple:
-$$\operatorname{dom}(h) \subseteq \operatorname{dom}(h')$$
+$$\operatorname{dom}(h) \subseteq \operatorname{dom}(h').$$
 \end{lema}
 
 Esto quiere decir que una dirección conocida al comienzo de una ejecución sigue siendo conocida cuando esta finaliza.
@@ -2059,9 +2058,9 @@ $s$ y $s'$ los \emph{stores} inicial y final,
 $h, h', h_f \in \mathsf{HeapExt}$ los \emph{heaps} inicial, final y adicional,
 respectivamente.
 Si
-$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f$$
+$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f,$$
 entonces
-$$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon$$
+$$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon.$$
 \end{lema}
 %\guido{creo que esto no es cierto. Considera
 %estado inicial y final vacio, frame $x \leadsto 1$ y el comando $Read~x$.
@@ -2194,7 +2193,7 @@ respectivamente, la lectura de una celda liberada y la lectura mediante un punte
 
 Finalmente, las reglas \textsc{Store} describen las escrituras sobre el \emph{heap}.
 En el caso de éxito,
-la celda cuya dirección se obtiene al evaluar $e_1$ contiene inicalmente el valor de $e$.
+la celda cuya dirección se obtiene al evaluar $e_1$ contiene inicialmente el valor de $e$.
 La escritura reemplaza ese contenido por el resultado de evaluar $e_2$,
 sin modificar el \emph{store}.
 Las reglas \textsc{StoreEr} y \textsc{StoreNull} representan,
@@ -2202,7 +2201,7 @@ respectivamente, una escritura sobre una celda liberada y una escritura mediante
 
 \textbf{Observación.}
 A diferencia de las reglas de la SL presentadas anteriormente,
-las reglas \textsc{Free} y \textsc{Store} permiten especificar el contenido inical de la celda mediante una expresión.
+las reglas \textsc{Free} y \textsc{Store} permiten especificar el contenido inicial de la celda mediante una expresión.
 Reemplazar ese contenido por - produce tripletas válidas,
 pero reglas más débiles para la deducción en ISL.
 Por ejemplo,
@@ -2252,7 +2251,7 @@ El siguiente teorema relaciona la derivabilidad de una tripleta de la ISL con su
 \label{teo:sound-isl}
 Para todo comando $C$, aserciones espaciales $p$ y $q$,
 y un modo de terminación $\varepsilon \in \{ok, er\}$:
-$$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}$$
+$$\vdash_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q} \implies \models_{\mathrm{ISL}} \itriple{p}{C}{\varepsilon : q}.$$
 \end{teorema}
 
 El teorema establece que toda tripleta derivable mediante las reglas de la ISL
@@ -2273,7 +2272,7 @@ pero no garantiza la existencia de una ejecución de error.
 Si
 $$\vdash_{\mathrm{ISL}} \itriple{p}{C}{er : q}$$
 y $q \neq \varnothing$, entonces existen estados espaciales $\sigma_p \in p$ y $\sigma_q \in q$ tales que:
-$$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}$$
+$$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
 \end{corolario}
 \emph{Demostración.} Análoga a la demostración del Corolario~\ref{cor:errores},
 utilizando el Teorema de Soundness de la ISL~\ref{teo:sound-isl} y su definición de validez semántica.
@@ -2302,7 +2301,7 @@ y solo puede realizarse cuando ambos fragmentos son disjuntos.
 \label{def:state-ext}
 Sea $\sigma = (s, h)$ un estado espacial y sea $h_f \in \mathsf{HeapExt}$ tal que $h \perp h_f$.
 Definimos:
-$$\sigma \bullet h_f = (s, h \uplus h_f)$$
+$$\sigma \bullet h_f = (s, h \uplus h_f).$$
 \end{definicion}
 
 A partir de esta operación,
@@ -2317,7 +2316,7 @@ es decir, $h(\sigma) = h_\sigma$.
 Sea $R \subseteq \Sigma_\mathrm{ISL} \times \Sigma_\mathrm{ISL}$ una relación entre estados.
 Su extensión por marcos se define como:
 $$\operatorname{frame}(R) = \{(\sigma_p \bullet h_f, \sigma_q \bullet h_f) \mid (\sigma_p, \sigma_q) \in R
-\land h_f \in \mathsf{HeapExt} \land h(\sigma_p) \perp h_f \land h(\sigma_q) \perp h_f\}$$
+\land h_f \in \mathsf{HeapExt} \land h(\sigma_p) \perp h_f \land h(\sigma_q) \perp h_f\}.$$
 \end{definicion}
 
 La extensión por marcos toma una transición entre dos estados
@@ -2341,7 +2340,7 @@ está formada por las transiciones de $[\![C]\!]_\varepsilon$ que son mínimas r
 \end{definicion}
 
 Una transición es mínima cuando no puede quitarse de sus estados inicial y final un mismo fragmento de memoria no vacío
-y seguir obteniendo una transición válida de $[\![C]\!]_\varepsilon$
+y seguir obteniendo una transición válida de $[\![C]\!]_\varepsilon$.
 
 Una transición perteneciente a $\operatorname{foot}(C)_\varepsilon$
 describe los recursos de memoria necesarios para una ejecución particular del comando.
@@ -2356,7 +2355,7 @@ Un comando con distintas ramas puede tener varias ejecuciones mínimas con reque
 \begin{teorema}[Teorema de la Huella]
 \label{teo:huella}
 Para todo comando $C$ y todo modo de terminación $\varepsilon \in \{ok, er\}$,
-$$[\![C]\!]_{\varepsilon} = \operatorname{frame}(\operatorname{foot}(C)_\varepsilon)$$
+$$[\![C]\!]_{\varepsilon} = \operatorname{frame}(\operatorname{foot}(C)_\varepsilon).$$
 \end{teorema}
 
 La igualdad del Teorema~\ref{teo:huella} expresa dos direcciones complementarias.
@@ -2484,9 +2483,9 @@ Para enunciar y demostrar propiedades,
 \fstar{} proporciona el efecto \lstinline|Lemma|.
 Un lema toma ciertas premisas como argumentos mediante una cláusula \lstinline|requires|
 y garantiza lógicamente una conclusión mediante la cláusula \lstinline|ensures|.
-Su resultado computacional es irrelevante,
+Su resultado computacional es irrelevante;
 lo importante es que su cuerpo constituya una demostración aceptada por el comprobador.
-Por ejemplo, una signatura de la forma:
+Por ejemplo, consideremos la siguiente signatura:
 \begin{lstlisting}
 val lemma :
   x : t ->
@@ -2494,7 +2493,7 @@ val lemma :
     (requires P x)
     (ensures Q x)
 \end{lstlisting}
-establece que, siempre que se cumpla la premisa \lstinline|P x|,
+Esta establece que, siempre que se cumpla la premisa \lstinline|P x|,
 el lema garantiza la conclusión \lstinline|Q x|.
 
 Retomando la relación \lstinline|same_length|,
@@ -2643,7 +2642,7 @@ el modo de terminación $\varepsilon \in \{ok, er\}$ aparece como un índice de 
 En esta formalización se incorpora directamente en el estado.
 %\guido{y la semántica no permite que un estado de error avance en su ejecucion?}.
 \changed{Las reglas operacionales exigen que el estado inicial tenga modo \lstinline|Ok|,
-por lo que no permiten iniciar otra ejecucion desde un estado con modo \lstinline|Er|.}
+por lo que no permiten iniciar otra ejecución desde un estado con modo \lstinline|Er|.}
 De esta manera,
 una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
 
@@ -2698,7 +2697,7 @@ en los comandos de filtrado,
 cero representa falso y cualquier valor distinto de cero representa verdadero.
 
 La definición de comandos es similar,
-pero incluye instrucciones que modifican el estado o controlan el flujo.
+pero incluye instrucciones que modifican el estado o controlan el flujo:
 
 \begin{lstlisting}
 type stmt =
@@ -2771,7 +2770,7 @@ sin necesidad de agregar una regla a la semántica operacional.
 A continuación,
 se presentan los constructores de \lstinline|runsto| que describen la ejecución de los comandos.
 \changed{Para simplificar sus signaturas,
-se deifinen dos abreviaturas para los estados según su modo de terminación:}
+se definen dos abreviaturas para los estados según su modo de terminación:}
 
 \begin{lstlisting}
 type ok_state = s : state { s._2 == Ok }
@@ -2870,7 +2869,7 @@ Para justificar una transición de \lstinline|Choice p q| alcanza con proporcion
 Por último,
 la estrella de Kleene representa una cantidad finita y no determinista de ejecuciones.
 El caso base realiza cero iteraciones,
-mientras que el caso inductivo agrega una nueva ejecución \lstinline|p| a una repetición previa:
+mientras que el caso inductivo agrega una nueva ejecución de \lstinline|p| a una repetición previa:
 
 \begin{lstlisting}
 | R_Kleene0 : #p : stmt -> #s : ok_state ->
@@ -2971,6 +2970,7 @@ La regla \lstinline|I_Nondet| usa una construcción similar.
 En este caso,
 para cada estado final se exige la existencia de algún valor anterior de \lstinline|x| 
 que permita reconstruir un estado inicial que satisfaga la presunción.
+Se representa mediante:
 
 \begin{lstlisting}
 | I_Nondet : #x : var -> #pre : cond ->
@@ -3055,7 +3055,7 @@ para cada natural \lstinline|n|,
 proporciona una derivación de la tripleta correspondiente.
 A partir de esta familia,
 las definiciones auxiliares \lstinline|kleene_pre| y \lstinline|kleene_post| expresan las aserciones de la conclusión:
-la primer corresponde a cero iteraciones y la segunda utiliza un cuantificador existencial sobre el número de iteraciones.
+la primera corresponde a cero iteraciones y la segunda utiliza un cuantificador existencial sobre el número de iteraciones.
 En ambas,
 el uso de \lstinline|is_ok| restringe los estados a aquellos con terminación normal.}
 %\guido{Acá parece que la estas explicando desde cero, pero ya lo explicamos (mas o menos)
@@ -3112,7 +3112,7 @@ El último paso para completar la formalización de la IL es demostrar que el si
 En el marco teórico,
 esto se vio en el Teorema~\ref{teo:sound-il}.
 Sin embargo,
-enunciamos otra vez el teorema en base a nuestra formalización.
+enunciamos otra vez el teorema sobre la base de nuestra formalización.
 
 \begin{teorema}[Soundness de la IL formalizada]
 Para todo comando \lstinline|p| y aserciones \lstinline|pre| y \lstinline|post|,
@@ -3168,7 +3168,7 @@ La cláusula \lstinline|decreases pf| indica que cada llamada recursiva se reali
 detallamos algunos casos de la prueba.}
 
 Los casos de \lstinline|I_Skip|,
-\lstinline|I_Error| e \lstinline|I_Assume| permiten reconstruir la ejecución de forma directa.
+\lstinline|I_Error| e \lstinline|I_Assume| permiten reconstruir la ejecución de forma directa:
 
 \begin{lstlisting}
 | I_Skip _ ->
@@ -3229,7 +3229,7 @@ que permite ejecutar estas operaciones no constructivas.}
 %con Tot/GTot}
 
 \changed{Con el valor elegido se reconstruye el \emph{store} inicial
-mediante \lstinline|override st1 x x_init| y se define \lstinline|s0 = (st0, Ok).|}
+mediante \lstinline|override st1 x x_init| y se define \lstinline|s0 = (st0, Ok):|}
 %\guido{Dado esto, construimos $s_1 = s_0 [ x \leftarrow xinit ] $,
 %o algo asi}
 
@@ -3256,7 +3256,7 @@ por lo que se puede utilizar directamente la derivación obtenida.
 
 El caso \lstinline|I_Nondet| sigue el mismo patrón.
 La postcondición proporciona un valor histórico que permite reconstruir un estado inicial,
-mientras que la ejecución se instancia con el valor final de \lstinline|x|.
+mientras que la ejecución se instancia con el valor final de \lstinline|x|:
 
 \begin{lstlisting}
 | I_Nondet #x #pre ->
@@ -3275,7 +3275,7 @@ La demostración para la secuenciación de comandos \lstinline|I_Seq| ilustra c�
 La regla deductiva afirma que el resultado de \lstinline|Seq p q|
 puede derivar de la ejecución de \lstinline|q| o de un fallo prematuro en \lstinline|p|.
 Por lo tanto,
-la función \lstinline|soundness| debe inspeccionar el estado final \lstinline|s1| para decidir qué fragmento de la semántica reconstruir.
+la función \lstinline|soundness| debe inspeccionar el estado final \lstinline|s1| para decidir qué fragmento de la semántica reconstruir:
 
 \begin{lstlisting}
 | I_Seq #p #q #pre #mid #post pf_p pf_q ->
@@ -3312,7 +3312,7 @@ Cuando esto ocurre,
 la prueba utiliza la ejecución de ambos comandos,
 pues basta con justificar una ejecución que llegue a ese estado.}
 
-Los casos de elección no determinista aplican la hipótesis inductiva solo en la rama seleccionada por la derivación.
+Los casos de elección no determinista aplican la hipótesis inductiva solo en la rama seleccionada por la derivación:
 
 \begin{lstlisting}
 | I_ChoiceL #p #q #pre #post pf_p ->
@@ -3336,7 +3336,8 @@ recursiva sobre el número de iteraciones.
 \changed{Esta recibe un natural \lstinline|m| y un estado que satisface \lstinline|variant m|,
 y obtiene un estado inicial que satisface \lstinline|variant 0|,
 junto con una ejecución de \lstinline|Kleene p| hasta el estado recibido.
-Ambos estados tienen modo \lstinline|Ok|.}
+Ambos estados tienen modo \lstinline|Ok|.
+Este caso se define de la siguiente manera:}
 
 \begin{lstlisting}
 | I_KleeneVariant #variant #p pf_var ->
@@ -3479,7 +3480,7 @@ los accesos exitosos a memoria exigen direcciones no nulas.
 
 La Definición~\ref{def:heap_ext} presentó los \emph{heaps} de la ISL como funciones parciales
 cuyo codominio incluye tanto valores como una marca negativa $\perp$.
-Para modelar esta parcialidad en \fstar{} se decidió codificar como una función total hacia un nuevo tipo de dato \lstinline|cell|,
+Para modelar esta parcialidad en \fstar{} se decidió codificar el \emph{heap} como una función total hacia un nuevo tipo de dato \lstinline|cell|,
 el cual explicita las tres situaciones posibles de una celda:
 
 \begin{lstlisting}
@@ -3547,7 +3548,8 @@ mientras que \lstinline|Empty| expresa información conocida sobre una ubicació
 el lenguaje conserva los comandos del \autoref{cap:formalizacion-il} e incorpora cuatro operaciones de memoria:
 \lstinline|Alloc| para reservar una celda,
 \lstinline|Free| para liberarla,
-\lstinline|Load| para leer su contenido y \lstinline|Store| para modificarlo.}
+\lstinline|Load| para leer su contenido y \lstinline|Store| para modificarlo.
+La extensión se representa mediante:}
 
 \begin{lstlisting}
 type stmt =
@@ -3678,7 +3680,7 @@ Esta definición constituye la traducción directa de la Definición~\ref{def:se
 Para que un estado satisfaga \lstinline|p ** q|,
 deben construirse dos \emph{heaps} disjuntos cuya unión sea el \emph{heap} original,
 de forma que \lstinline|p| se satisfaga sobre el primer fragmento y \lstinline|q| sobre el segundo.
-Ambas aserciones se evalúan con el mismo \emph{store} y el mismo modo de terminación,
+Ambas aserciones se evalúan con el mismo \emph{store} y el mismo modo de terminación;
 solo se divide el \emph{heap}.
 
 \changed{A partir de la conjunción separadora,
@@ -3775,7 +3777,7 @@ La liberación exitosa se formaliza mediante:
   runsto (Free e) s (s._1, override s._2 l Empty, s._3)
 \end{lstlisting}
 
-La expresión debe evaluar una dirección no nula que contenga una celda activa.
+La expresión debe evaluarse a una dirección no nula que contenga una celda activa.
 La ejecución no elimina la ubicación del \emph{heap},
 sino que transforma \lstinline|Full v| en \lstinline|Empty|.
 De esta manera,
@@ -3785,7 +3787,7 @@ Si la dirección
 \changed{está marcada como \lstinline|Empty|,
 la liberación termina con error.
 Este caso permite representar un \emph{double free} cuando la celda ya había sido liberada.}
-El \emph{heap} se conserva y el modo de terminación cambia a \texttt{Er}.
+El \emph{heap} se conserva y el modo de terminación cambia a \texttt{Er}:
 
 \begin{lstlisting}
 | R_FreeEr : s : ok_state -> e : expr ->
@@ -3948,7 +3950,8 @@ al restaurar la celda como \lstinline|Full v|,
 se obtenga un estado que satisface \lstinline|pre|.
 Así se justifica que cada estado final descrito proviene de un estado inicial en el que la celda estaba asignada,
 sin exigir una forma particular para \lstinline|pre|.
-El cuantificador existencial permite que el valor anterior de la celda sea distinto para cada estado final.}
+El cuantificador existencial permite que el valor anterior de la celda sea distinto para cada estado final.
+La regla se representa mediante:}
 
 \begin{lstlisting}
 | ISL_Free : #pre : cond -> e : expr ->
@@ -3975,7 +3978,8 @@ El cuantificador existencial permite que el valor anterior de la celda sea disti
 \changed{La regla \lstinline|ISL_FreeEr| permite justificar un resultado de error al intentar liberar una ubicación marcada como \lstinline|Empty|.
 En particular,
 permite representar errores temporales como el \emph{double free},
-cuando esa marca proviene de una liberación anterior.}
+cuando esa marca proviene de una liberación anterior.
+Este caso se representa mediante:}
 %\guido{la semantica capta el error, ok, pero estamos
 %hablando de la regla de la logica?}
 
@@ -4256,7 +4260,7 @@ expresamos esta existencia sobre un par de \emph{heaps} y seleccionamos un testi
 Esta elección se realiza en el contexto fantasma de la prueba.}
 
 Una vez aislado el fragmento local del \emph{heap},
-aplicamos la hipótesis inductiva de nuestro teorema.
+aplicamos la hipótesis inductiva de nuestro teorema:
 
 \begin{lstlisting}
   let (|s0_local, r_local|) =
@@ -4538,7 +4542,7 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
   : GTot (runsto p s0 s1) (decreases f)
 \end{lstlisting}
 
-La función establece
+La función establece la siguiente implicación:
 \begin{center}
 \lstinline|footprint p s0 s1| $\implies$ \lstinline|runsto p s0 s1|.
 \end{center}
@@ -4624,7 +4628,7 @@ Esta propiedad se mecaniza con:
 let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) (decreases r)
 \end{lstlisting}
-La función establece,
+La función establece la siguiente implicación:
 \begin{center}
 \lstinline|runsto p s0 s1| $\implies$ \lstinline|framed_footprint p s0 s1|.
 \end{center}
@@ -4694,7 +4698,7 @@ let map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
     let fp' = transform fp in
     FF_Frame q s0_local s1_local h_fr fp' d0 d1
 \end{lstlisting}
-La función no agrega ni elimina marcos,
+La función no agrega ni elimina marcos;
 solo transforma la huella local ubicada dentro de la estructura.
 
 Si el primer comando de una secuencia termina en error,
@@ -4771,7 +4775,7 @@ type cross_split_witness (h1 h2 h3 h4 : heap) = {
 \end{lstlisting}
 
 En la composición secuencial,
-se tiene \lstinline|dp1| y \lstinline|dq0|,
+se tienen \lstinline|dp1| y \lstinline|dq0|,
 que justifican, respectivamente,
 \lstinline|p1._2 >< fr_p| y \lstinline|q0._2 >< fr_q|.
 Con estas pruebas,
@@ -5122,7 +5126,7 @@ mientras que el no determinismo permite seleccionar la ejecución de reasignaci�
 A lo largo del desarrollo de software,
 la presencia de bucles combinados con comportamientos no deterministas supone una barrera para las técnicas de verificación tradicionales.
 Para comprender los límites prácticos de dichas metodologías frente a la subaproximación,
-evaluaremos un programa semi-realista con una alta cantidad de iteraciones y decisiones no deterministas.
+evaluaremos un programa semirrealista con una alta cantidad de iteraciones y decisiones no deterministas.
 El caso busca mostrar dos propiedades del sistema deductivo:
 \begin{enumerate}
   \item una derivación subaproximada puede seleccionar un único camino entre varias alternativas (en la \autoref{sec:pushback} se vio en menor magnitud);
@@ -5140,7 +5144,7 @@ while (i < n){
 }
 assert  (j != n);
 \end{lstlisting}
-El bucle ejecuta un millón de veces.
+El bucle se ejecuta un millón de veces.
 En cada iteración,
 \lstinline|i| se incrementa siempre,
 mientras que el incremento de \lstinline|j| depende de una decisión no determinista.
@@ -5212,8 +5216,8 @@ La rama izquierda representa el caso de \lstinline|j| y \lstinline|n| iguales,
 donde el \lstinline|Assume| permite continuar y luego \lstinline|Error| cambia el modo de terminación.
 La rama derecha representa el caso en que \lstinline|j| y \lstinline|n| son distintos.
 
-La variante construida para el camino seleccionado permite alcanzar el estado
-en el que tanto \lstinline|i| como \lstinline|j| como \lstinline|n| son iguales a un millón.
+La variante construida para el camino seleccionado permite alcanzar el estado en el que \lstinline|i|,
+\lstinline|j| y \lstinline|n| son iguales a un millón.
 Por lo tanto,
 la igualdad evaluada por el primer \lstinline|Assume| es verdadera.
 La derivación vuelve a usar \lstinline|ISL_ChoiceL| para seleccionar la rama que lleva a \lstinline|Error|.
@@ -5280,8 +5284,8 @@ modelamos esta estructura desarmándola en sus componentes de memoria fundamenta
 Un nodo ocupa dos ubicaciones de memoria adyacentes:
 \begin{enumerate}
   \item la dirección base \lstinline|curr_ptr|,
-  que almacena el valor numérico del nodo y
-  \item la dirección consecutiva \lstinline|curr_ptr + 1|,
+  que almacena el valor numérico del nodo;
+  \item y la dirección consecutiva \lstinline|curr_ptr + 1|,
   que almacena el puntero hacia el siguiente nodo de la estructura.
 \end{enumerate}
 
@@ -5289,7 +5293,7 @@ Para describir una lista con una longitud arbitraria se define el predicado \lst
 El caso de \lstinline|list_seg i j xs| describe un segmento de lista que empieza en \lstinline|i|,
 termina en \lstinline|j| y tiene la secuencia de valores \lstinline|xs|.
 El caso vacío representa un segmento sin nodos.
-El caso inductivo describe las dos celdas del primer nodo y el segmento restante con la conjunción separadora.
+El caso inductivo describe las dos celdas del primer nodo y el segmento restante con la conjunción separadora:
 
 \begin{lstlisting}
 let rec list_seg (i j : loc) (xs : list value) : Tot cond (decreases xs) =
@@ -5304,10 +5308,11 @@ La conjunción separadora garantiza que las celdas de nodos diferentes pertenezc
 
 A partir de esta representación,
 se define el predicado \lstinline|history|
-para relacionar la posición actual del puntero con el inicio de la lista,.
+para relacionar la posición actual del puntero con el inicio de la lista.
 Este predicado describe un recorrido de \lstinline|k| pasos desde \lstinline|start_ptr| hasta \lstinline|curr_ptr| sobre un mismo \emph{heap}.
 La lista de valores utilizada en su caso base se construye mediante \lstinline|ones n|,
 que contiene \lstinline|n| elementos iguales a \lstinline|Nat 1|.
+La aserción se define de la siguiente manera:
 
 \begin{lstlisting}
 let heap_only (hp : heap) : state = on var (fun _ -> Nat 0), hp, Ok
@@ -5438,15 +5443,15 @@ let variant (start_ptr : loc) (n : nat) (k : nat) : cond =
       s._1 "ptr" == Loc curr_ptr /\
       history start_ptr curr_ptr n k s._2
 \end{lstlisting}
-La incialización establece que \lstinline|sum| y \lstinline|len| valen cero y conserva el puntero y el \emph{heap} descritos por \lstinline|pre_init|.
+La inicialización establece que \lstinline|sum| y \lstinline|len| valen cero y conserva el puntero y el \emph{heap} descritos por \lstinline|pre_init|.
 Así se obtiene el caso \lstinline|k = 0| de la variante,
-como demustra \lstinline|proof_init|.
+como demuestra \lstinline|proof_init|.
 La condición \lstinline|s._1 "v" == Nat 1| se exige solo cuando \lstinline|k > 0|,
 porque \lstinline|v| recibe su valor durante la primera lectura del cuerpo.
 
 Para justificar el paso entre dos índices consecutivos de la variante,
-se contruye una derivación para cada instrucción del cuerpo.
-Las dos lecturas requieren acceder a una celda sin perder la informaci+on sobre el resto de la lista.
+se construye una derivación para cada instrucción del cuerpo.
+Las dos lecturas requieren acceder a una celda sin perder la información sobre el resto de la lista.
 Para ello se utiliza la derivación auxiliar \lstinline|framed_load|,
 que combina \lstinline|ISL_Load| con la Regla del Marco.
 Para construir el marco,
@@ -5647,21 +5652,25 @@ sin escribir manualmente una prueba distinta para cada nodo.
 
 \section{Resumen de los resultados}
 Los cuatro casos muestran distintas capacidades del núcleo lógico.
-El primero valida el mecanismo básico de \emph{heaps} negativos, mostrando que la liberación de una celda conserva la información necesaria para justificar un acceso posterior erróneo.
+El primero valida el mecanismo básico de \emph{heaps} negativos,
+mostrando que la liberación de una celda conserva la información necesaria para justificar un acceso posterior erróneo.
 
 El segundo muestra que esta información puede propagarse a través de una secuencia más compleja que involucra aliases y una llamada no determinista.
 La derivación selecciona el comportamiento de reasignación y conserva la dirección histórica que usa después el cliente.
 
 El tercer caso muestra que la subaproximación permite concentrarse en una única secuencia de decisiones.
-La regla de variante de Kleene permite expresar el efecto de una cantidad arbitraria de iteraciones con una familia de aserciones, sin materializar un árbol diferente para cada valor concreto.
+La regla de variante de Kleene permite expresar el efecto de una cantidad arbitraria de iteraciones con una familia de aserciones,
+sin materializar un árbol diferente para cada valor concreto.
 
 Finalmente,
 el recorrido de la lista enlazada combina el razonamiento paramétrico con predicados espaciales recursivos.
 El predicado \lstinline|history| relaciona las posiciones sucesivas del puntero,
 mientras que la Regla del Marco permite justificar las lecturas conservando la información sobre el resto de la lista.
 
-Esta evaluación no establece completitud respecto de todos los programas posibles, no mide el rendimiento de la verificación y no demuestra que las aserciones puedan sintetizarse automáticamente.
-Su alcance consiste en validar que las construcciones desarrolladas en el \autoref{cap:formalizacion-isl} puedan usarse para demostrar la alcanzabilidad de errores no triviales.
+Esta evaluación no establece completitud respecto de todos los programas posibles,
+no mide el rendimiento de la verificación y no demuestra que las aserciones puedan sintetizarse automáticamente.
+Su alcance consiste en validar que las construcciones desarrolladas en el \autoref{cap:formalizacion-isl}
+puedan usarse para demostrar la alcanzabilidad de errores no triviales.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 7 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5676,32 +5685,49 @@ Su alcance consiste en validar que las construcciones desarrolladas en el \autor
 
 \section{Resumen de aportes}
 \label{sec:aportes}
-En esta tesina se mecanizaron la Lógica de Incorrectitud y su extensión con razonamiento espacial, la Lógica de Incorrectitud de Separación, utilizando el asistente de pruebas \fstar{}.
-El desarrollo permite representar programas, ejecuciones y derivaciones deductivas dentro del sistema de tipos, y verificar formalmente que los resultados obtenidos mediante las reglas de ambas lógicas se encuentran respaldados por la semántica operacional.
+En esta tesina se mecanizaron la Lógica de Incorrectitud y su extensión con razonamiento espacial,
+la Lógica de Incorrectitud de Separación, utilizando el asistente de pruebas \fstar{}.
+El desarrollo permite representar programas,
+ejecuciones y derivaciones deductivas dentro del sistema de tipos,
+y verificar formalmente que los resultados obtenidos mediante las reglas de ambas lógicas se encuentran respaldados por la semántica operacional.
 
 En una primera etapa se formalizó la IL sobre un lenguaje imperativo simplificado.
-Se definió una semántica operacional con el tipo inductivo \texttt{runsto} y se representaron las reglas deductivas mediante el tipo inductivo indexado \texttt{il\_triple}.
-De esta manera, la semántica del lenguaje y la derivabilidad dentro de la lógica quedaron expresadas como relaciones diferentes.
+Se definió una semántica operacional con el tipo inductivo \lstinline|runsto| y se representaron las reglas deductivas
+mediante el tipo inductivo indexado \lstinline|il_triple|.
+De esta manera,
+la semántica del lenguaje y la derivabilidad dentro de la lógica quedaron expresadas como relaciones diferentes.
 Sobre estas definiciones se mecanizó el Teorema de Soundness de la IL.
-Este resultado establece que, para cada estado perteneciente a la postcondición de una tripleta derivable, existe un estado inicial que satisface la presunción y una ejecución operacional del comando que conecta los dos estados.
+Este resultado establece que,
+para cada estado perteneciente a la postcondición de una tripleta derivable,
+existe un estado inicial que satisface la presunción y una ejecución operacional del comando que conecta los dos estados.
 
-La formalización de la IL incluye las reglas correspondientes a asignación, secuencia, elección no determinista, filtrado mediante \lstinline|Assume|, error e iteración.
-También se representó la regla de variante de Kleene, que permite razonar sobre una cantidad finita pero arbitraria de iteraciones con una familia de aserciones indexada por números naturales.
+La formalización de la IL incluye las reglas correspondientes a asignación,
+secuencia, elección no determinista, filtrado mediante \lstinline|Assume|, error e iteración.
+También se representó la regla de variante de Kleene,
+que permite razonar sobre una cantidad finita pero arbitraria de iteraciones con una familia de aserciones indexada por números naturales.
 
 En una segunda etapa se extendió el desarrollo para formalizar la ISL.
-Para ello se incorporó un \emph{heap} como componente independiente del estado y se definieron tres clases de celdas, \texttt{Full}, \texttt{Empty} y \texttt{Unknown}.
-Las celdas \texttt{Full} representan ubicaciones activas, las celdas \texttt{Empty} representan ubicaciones conocidas como no asignadas,
+Para ello se incorporó un \emph{heap} como componente independiente del estado y se definieron tres clases de celdas,
+\lstinline|Full|, \lstinline|Empty| y \lstinline|Unknown|.
+Las celdas \lstinline|Full| representan ubicaciones activas,
+las celdas \lstinline|Empty| representan ubicaciones conocidas como no asignadas,
 incluidas las que fueron liberadas,
-y \texttt{Unknown} indica que una ubicación no forma parte del fragmento local en el que se está trabajando.
+y \lstinline|Unknown| indica que una ubicación no forma parte del fragmento local en el que se está trabajando.
 Esta distinción permite conservar información sobre las ubicaciones liberadas y utilizarla para después justificar accesos erróneos.
-Sobre este modelo se definieron la aserciones espaciales \texttt{emp}, \texttt{points\_to} y \texttt{points\_to\_empty}, junto con la conjunción separadora.
-También se extendieron la sintaxis y la semántica operacional con instrucciones de reserva, lectura, escritura y liberación de memoria.
+Sobre este modelo se definieron las aserciones espaciales \lstinline|emp|,
+\lstinline|points_to|, \lstinline|points_to_flex| y \lstinline|points_to_empty|,
+junto con la conjunción separadora.
+También se extendieron la sintaxis y la semántica operacional con instrucciones de reserva,
+lectura, escritura y liberación de memoria.
 
-Las reglas deductivas de la ISL se representaron con el tipo inductivo \texttt{isl\_triple}.
-Además de las reglas para las operaciones primitivas, se formalizó la Regla del Marco, con la condición de independencia entre la aserción usada como marco y las variables modificadas por el comando.
+Las reglas deductivas de la ISL se representaron con el tipo inductivo \lstinline|isl_triple|.
+Además de las reglas para las operaciones primitivas,
+se formalizó la Regla del Marco,
+con la condición de independencia entre la aserción usada como marco y las variables modificadas por el comando.
 
 Sobre esta formalización se mecanizó el Teorema de Soundness de la ISL.
-Al igual que en el caso anterior, el resultado relaciona cada estado final descrito por su derivación con un estado inicial y una ejecución operacional concreta.
+Al igual que en el caso anterior,
+el resultado relaciona cada estado final descrito por su derivación con un estado inicial y una ejecución operacional concreta.
 La demostración del caso de la Regla del Marco requirió probar que una ejecución local puede extenderse con un \emph{heap} disjunto que no es modificado.
 
 También se formalizó una relación inductiva denominada \lstinline|footprint|,
@@ -5715,103 +5741,155 @@ Sobre estas relaciones se demostró:
 La implicación de izquierda a derecha establece que toda ejecución operacional puede descomponerse en una huella local y un marco que no es modificado.
 El otro lado demuestra que toda huella extendida con un marco compatible constituye una ejecución operacional válida.
 
-Finalmente, la formalización fue evaluada con cuatro casos de estudio.
-Se construyeron derivaciones para un error \emph{use after free}, un puntero colgante producido por una reasignación no determinista, una ejecución con una gran cantidad de iteraciones y decisiones no deterministas, y el recorrido de una lista enlazada.
+Finalmente,
+la formalización fue evaluada con cuatro casos de estudio.
+Se construyeron derivaciones para un error \emph{use after free},
+un puntero colgante producido por una reasignación no determinista,
+una ejecución con una gran cantidad de iteraciones y decisiones no deterministas,
+y el recorrido de una lista enlazada.
 
 El desarrollo obtenido constituye un núcleo lógico mecanizado y la formalización garantiza el respaldo operacional de las derivaciones construidas.
 
 \section{Trabajo relacionado}
 \label{sec:relacionado}
 Existen distintos trabajos relacionados con esta tesina.
-Los presentamos a continuación, comparándolos con el desarrollo realizado en esta tesina.
+Los presentamos a continuación,
+comparándolos con el desarrollo realizado en esta tesina.
 
 \subsection*{Mecanización de la HL para código máquina}
 \citet{mchoare} presentan un framework mecanizado de estilo Hoare para razonar sobre programas escritos en código máquina.
-La lógica se construye sobre una semántica operacional que representa características propias de máquinas reales, como la memoria finita, la coexistencia de código y datos en un mismo espacio de direcciones, los registros de estado y el riesgo de modificar registros como el contador de programa, el puntero de pila y el registro de retorno.
+La lógica se construye sobre una semántica operacional que representa características propias de máquinas reales,
+como la memoria finita,
+la coexistencia de código y datos en un mismo espacio de direcciones,
+los registros de estado y el riesgo de modificar registros como el contador de programa,
+el puntero de pila y el registro de retorno.
 El desarrollo fue formalizado en lógica de orden superior y mecanizado en HOL4~\citep{hol4}.
 
-El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales y de uso de recursos directamente sobre programas de bajo nivel.
-Aunque el modelo conserva detalles de la máquina, las especificaciones se expresan con una especificación flexible del estado inspirada en el razonamiento local de la SL.
+El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales
+y de uso de recursos directamente sobre programas de bajo nivel.
+Aunque el modelo conserva detalles de la máquina,
+las especificaciones se expresan con una especificación flexible del estado inspirada en el razonamiento local de la SL.
 
-El uso de una semántica operacional explícita y de un asistente de pruebas para justificar las reglas de razonamiento es un enfoque que comparte ese trabajo con la tesina actual.
-En los dos casos, las propiedades del sistema lógico no dependen solo de una argumentación informal, sino que se encuentran respaldadas por una mecanización.
+El uso de una semántica operacional explícita y de un asistente de pruebas para justificar las reglas de razonamiento
+es un enfoque que comparte ese trabajo con la tesina actual.
+En los dos casos,
+las propiedades del sistema lógico no dependen solo de una argumentación informal,
+sino que se encuentran respaldadas por una mecanización.
 
 La diferencia principal se encuentra en la interpretación de las tripletas.
 El trabajo de Myreen y Gordon se orienta al razonamiento de correctitud.
-En esta tesina, en cambio, las tripletas de IL e ISL tienen una interpretación subaproximada y se usan para demostrar estados descritos por la postcondición son alcanzables.
+En esta tesina, en cambio,
+las tripletas de IL e ISL tienen una interpretación subaproximada y se usan para demostrar que los estados descritos por la postcondición son alcanzables.
 
 También difiere el nivel de abstracción.
 Myreen y Gordon trabajan directamente con código máquina y tienen que representar varios detalles de la arquitectura.
-La presente formalización usa un lenguaje imperativo reducido, lo que permite concentrar el desarrollo en la estructura de la IL y de la ISL y las demostraciones de sus propiedades metateóricas.
+La presente formalización usa un lenguaje imperativo reducido,
+lo que permite concentrar el desarrollo en la estructura de la IL y de la ISL y las demostraciones de sus propiedades metateóricas.
 
 \subsection*{SL para la semántica de paso pequeño de Cminor}
-\citet{cminor} presentan una formalización de la SL para Cminor, un lenguaje imperativo intermedio usado dentro de la infraestructura de CompCert.
-El trabajo redefine Cminor para facilitar el razonamiento con la HL y da una semántica operacional de paso pequeño, en lugar de solo usar la semántica de paso grande del compilador.
+\citet{cminor} presentan una formalización de la SL para Cminor,
+un lenguaje imperativo intermedio usado dentro de la infraestructura de CompCert.
+El trabajo redefine Cminor para facilitar el razonamiento con la HL y da una semántica operacional de paso pequeño,
+en lugar de solo usar la semántica de paso grande del compilador.
 Esta elección se encuentra motivada por la posibilidad de extender luego el lenguaje con concurrencia.
 
 El desarrollo incluye una demostración mecanizada en Coq~\citep{coq} de la solidez de la SL respecto de esa semántica.
 Los autores presentan el resultado como la primera demostración mecanizada de una SL respecto de una semántica de paso pequeño.
 
 Este trabajo es cercano a esta tesina por su metodología.
-En los dos desarrollos se define una semántica operacional, se formaliza un sistema de razonamiento espacial y se demuestra que las reglas de la lógica son sólidas respecto de dicha semántica.
-También comparten el uso de una representación explícita del \emph{heap}, aserciones espaciales y razonamiento local con marcos.
+En los dos desarrollos se define una semántica operacional,
+se formaliza un sistema de razonamiento espacial y se demuestra que las reglas de la lógica son sólidas respecto de dicha semántica.
+También comparten el uso de una representación explícita del \emph{heap},
+aserciones espaciales y razonamiento local con marcos.
 
-Sin embargo, las lógicas formalizadas tienen interpretaciones diferentes.
+Sin embargo,
+las lógicas formalizadas tienen interpretaciones diferentes.
 Appel y Blazy usan la SL para demostrar propiedades de correctitud y seguridad de programas Cminor.
-Esta tesina formaliza la ISL, cuyo objetivo es demostrar la existencia de ejecuciones que alcanzan determinadas postcondiciones, incluidos estados de error.
+Esta tesina formaliza la ISL,
+cuyo objetivo es demostrar la existencia de ejecuciones que alcanzan determinadas postcondiciones, incluidos estados de error.
 Esta diferencia se refleja en los teoremas de solidez.
-En el razonamiento de correctitud, la prueba debe garantizar que toda ejecución respete la postcondición.
-En la interpretación subaproximada, debe demostrarse que cada estado descrito por la postcondición tiene al menos una ejecución que lo alcanza desde algún estado que satisface la presunción.
+En el razonamiento de correctitud,
+la prueba debe garantizar que toda ejecución respete la postcondición.
+En la interpretación subaproximada,
+debe demostrarse que cada estado descrito por la postcondición tiene al menos una ejecución que lo alcanza desde algún estado que satisface la presunción.
 
 Otra diferencia es la incorporación de \emph{heaps} negativos.
-La formalización desarrollada en esta tesina distingue entre celdas activas, celdas liberadas y direcciones que no pertenecen al fragmento local.
-Esta representación permite justificar accesos erróneos a memoria liberada, un fin diferente al perseguido por la SL de Cminor.
+La formalización desarrollada en esta tesina distingue entre celdas activas,
+celdas liberadas y direcciones que no pertenecen al fragmento local.
+Esta representación permite justificar accesos erróneos a memoria liberada,
+un fin diferente al perseguido por la SL de Cminor.
 
 \subsection*{IsaBIL: verificación de correctitud e incorrectitud de binarios}
-\citet{isabil} presentan IsaBIL, un framework desarrollado en Isabelle/HOL para verificar propiedades de programas binarios.
-La herramienta usa \emph{Binary Analysis Platform} (BAP)~\citep{bap} para traducir los binarios al lenguaje intermedio BIL y genera un entorno dentro de Isabelle/HOL en el que pueden construirse pruebas basadas tanto en HL como IL.
+\citet{isabil} presentan IsaBIL,
+un framework desarrollado en Isabelle/HOL para verificar propiedades de programas binarios.
+La herramienta usa \emph{Binary Analysis Platform} (BAP)~\citep{bap} para traducir los binarios al lenguaje intermedio BIL
+y genera un entorno dentro de Isabelle/HOL en el que pueden construirse pruebas basadas tanto en HL como IL.
 IsaBIL incluye una formalización de la sintaxis y la semántica operacional de BIL.
-Las lógicas de correctitud e incorrectitud se definen de forma paramétrica respecto de una relación operacional, lo que permite reutilizar sus reglas con diferentes modelos de estado.
+Las lógicas de correctitud e incorrectitud se definen de forma paramétrica respecto de una relación operacional,
+lo que permite reutilizar sus reglas con diferentes modelos de estado.
 Esta estructura se implementa mediante los \emph{locales} de Isabelle/HOL,
 contextos parametrizados que agrupan hipótesis,
 definiciones y resultados reutilizables.
 
-Además, el framework incorpora mecanismos de automatización destinados a reducir el esfuerzo de prueba.
-Los autores aplican estas técnicas a distintos ejemplos y demuestran, con la IL, la presencia de vulnerabilidades de \emph{double free}, incluida una vulnerabilidad de la biblioteca cURL.
+Además,
+el framework incorpora mecanismos de automatización destinados a reducir el esfuerzo de prueba.
+Los autores aplican estas técnicas a distintos ejemplos y demuestran, con la IL,
+la presencia de vulnerabilidades de \emph{double free},
+incluida una vulnerabilidad de la biblioteca cURL.
 
-Este trabajo muy cercano a esta tesina en cuanto al sistema lógico estudiado.
-Los dos desarrollos mecanizan la IL, definen una semántica operacional y usan un asistente de pruebas para verificar que los razonamientos deductivos tienen respaldo semántico.
+Este trabajo es muy cercano a esta tesina en cuanto al sistema lógico estudiado.
+Los dos desarrollos mecanizan la IL,
+definen una semántica operacional y usan un asistente de pruebas para verificar que los razonamientos deductivos tienen respaldo semántico.
 
 Su distinción está en el objetivo y nivel de abstracción.
-IsaBIL busca proporcionar un entorno semi-automatizado para verificar ejecuciones reales, incluso cuando no se tiene el código fuente.
-Por esa razón, tiene que representar instrucciones, registros, palabras de máquina, saltos y detalles de arquitecturas concretas.
+IsaBIL busca proporcionar un entorno semiautomatizado para verificar ejecuciones reales,
+incluso cuando no se tiene el código fuente.
+Por esa razón, tiene que representar instrucciones,
+registros, palabras de máquina, saltos y detalles de arquitecturas concretas.
 Esta tesina usa un lenguaje más chico para estudiar directamente la estructura metateórica de la IL y la ISL.
 
 La diferencia más importante se encuentra en el razonamiento espacial.
 IsaBIL no incorpora actualmente la SL ni la ISL.
-Los autores explican que la memoria de BIL se representa con un historial de actualizaciones y que esa representación no es directamente compatible con la separación del \emph{heap}, por lo que dejan la ISL como una extensión futura.
+Los autores explican que la memoria de BIL se representa con un historial de actualizaciones y que esa representación
+no es directamente compatible con la separación del \emph{heap},
+por lo que dejan la ISL como una extensión futura.
 
 \subsection*{Automatización del razonamiento espacial con VeriFast}
-\citet{verifast} presentan VeriFast, una herramienta de verificación para programas C y Java basada en SL y ejecución simbólica.
-El usuario anota los programas con contratos, predicados espaciales y otros elementos auxiliares, mientras que la herramienta ejecuta simbólicamente los comandos y verifica las obligaciones de prueba.
-VeriFast admite programas secuenciales y concurrentes y puede utilizarse para demostrar la ausencia de diferentes errores de ejecución, como accesos inválidos a memoria, desreferencias de punteros nulos y accesos fuera de los límites de arreglos.
+\citet{verifast} presentan VeriFast,
+una herramienta de verificación para programas C y Java basada en SL y ejecución simbólica.
+El usuario anota los programas con contratos,
+predicados espaciales y otros elementos auxiliares,
+mientras que la herramienta ejecuta simbólicamente los comandos y verifica las obligaciones de prueba.
+VeriFast admite programas secuenciales y concurrentes y puede utilizarse para demostrar la ausencia de diferentes errores de ejecución,
+como accesos inválidos a memoria,
+desreferencias de punteros nulos y accesos fuera de los límites de arreglos.
 Su sistema de especificación permite representar permisos y predicados definidos por el usuario para describir estructuras dinámicas.
 
 Este trabajo se relaciona con esta tesina porque los dos usan aserciones espaciales y conjunción separadora para razonar sobre fragmentos disjuntos de memoria.
-En ambos casos, los predicados inductivos permiten representar estructuras enlazadas sin enumerar individualmente todas sus celdas.
+En ambos casos,
+los predicados inductivos permiten representar estructuras enlazadas sin enumerar individualmente todas sus celdas.
 
 La diferencia principal reside nuevamente en la interpretación lógica.
 VeriFast usa SL para verificar que los programas respeten sus contratos y no produzcan determinados errores.
-La ISL formalizada en esta tesina usa subaproximaciones para demostrar que existen ejecuciones que alcanzan estados determinados, incluidos estados que representan accesos inválidos.
+La ISL formalizada en esta tesina usa subaproximaciones para demostrar que existen ejecuciones que alcanzan estados determinados,
+incluidos estados que representan accesos inválidos.
 
 También difieren en el grado de automatización.
 VeriFast selecciona automáticamente los pasos de ejecución simbólica y aplica las reglas necesarias para procesar la estructura del programa.
-Aunque el usuario debe dar contratos, invariantes y predicados auxiliares, no construye manualmente un árbol de prueba para cada instrucción.
-En esta tesina, las derivaciones de \texttt{isl\_triple} se construyen de forma explícita con los constructores del tipo inductivo.
-\fstar{} y Z3 verifican los refinamientos y condiciones laterales, pero no eligen de manera autónoma los caminos de ejecución, las reglas ni las aserciones intermedias.
+Aunque el usuario debe dar contratos,
+invariantes y predicados auxiliares,
+no construye manualmente un árbol de prueba para cada instrucción.
+En esta tesina,
+las derivaciones de \lstinline|isl_triple| se construyen de forma explícita con los constructores del tipo inductivo.
+\fstar{} y Z3 verifican los refinamientos y condiciones laterales,
+pero no eligen de manera autónoma los caminos de ejecución,
+las reglas ni las aserciones intermedias.
 
-Por otra parte, VeriFast es una herramienta destinada a la verificación de programas concretos, mientras que el objetivo de la tesina es mecanizar el núcleo de una lógica y demostrar sus propiedades metateóricas.
-La comparación permite mostrar una posible línea de investigación futura, usar las definiciones y los teoremas mecanizados como fundamento de un procedimiento que automatice la construcción de derivaciones de ISL.
+Por otra parte,
+VeriFast es una herramienta destinada a la verificación de programas concretos,
+mientras que el objetivo de la tesina es mecanizar el núcleo de una lógica y demostrar sus propiedades metateóricas.
+La comparación permite mostrar una posible línea de investigación futura:
+usar las definiciones y los teoremas mecanizados como fundamento de un procedimiento que automatice la construcción de derivaciones de ISL.
 
 \subsection*{Mizzle: mecanización de una lógica de incorrectitud concurrente}
 \citet{mizzle} presentan Mizzle, una lógica de incorrectitud con separación para programas concurrentes escritos en OCaml 5.
@@ -5821,35 +5899,63 @@ sobre el framework Iris y cuenta con demostraciones de solidez y completitud.
 Mientras que la solidez garantiza que una derivación de Mizzle está respaldada por una ejecución real,
 la completitud establece que toda ejecución incorrecta considerada por el modelo puede representarse mediante una derivación de la lógica.
 
-Este trabajo es el más cercano a esta tesina porque los dos mecanizan razonamiento subaproximado junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
-Sin embargo, los dos desarrollos persiguen objetivos diferentes.
-Mizzle se enfoca en un lenguaje más expresivo, con funciones de orden superior y concurrencia, mientras que en esta tesina se usa un lenguaje imperativo simplificado para estudiar la estructura metateórica de la ISL.
-Por otro lado, Mizzle no incorpora liberación de memoria, mientras que la formalización desarrollada en esta tesina modela la liberación con \emph{heaps} negativos y usa esta información para demostrar errores de \emph{use after free} o \emph{double free}.
+Este trabajo es el más cercano a esta tesina porque los dos mecanizan razonamiento subaproximado
+junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
+Sin embargo,
+los dos desarrollos persiguen objetivos diferentes.
+Mizzle se enfoca en un lenguaje más expresivo,
+con funciones de orden superior y concurrencia,
+mientras que en esta tesina se usa un lenguaje imperativo simplificado para estudiar la estructura metateórica de la ISL.
+Por otro lado,
+Mizzle no incorpora liberación de memoria,
+mientras que la formalización desarrollada en esta tesina modela la liberación con \emph{heaps} negativos
+y usa esta información para demostrar errores de \emph{use after free} o \emph{double free}.
 
 Un aspecto interesante de Mizzle es su utilización como lenguaje de prueba para agentes basados en modelos de lenguaje.
 La propuesta consiste en no confiar en el razonamiento interno de un modelo de lenguaje de gran tamaño (LLM, por sus siglas en inglés)
-para decidir si un error es real, sino exigir que el modelo genere una demostración que pueda ser comprobada por Rocq.
-En su evaluación, los autores usan Claude Sonnet 5 junto con una guía de prueba, una descripción de la arquitectura del proyecto y una biblioteca de tácticas.
+para decidir si un error es real,
+sino exigir que el modelo genere una demostración que pueda ser comprobada por Rocq.
+En su evaluación,
+los autores usan Claude Sonnet 5 junto con una guía de prueba,
+una descripción de la arquitectura del proyecto y una biblioteca de tácticas.
 
-Motivados por esta propuesta, se realizó un experimento exploratorio para evaluar si un modelo de lenguaje podía usar la formalización desarrollada en esta tesina para verificar la presencia de errores en los programas.
-Para ello, en primer lugar se usó Claude Sonnet 5 para generar un programa en C que contuviera algún error de memoria.
-En el programa creado, hay una función \texttt{apply\_catchup\_bonus} que conserva en una variable \texttt{lowest} un puntero a un elemento del arreglo dinámico \texttt{q->items} y luego invoca \texttt{queue\_push}.
-Cuando la cola se llena, \texttt{queue\_push} ejecuta \texttt{realloc}.
-Si este último mueve el arreglo a una nueva ubicación, \texttt{lowest} queda apuntando a memoria liberada y la próxima escritura en \texttt{lowest->score} es un caso de \emph{use after free}.
+Motivados por esta propuesta,
+se realizó un experimento exploratorio para evaluar si un modelo de lenguaje podía usar la formalización desarrollada en esta tesina
+para verificar la presencia de errores en los programas.
+Para ello,
+en primer lugar se usó Claude Sonnet 5 para generar un programa en C que contuviera algún error de memoria.
+En el programa creado,
+hay una función \lstinline|apply_catchup_bonus| que conserva en una variable \lstinline|lowest|
+un puntero a un elemento del arreglo dinámico \lstinline|q->items| y luego invoca \lstinline|queue_push|.
+Cuando la cola se llena,
+\lstinline|queue_push| ejecuta \lstinline|realloc|.
+Si este último mueve el arreglo a una nueva ubicación,
+\lstinline|lowest| queda apuntando a memoria liberada y la próxima escritura en \lstinline|lowest->score| es un caso de \emph{use after free}.
 
-En segundo lugar, se le proporcionó a un agente basado en GPT-5.5 el repositorio que contenía la formalización desarrollada junto con sus casos de uso, y se le solicitó verificar el programa generado.
-El agente identificó el camino de ejecución que conduce al error y produjo un archivo de \fstar{}, donde abstrajo el efecto relevante de \texttt{realloc}.
-Construyó una derivación de la ISL usando las reglas de la formalización y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
+En segundo lugar,
+se le proporcionó a un agente basado en GPT-5.5 el repositorio que contenía la formalización desarrollada junto con sus casos de uso,
+y se le solicitó verificar el programa generado.
+El agente identificó el camino de ejecución que conduce al error y produjo un archivo de \fstar{},
+donde abstrajo el efecto relevante de \lstinline|realloc|.
+Construyó una derivación de la ISL usando las reglas de la formalización
+y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
 La demostración generada fue aceptada por \fstar{}.
 
 Este experimento es una prueba preliminar y no pretende evaluar la capacidad de los LLM para construir pruebas formales.
-Sin embargo, muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
+Sin embargo,
+muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático
+construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
 
 \subsection*{Resumen}
 La formalización propuesta en este trabajo se encuentra de alguna forma entre todos los desarrollos antes mencionados.
-Al igual que varios de los desarrollos anteriores, se concentra en dar una representación mecanizada de la semántica, las reglas lógicas y sus propiedades.
-Al igual que VeriFast, incorpora aserciones espaciales y predicados sobre memoria mutable.
-Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpretación subaproximada de la IL junto con el razonamiento local de la SL, incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos.
+Al igual que varios de los desarrollos anteriores,
+se concentra en dar una representación mecanizada de la semántica,
+las reglas lógicas y sus propiedades.
+Al igual que VeriFast,
+incorpora aserciones espaciales y predicados sobre memoria mutable.
+Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpretación subaproximada de la IL
+junto con el razonamiento local de la SL,
+incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos.
 
 El resultado no alcanza todavía el nivel de IsaBIL o VeriFast ni pretende analizar un lenguaje industrial.
 Su aporte consiste en dar un núcleo formal en el que las derivaciones de la IL e ISL son objetos explícitos y sus propiedades de solidez,
@@ -5860,17 +5966,27 @@ localidad y descomposición por huellas son verificadas dentro de \fstar{}.
 Detallamos a continuación algunas líneas de investigación que permitirían extender el desarrollo realizado.
 
 \subsection*{Automatización de las derivaciones}
-Actualmente, los caminos de ejecución, las aserciones intermedias y los constructores utilizados en los árboles de prueba son seleccionados manualmente.
-Una extensión consiste en desarrollar un procedimiento que recorra la sintaxis del programa y construya automáticamente derivaciones de \texttt{isl\_triple}.
-Este procedimiento podría calcular postcondiciones, seleccionar ramas de elección no determinista, descubrir caminos que llevan a errores y generar las obligaciones lógicas.
+Actualmente,
+los caminos de ejecución,
+las aserciones intermedias y los constructores utilizados en los árboles de prueba son seleccionados manualmente.
+Una extensión consiste en desarrollar un procedimiento que recorra la sintaxis del programa y construya automáticamente derivaciones de \lstinline|isl_triple|.
+Este procedimiento podría calcular postcondiciones,
+seleccionar ramas de elección no determinista,
+descubrir caminos que llevan a errores y generar las obligaciones lógicas.
 
-En el caso espacial, técnicas de bi-abducción \citep{biabd} podrían usarse para inferir los recursos requeridos por una operación y los marcos que deben conservarse.
+En el caso espacial,
+técnicas de bi-abducción \citep{biabd} podrían usarse para inferir los recursos requeridos por una operación y los marcos que deben conservarse.
 Esto permitiría aproximar la formalización a una herramienta de análisis estático sin abandonar las garantías mecanizadas del núcleo lógico.
 
 \subsection*{Extensión del lenguaje y del modelo de memoria}
-El lenguaje formalizado tiene las construcciones necesarias para estudiar las reglas centrales de la lógica, pero no incorpora llamadas recursivas, estructuras, arreglos ni aritmética general de punteros.
+El lenguaje formalizado tiene las construcciones necesarias para estudiar las reglas centrales de la lógica,
+pero no incorpora llamadas recursivas,
+estructuras,
+arreglos ni aritmética general de punteros.
 Agregar estas características permitiría representar programas más cercanos a lenguajes de uso real.
-También podría desarrollarse un modelo de memoria con bloques de distintos tamaños, direcciones interiores, alineamiento y una representación más detallada de los valores almacenados.
+También podría desarrollarse un modelo de memoria con bloques de distintos tamaños,
+direcciones interiores,
+alineamiento y una representación más detallada de los valores almacenados.
 
 Cada extensión requeriría agregar las reglas operacionales correspondientes y demostrar que estas nuevas reglas deductivas preservan el Teorema de Soundness.
 
@@ -5880,22 +5996,30 @@ Esta construcción se realiza en el contexto fantasma de la prueba,
 por lo que no constituye directamente un generador ejecutable de trazas.
 Una herramienta práctica podría complementar esta evidencia con un procedimiento que construya explícitamente los testigos y produzca una traza legible.
 
-La traza podría indicar las instrucciones ejecutadas, las ramas no deterministas seleccionadas, los valores relevantes del \emph{store} y las modificaciones realizadas sobre el \emph{heap}.
-De esta manera, la demostración formal podría usarse también para producir una explicación concreta del error.
+La traza podría indicar las instrucciones ejecutadas, las ramas no deterministas seleccionadas,
+los valores relevantes del \emph{store} y las modificaciones realizadas sobre el \emph{heap}.
+De esta manera,
+la demostración formal podría usarse también para producir una explicación concreta del error.
 
 \subsection*{Evaluación experimental}
 La evaluación realizada en esta tesina es cualitativa y se concentra en la expresividad de la formalización.
 Una implementación con más automatización permitiría estudiar experimentalmente su comportamiento.
 
-Podrían medirse los tiempos de verificación, el tamaño de las condiciones generadas, el consumo de memoria, la participación del solucionador SMT y la variación de los valores frente a programas de distintas dimensiones.
-También sería posible comparar diferentes estrategias de exploración y estudiar hasta qué punto la construcción de derivaciones subaproximadas permite controlar el crecimiento producido por las elecciones no deterministas y los bucles.
+Podrían medirse los tiempos de verificación,
+el tamaño de las condiciones generadas, el consumo de memoria,
+la participación del solucionador SMT y la variación de los valores frente a programas de distintas dimensiones.
+También sería posible comparar diferentes estrategias de exploración y estudiar hasta qué punto
+la construcción de derivaciones subaproximadas permite controlar el crecimiento producido por las elecciones no deterministas y los bucles.
 
 \subsection*{Concurrencia}
 Otra posible extensión es incorporar programas concurrentes.
-Esto requeriría incorporar construcciones de composición paralela y una semántica operacional que represente las posibles intercalaciones entre los pasos de los distintos hilos.
+Esto requeriría incorporar construcciones de composición paralela y una semántica operacional
+que represente las posibles intercalaciones entre los pasos de los distintos hilos.
 
-\citet{cisl} presentan la Lógica de Incorrectitud de Separación Concurrente (CISL), que extiende la ISL al razonamiento subaproximado sobre programas concurrentes.
-Mecanizar las propiedades de concurrencia en \fstar{} permitiría estudiar errores que no aparecen en programas secuenciales, como \emph{race conditions}, \emph{deadlocks} y fallas dependientes del orden de ejecución.
+\citet{cisl} presentan la Lógica de Incorrectitud de Separación Concurrente (CISL),
+que extiende la ISL al razonamiento subaproximado sobre programas concurrentes.
+Mecanizar las propiedades de concurrencia en \fstar{} permitiría estudiar errores que no aparecen en programas secuenciales,
+como \emph{race conditions}, \emph{deadlocks} y fallas dependientes del orden de ejecución.
 
 % \appendix
 % \label{sec:appendix}

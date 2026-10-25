@@ -234,7 +234,7 @@ se verifican programas ilustrativos que incluyen errores de memoria,
 elecciones no deterministas, bucles y estructuras enlazadas.
 Para estos programas se construyen derivaciones comprobadas por \fstar{} que actúan como certificados formales de error.
 Los teoremas de solidez garantizan que cada estado descrito por sus postcondiciones está respaldado
-por una ejecución del programa desde algún estado que satisface la precondición.
+por una ejecución del programa desde algún estado que satisface la aserción inicial.
 
 \section{Estructura de la tesina}
 \label{sec:estructura}
@@ -646,8 +646,8 @@ $$
 
 Estas definiciones explicitan los comportamientos relevantes para el razonamiento de la IL.
 La elección no determinista se interpreta mediante la unión de las relaciones de sus ramas,
-mientras que la composición secuencial distingue entre las ejecuciones que alcanzan normalmente el primer comando
-y aquellas que terminan con un error antes de ejecutar el segundo.
+mientras que la composición secuencial distingue entre las ejecuciones en las que el primer comando termina normalmente
+y aquellas en las que termina con un error antes de ejecutar el segundo.
 En este último caso,
 el error se propaga directamente al resultado de la secuencia.
 
@@ -675,8 +675,10 @@ Sobre esta semántica se definen las tripletas de la IL,
 que permiten especificar los estados iniciales y finales de una ejecución junto con su modo de terminación.
 Estas tienen la forma:
 $$\itriple{p}{C}{\varepsilon : q},$$
-donde $p$ es la precondición, $C$ es un comando, $\varepsilon$ es el modo de terminación considerado y
-$q$ es la postcondición.
+donde $p$ es la \emph{presunción},
+nombre utilizado en la IL para la aserción que ocupa el lugar de la precondición en la HL,
+$C$ es un comando,
+$\varepsilon$ es el modo de terminación considerado y $q$ es la postcondición.
 En la HL, el modo de terminación no aparece en la sintaxis de la tripleta,
 aunque interviene en su validez semántica.
 En cambio, en la IL aparece explícitamente,
@@ -701,7 +703,7 @@ ambas lógicas pueden coincidir cuando la postcondición es igual a la postimage
 \label{eje:comp-HL-IL0}
 Tomamos el mismo comando
 $$C \equiv x := x + 2$$
-y la misma precondición $p \equiv x > 0$ que en el Ejemplo~\ref{eje:sobreaprox}.
+y la misma aserción inicial $p \equiv x > 0$ que en el Ejemplo~\ref{eje:sobreaprox}.
 
 En este caso,
 $$\operatorname{post}_{ok}(C)(p) = \{\sigma \in \Sigma \mid \sigma(x) > 2\}.$$
@@ -728,7 +730,7 @@ pero no en la otra.
 \label{eje:comp-HL-IL}
 Consideremos nuevamente el comando
 $$C \equiv x := x + 2$$
-y la precondición $p \equiv x > 0$.
+y la aserción inicial $p \equiv x > 0$.
 
 En la IL, es válida, por ejemplo, la tripleta
 $$\itriple{x > 0}{C}{ok : x = 3},$$
@@ -752,12 +754,12 @@ no es válida como tripleta de IL.
 
 Esto se debe a que la postcondición $q \equiv x > 1$ incluye el estado final $x = 2$.
 Para alcanzar dicho estado mediante el comando $C$, la ejecución debería comenzar en un estado donde $x = 0$.
-Ese estado no es alcanzable desde ningún estado que satisfaga la precondición $x > 0$.
-Por lo tanto, no existe una ejecución que comience en un estado permitido y termine en otro donde $x = 2$.
+Por lo tanto,
+el estado final donde $x = 2$ no es alcanzable desde ningún estado que satisfaga la presunción $x > 0$.
 \end{ejemplo}
 
 Si se observa en términos de conjuntos,
-para un mismo comando $C$ y una misma precondición $p$,
+para un mismo comando $C$ y una misma aserción inicial $p$,
 si $q_{\mathrm{IL}}$ es una postcondición elegida como subaproximación de los resultados alcanzables y
 $q_{\mathrm{HL}}$ es una postcondición elegida como sobreaproximación,
 entonces se cumple
@@ -770,7 +772,7 @@ La IL requiere que la postcondición esté contenida en la postimagen,
 mientras que la HL requiere que la postimagen esté contenida en la postcondición.
 
 Los tres casos analizados se resumen en la \autoref{tab:comparacion-hl-il}.
-En todos ellos se considera el comando $C \equiv x := x + 2$ y la precondición $p \equiv x > 0$.
+En todos ellos se considera el comando $C \equiv x := x + 2$ y la aserción inicial $p \equiv x > 0$.
 
 \begin{table}[ht]
   \centering
@@ -779,7 +781,7 @@ En todos ellos se considera el comando $C \equiv x := x + 2$ y la precondición 
   \begin{tabular}{@{}lccccc@{}}
     \toprule
     Caso
-    & Precondición
+    & Aserción inicial
     & $post_{ok}(C)(p)$
     & Postcondición
     & HL
@@ -942,7 +944,7 @@ Finalmente, las reglas asociadas al operador de Kleene permiten razonar sobre re
 \end{figure}
 
 Las reglas de \textsc{Consecuencia} y \textsc{Disyunción} reflejan propiedades generales de la postimagen.
-La primera permite ampliar la precondición y restringir la postcondición de una tripleta ya derivada.
+La primera permite ampliar la presunción y restringir la postcondición de una tripleta ya derivada.
 La segunda combina derivaciones obtenidas a partir de distintos conjuntos de estados iniciales.
 Esta última regla se apoya en la preservación de uniones de la postimagen,
 establecida en el Lema~\ref{lem:prop-pi}.
@@ -950,11 +952,11 @@ La interpretación particular de la Regla de Consecuencia en el contexto subapro
 
 La regla \textsc{Skip} expresa que el comando \texttt{skip} termina normalmente y preserva la aserción inicial.
 Por el contrario, la regla \textsc{Error} expresa que el comando \texttt{error} termina en el modo $er$
-y conserva el estado descrito por la precondición.
+y conserva el estado descrito por la presunción.
 
 Para el caso de secuenciación hay dos reglas.
 La primera regla (\textsc{Secuencia (normal)}) contempla el caso en que el
-primer comando termina normalmente y su postcondición se usa como precondición
+primer comando termina normalmente y su postcondición se usa como presunción
 del segundo comando.
 En este caso, el modo de terminación final puede ser $ok$ o $er$.
 %
@@ -976,7 +978,7 @@ evitando perder información al sobreescribir la variable.
 La variable auxiliar $x'$ se elige fresca,
 de modo que no aparezca en la aserción $p$ ni en la expresión $e$;
 las sustituciones se realizan evitando la captura de variables.
-Por ejemplo, para la asignación $x := x + 2$ y la precondición $x > 0$,
+Por ejemplo, para la asignación $x := x + 2$ y la presunción $x > 0$,
 la regla permite obtener la postcondición
 $$\exists x'. \; x' > 0 \land x = x' + 2,$$
 que es equivalente a $x > 2$.
@@ -1035,8 +1037,8 @@ pero que no satisfacen $q_2$.
 Por lo tanto, algunos de los estados incorporados podrían ser inalcanzables.
 
 La Regla de Consecuencia de la IL produce el efecto contrario:
-permite fortalecer la postcondición y conservar solo una parte de los estados alcanzables.
-Esto hace posible conservar un subconjunto de los resultados alcanzables y concentrarse en los comportamientos que se desean certificar.
+permite fortalecer la postcondición y conservar solo una parte de los estados alcanzables,
+concentrándose en los comportamientos que se desean certificar.
 \begin{mathpar}
 \inferrule []
   {p \implies p' \\ \vdash_{\mathrm{IL}} \itriple{p}{C}{\varepsilon : q} \\ q' \implies q}
@@ -1048,7 +1050,7 @@ las dos implicaciones que acompañan la regla equivalen a $p \subseteq p'$ y $q'
 Por lo tanto, la regla permite ampliar el conjunto de estados iniciales y restringir el conjunto de estados finales.
 
 La dirección de estas inclusiones puede justificarse utilizando las definiciones anteriores y el Lema~\ref{lem:prop-pi}.
-Este lema establece que, si se amplía la precondición,
+Este lema establece que, si se amplía la presunción,
 también puede ampliarse el conjunto de estados finales alcanzables:
 $$p \subseteq p' \implies post_\varepsilon(C)(p) \subseteq post_\varepsilon(C)(p').$$
 En otras palabras,
@@ -1095,10 +1097,10 @@ Denotamos por $C$ al comando representado por el siguiente fragmento:
       }
   }
   \end{verbatim}
-y la precondición inicial $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$.
+y la presunción $p = \{\sigma \in \Sigma \mid \sigma(z) = 11\}$.
 
 ¿La aserción $q = \{\sigma \in \Sigma \mid \sigma(z) = 42\}$
-es una subaproximación de los estados alcanzables por este código partiendo de la precondición?
+es una subaproximación de los estados alcanzables por este código partiendo de la presunción?
 
 Para que la tripleta $\itriple{p}{C}{ok : q}$ sea válida se exige:
 $$q \subseteq post_{ok}(C)(p).$$
@@ -1822,7 +1824,7 @@ De la SL toma la representación explícita del \emph{heap} y el razonamiento lo
 
 Las tripletas de la ISL conservan la forma presentada para la IL:
 $$\itriple{p}{C}{\varepsilon : q},$$
-pero ahora $p$ y $q$ son aserciones espaciales que describen conjuntos de estados compuestos por un \emph{store} y un \emph{heap}.
+pero ahora la presunción $p$ y la postcondición $q$ son aserciones espaciales que describen conjuntos de estados compuestos por un \emph{store} y un \emph{heap}.
 Su interpretación semántica sigue siendo subaproximada:
 todo estado descrito por $q$ debe estar respaldado por una ejecución real de $C$ desde algún estado que satisface $p$,
 con el modo de terminación $\varepsilon$.
@@ -1848,10 +1850,9 @@ liberar una celda elimina del \emph{heap} la dirección que ocupaba.
 De este modo,
 el \emph{heap} deja de tener información sobre el hecho de que esa dirección fue liberada.
 Esta pérdida de información resulta problemática para la interpretación subaproximada,
-porque puede permitir derivar una postcondición satisfacible a partir de una precondición que ningún estado satisface.
+porque puede permitir derivar una postcondición satisfacible a partir de una presunción que ningún estado satisface.
 
-Para estudiar cómo se combina la operación de liberación con la interpretación subaproximada,
-consideremos la siguiente tripleta sobre el modelo clásico de memoria:
+Consideremos la siguiente tripleta sobre el modelo clásico de memoria:
 $$\itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : \mathsf{emp} \land \mathsf{loc}(x)}.$$
 En este caso,
 $\mathsf{loc}(x)$ expresa que $x$ contiene una dirección de memoria,
@@ -1865,13 +1866,13 @@ Supongamos que aplicamos la Regla del Marco utilizando como marco otra celda des
   {\itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : (\mathsf{emp} \land \mathsf{loc}(x)) * x \mapsto -}}
 \end{mathpar}
 
-La precondición $x \mapsto - * x \mapsto -$ es insatisfacible porque exige que dos fragmentos disjuntos posean la misma dirección.
+La presunción $x \mapsto - * x \mapsto -$ es insatisfacible porque exige que dos fragmentos disjuntos posean la misma dirección.
 No existe ningún estado que la satisfaga.
 Sin embargo, la postcondición $(\mathsf{emp} \land \mathsf{loc}(x)) * x \mapsto -$ es satisfacible.
-Esto produciría una tripleta con una precondición inconsistente y una postcondición satisfacible.
+Esto produciría una tripleta con una presunción inconsistente y una postcondición satisfacible.
 Recordando la semántica de una tripleta de subaproximación,
 y dado que la postcondición no es vacía,
-esto indicaría que existe un estado que satisface la precondición,
+esto indicaría que existe un estado que satisface la presunción,
 lo cual es absurdo.
 
 El problema no pertenece a la IL en sí misma,
@@ -1926,14 +1927,14 @@ $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x 
 
 Al aplicar otra vez el marco $x \mapsto -$ obtenemos:
 $$\vdash_{\mathrm{ISL}} \itriple{x \mapsto - * x \mapsto -}{\texttt{free(}x\texttt{)}}{ok : x \nmapsto * \; x \mapsto -}$$
-La precondición sigue siendo inconsistente,
+La presunción sigue siendo inconsistente,
 pero ahora la postcondición también lo es,
-ya que la misma dirección pertenece a dos \emph{heaps} disjuntos,
+ya que exige que una misma dirección pertenezca a dos \emph{heaps} disjuntos,
 estando liberada en uno y activa en el otro.
 Por lo tanto, la conclusión es semánticamente válida:
 $$\varnothing \subseteq post_{ok}(\texttt{free(}x\texttt{)})(\varnothing).$$
 De este modo,
-los \emph{heaps} negativos impiden que la Regla del Marco transforme una precondición inconsistente en una postcondición satisfacible.
+los \emph{heaps} negativos impiden que la Regla del Marco transforme una presunción inconsistente en una postcondición satisfacible.
 
 El ejemplo anterior muestra cómo los \emph{heaps} negativos permiten conservar la inconsistencia al aplicar la Regla del Marco.
 Para continuar,
@@ -2012,7 +2013,7 @@ $$\models_\mathrm{ISL} \itriple{p}{C}{\varepsilon : q} \iff
 \forall \sigma_q \in q. \exists \sigma_p \in p. (\sigma_p, \sigma_q) \in [\![C]\!]_\varepsilon.$$
 Con esta definición,
 se exige que cada estado espacial descrito por la postcondición esté respaldado por una ejecución real del comando
-desde algún estado espacial que satisface la precondición.
+desde algún estado espacial que satisface la presunción.
 La condición se aplica tanto a las terminaciones normales como a las terminaciones erróneas,
 según el modo $\varepsilon$ considerado.
 
@@ -2146,7 +2147,7 @@ A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:regl
 \label{fig:reglas-isl}
 \end{figure}
 
-La regla \textsc{Exist} permite cuantificar existencialmente una variable en la precondición y la postcondición,
+La regla \textsc{Exist} permite cuantificar existencialmente una variable en la presunción y la postcondición,
 siempre que no aparezca en el comando.
 En esta regla denotamos por $\operatorname{fv}(C)$ las variables libres de $C$.
 Luego,
@@ -2163,7 +2164,7 @@ de liberado a activo.
 
 En ambas reglas,
 $x$ y $x'$ son variables distintas,
-y la precondición $x = x'$ establece que almacenan el mismo valor antes de ejecutar el comando.
+y la presunción $x = x'$ establece que almacenan el mismo valor antes de ejecutar el comando.
 La alocación modifica solo $x$,
 que pasa a contener la dirección reservada,
 mientras que $x'$ conserva el valor inicial de $x$.
@@ -2211,7 +2212,7 @@ no permite obtener mediante la Regla de Consecuencia la tripleta
 $$\itriple{e_1 \mapsto 7}{[e_1] := 5}{ok : e_1 \mapsto 5}.$$
 Esto se debe a que,
 en ISL,
-dicha regla permite debilitar la precondición,
+dicha regla permite debilitar la presunción,
 pero no fortalecerla.
 En cambio,
 una regla que admite una expresión arbitraria para el contenido inicial permite obtener esta última tripleta directamente,
@@ -2227,7 +2228,7 @@ la ISL utiliza la Regla del Marco heredada de la SL:
 \label{eq:frame-isl}
 \end{equation}
 
-La regla muestra que el mismo marco $r$ se agrega tanto a la precondición como a la postcondición,
+La regla muestra que el mismo marco $r$ se agrega tanto a la presunción como a la postcondición,
 mientras que el comando $C$ y el modo de terminación $\varepsilon$ se mantienen sin cambios.
 La regla conserva así la estructura de la Regla del Marco de la SL,
 pero ahora se aplica dentro de la interpretación subaproximada de la ISL.
@@ -2238,8 +2239,7 @@ En este último caso,
 los \emph{heaps} negativos permiten conservar en la postcondición la información espacial que justifica el error.
 De este modo,
 una derivación local puede extenderse a un estado que contiene memoria adicional sin describir explícitamente todo el \emph{heap}.
-Por su parte,
-el Lema~\ref{lem:monotonia} garantiza que las operaciones de memoria no eliminan del dominio las direcciones que ya eran conocidas.
+Esta conservación de la información sobre las direcciones conocidas se apoya en la monotonía del \emph{heap} establecida en el Lema~\ref{lem:monotonia}.
 
 Con estas reglas queda definido el sistema deductivo de la ISL.
 Su relación con la semántica relacional se establece en la siguiente subsección.
@@ -2306,7 +2306,7 @@ $$\sigma \bullet h_f = (s, h \uplus h_f).$$
 
 A partir de esta operación,
 es posible definir la extensión por marcos de una relación entre estados.
-A partir de ahora,
+Para expresarla,
 si $\sigma = (s_\sigma,h_\sigma)$ es un estado espacial,
 denotamos por $h(\sigma)$ su componente del \emph{heap},
 es decir, $h(\sigma) = h_\sigma$.
@@ -2784,9 +2784,7 @@ se evalúa la expresión en el estado inicial y se actualiza el valor de la vari
   runsto (Assign x e) s (override s._1 x (eval_expr s e), Ok)
 \end{lstlisting}
 %\guido{ayudaria definir un \lstinline{ok_state} para no repetir el refinamiento?}
-
-Esta regla actúa como el puente entre el mundo puro de las expresiones y el mundo impuro de los comandos.
-Toma un estado de éxito arbitrario \lstinline|s|,
+Toma un estado inicial \lstinline|s| con modo \lstinline|Ok|,
 evalúa matemáticamente la expresión utilizando la función determinista \lstinline|eval_expr s e|,
 y garantiza que el estado final es idéntico a \lstinline|s|,
 pero con el valor de la variable \lstinline|x| actualizado mediante \lstinline|override|.
@@ -2914,7 +2912,7 @@ Cada constructor de \lstinline|il_triple| corresponde a una adaptación de las r
 Del mismo modo que un término de \lstinline|runsto p s0 s1| constituye un testigo de ejecución,
 un término de \lstinline|il_triple pre p post| constituye un testigo de derivabilidad.
 
-Las precondiciones de las reglas describen estados desde los cuales la ejecución todavía puede continuar,
+Las presunciones de las reglas describen estados desde los cuales la ejecución todavía puede continuar,
 es decir, tienen modo \lstinline|Ok|.
 Para expresarlo se utiliza:
 
@@ -2997,7 +2995,8 @@ El segundo disjunto
 contiene los estados de error producidos durante \lstinline|p|,
 en los cuales \lstinline|q| no se ejecuta.
 Cuando \lstinline|p| finaliza normalmente,
-el estado intermedio satisface \lstinline|mid| y puede utilizarse como presunción de \lstinline|q|.
+el estado intermedio satisface \lstinline|is_ok mid|,
+que es la presunción utilizada para \lstinline|q|.
 Cuando \lstinline|p| finaliza en \lstinline|Er|,
 el error se propaga directamente al resultado de la secuencia.
 
@@ -3018,7 +3017,7 @@ uno por cada rama:
 El constructor \lstinline|I_ChoiceL| utiliza una derivación para \lstinline|p|,
 mientras que \lstinline|I_ChoiceR| utiliza una para \lstinline|q|.
 En ambos casos,
-la precondición y la postcondición se conservan al pasar a \lstinline|Choice p q|.
+la presunción y la postcondición se conservan al pasar a \lstinline|Choice p q|.
 
 El caso de las iteraciones finitas se representa mediante:
 
@@ -3115,7 +3114,8 @@ Sin embargo,
 enunciamos otra vez el teorema sobre la base de nuestra formalización.
 
 \begin{teorema}[Soundness de la IL formalizada]
-Para todo comando \lstinline|p| y aserciones \lstinline|pre| y \lstinline|post|,
+Para todo comando \lstinline|p|,
+presunción \lstinline|pre| y postcondición \lstinline|post|,
 si existe una derivación
 $$\vdash_{\mathrm{IL}} \itriple{\text{\lstinline|pre|}}{\text{\lstinline|p|}}{\text{\lstinline|post|}}$$
 entonces,
@@ -3209,15 +3209,15 @@ Sus testigos permiten reconstruir un estado inicial desde el cual se alcanza el 
 En el caso de asignación,
 la postcondición garantiza la existencia de un valor histórico \lstinline|x_init| tal que,
 al colocarlo en la variable \lstinline|x| del \emph{store} final,
-se obtiene un estado que satisface la precondición.
+se obtiene un estado que satisface la presunción.
 Para seleccionar un valor anterior que satisfaga estas condiciones,
 nos apoyamos en la operación fantasma \lstinline|indefinite_description_ghost|.
-Esta operación de elección clásica está en el módulo \lstinline|FStar.IndefiniteDescription|
-y permite transformar la existencia lógica de un valor en un testigo que podemos manipular en el código de la demostración,
-\changed{mientras estemos dentro del efecto fantasma}.
-Este testigo no forma parte de un programa ejecutable,
-\changed{ya que el uso de esta operación es válido porque la prueba tiene efecto \lstinline|GTot|,
-que permite ejecutar estas operaciones no constructivas.}
+Esta operación de elección clásica,
+disponible en el módulo \lstinline|FStar.IndefiniteDescription|,
+permite obtener un testigo a partir de la existencia lógica de un valor.
+Como la prueba tiene efecto \lstinline|GTot|,
+el testigo puede utilizarse dentro de la demostración fantasma,
+sin formar parte de un programa extraído ejecutable.
 %\guido{Está bien. Aunque cambiaria
 %``solo se usa durante la demostración''
 %por
@@ -3271,11 +3271,10 @@ mientras que la ejecución se instancia con el valor final de \lstinline|x|:
   (|s0, pf0|)
 \end{lstlisting}
 
-La demostración para la secuenciación de comandos \lstinline|I_Seq| ilustra cómo la subaproximación captura flujos anormales.
-La regla deductiva afirma que el resultado de \lstinline|Seq p q|
-puede derivar de la ejecución de \lstinline|q| o de un fallo prematuro en \lstinline|p|.
-Por lo tanto,
-la función \lstinline|soundness| debe inspeccionar el estado final \lstinline|s1| para decidir qué fragmento de la semántica reconstruir:
+En el caso \lstinline|I_Seq|,
+el estado final puede estar justificado por una ejecución de ambos comandos o por una ejecución del primer comando \lstinline|p|
+que termina con error antes de ejecutar el segundo \lstinline|q|.
+La función \lstinline|soundness| distingue estas posibilidades para reconstruir una ejecución que alcance \lstinline|s1|:
 
 \begin{lstlisting}
 | I_Seq #p #q #pre #mid #post pf_p pf_q ->
@@ -3363,8 +3362,7 @@ Este caso se define de la siguiente manera:}
 Primero,
 utiliza la descripción indefinida para seleccionar un número de iteraciones \lstinline|n| que satisfaga la postcondición.
 Luego,
-construye la traza completa declarando una función auxiliar recursiva
-sobre el número de iteraciones.
+aplica \lstinline|aux n s1| para reconstruir una derivación operacional de esas iteraciones.
 El caso base utiliza \lstinline|R_Kleene0|.
 En el caso inductivo,
 se reconstruye primero la última ejecución de \lstinline|p|,
@@ -3386,9 +3384,9 @@ La prueba distingue los casos mediante \lstinline|t2b| y aplica la hipótesis in
 \changed{Si ambas postcondiciones se cumplen,
 cualquiera de las dos derivaciones permite justificar el resultado;
 la prueba utiliza la primera.}
-El estado inicial obtenido satisface la precondición de esa derivación y,
+El estado inicial obtenido satisface la presunción de esa derivación y,
 por lo tanto,
-también la disyunción de las precondiciones,
+también la disyunción de las presunciones,
 por lo que puede devolverse con la misma derivación operacional.
 %\guido{acá de vuelta se pueden solapar, por ahí merece un mínimo comentario}
 
@@ -3535,7 +3533,7 @@ type cond = state -> prop
 \end{lstlisting}
 
 \changed{La formalización no impone un único \emph{heap} inicial:
-el fragmento de memoria considerado depende de la precondición de cada tripleta.
+el fragmento de memoria considerado depende de la presunción de cada tripleta.
 Un \emph{heap} que asigna \lstinline|Unknown| a todas las ubicaciones representa un fragmento vacío,
 mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.}
 %\guido{el heap inicial está en Empty o en Unknown?}
@@ -4016,7 +4014,7 @@ Omitimos el código de estos constructores,
 ya que siguen el mismo esquema de reconstrucción del estado inicial ilustrado en \lstinline|ISL_Free|.}
 
 \changed{La regla \textsc{Exist} de la \autoref{fig:reglas-isl} se representa mediante \lstinline|ISL_Exists|.
-Esta permite cuantificar existencialmente una variable del \emph{store} en la precondición y postcondición,
+Esta permite cuantificar existencialmente una variable del \emph{store} en la presunción y postcondición,
 siempre que dicha variable no aparezca en el comando.
 El predicado \lstinline|fv_stmt p x| indica que \lstinline|x| aparece libre en \lstinline|p|.
 Para expresar la cuantificación,
@@ -4102,7 +4100,7 @@ Su mecanización conserva la misma forma general que la función \lstinline|soun
 \begin{teorema}[Soundness de la ISL formalizada]
 \label{teo:soundness-isl}
 Para todo comando \lstinline|p|,
-presunción \lstinline|pre| y resultado \lstinline|post|,
+presunción \lstinline|pre| y postcondición \lstinline|post|,
 si existe una derivación
 $$\vdash_{\mathrm{ISL}} \itriple{\text{\lstinline|pre|}}{\text{\lstinline|p|}}{\text{\lstinline|post|}}$$
 entonces, para todo estado final \lstinline|s1| que satisface \lstinline|post|,
@@ -4110,8 +4108,8 @@ existe un estado inicial \lstinline|s0| que satisface \lstinline|pre| y una ejec
 $$\forall \text{\lstinline|s1|}. \ \text{\lstinline|post s1|} \implies
 \exists \text{\lstinline|s0|}. \ \text{\lstinline|pre s0|} \land \text{\lstinline|runsto p s0 s1|}.$$
 \end{teorema}
-\guido{me olvidé del término ``presunción'', al final hagamos una
-pasada para usarlo consistentemente en vez de precondicion}
+%\guido{me olvidé del término ``presunción'', al final hagamos una
+%pasada para usarlo consistentemente en vez de precondicion}
 
 \changed{De manera análoga a la IL,
 el teorema se codifica en \fstar{} mediante una función con tipos dependientes.
@@ -4129,12 +4127,12 @@ let rec soundness
 
 La signatura constituye la misma traducción de la caracterización subaproximada utilizada en el \autoref{cap:formalizacion-il}:
 \begin{itemize}
-  \item \lstinline|s1 : state { post s1 }| representa un estado final perteneciente al resultado;
+  \item \lstinline|s1 : state { post s1 }| representa un estado final que satisface la postcondición;
   \item \lstinline|s0 : state { pre s0 }| representa el estado inicial testigo;
   \item \lstinline|runsto p s0 s1| es la ejecución que conecta ambos estados.
 \end{itemize}
 
-La demostración de la función se realiza por inducción estructural sobre el árbol de prueba \lstinline|pf|.
+La demostración de la función se realiza por inducción estructural sobre el árbol de derivación \lstinline|pf|.
 Los constructores heredados de la IL siguen el argumento desarrollado en la \autoref{sec:il-soundness}.
 Los nuevos casos corresponden a las operaciones de memoria,
 a la cuantificación existencial y a la Regla del Marco.
@@ -4156,7 +4154,7 @@ Los casos \lstinline|ISL_FreeEr|,
 \lstinline|ISL_LoadEr| e \lstinline|ISL_StoreEr| son más directos.
 La postcondición ya contiene el recurso \lstinline|points_to_empty| necesario para construir la regla operacional de error correspondiente.
 Por otro lado,
-los casos nulos utilizan la prueba de que la expresión evaluada es igual a 0 y construyen directamente \lstinline|R_FreeNull|,
+los casos de acceso a la dirección nula utilizan la prueba de que la expresión evaluada es igual a 0 y construyen directamente \lstinline|R_FreeNull|,
 \lstinline|R_LoadNull| o \lstinline|R_StoreNull|.
 %\guido{demos un ejemplo de alguno?}
 
@@ -4266,7 +4264,7 @@ aplicamos la hipótesis inductiva de nuestro teorema:
   let (|s0_local, r_local|) =
     soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
 \end{lstlisting}
-Esta llamada nos devuelve un estado inicial local y una traza válida entre dicho estado y la porción final \lstinline|h_local|.
+Esta llamada devuelve el estado inicial local \lstinline|s0_local| y una derivación \lstinline|r_local| de la ejecución hasta el estado \lstinline|(st1, h_local, m)|.
 El \emph{heap} \lstinline|h_local| es el fragmento que satisface la postcondición local proporcionada por la conjunción separadora.
 En esta parte de la prueba no se afirma todavía que dicho fragmento sea una huella mínima en el sentido de la Definición~\ref{def:huella-minima}.
 
@@ -4735,7 +4733,7 @@ se obtiene:
 \lstinline|(p1._2 <+> fr_p) == (q0._2 <+> fr_q)|.
 \end{center}
 
-Para reconciliar estas particiones se utiliza una partición cruzada,
+Esta igualdad permite aplicar una partición cruzada,
 denominada \emph{cross split}.
 Esta construcción subdivide los fragmentos de ambas particiones en cuatro componentes compatibles.
 En general,
@@ -4903,7 +4901,7 @@ Esta aserción describe un estado en modo \lstinline|Ok| cuyo fragmento local de
 La propiedad que se busca verificar tiene la forma
 $$\vdash_\mathrm{ISL} \itriple{\operatorname{is\_ok} \; emp}{\operatorname{prog\_uaf}}{\operatorname{post\_uaf\_err}}.$$
 En este caso,
-la postcondición final describe un estado con el modo erróneo en el que la dirección almacenada en \lstinline|x| continúa representada con un \emph{heap} negativo.
+la postcondición final describe un estado con modo \lstinline|Er| en el que la dirección almacenada en \lstinline|x| continúa representada con un \emph{heap} negativo.
 
 El primer paso se justifica mediante la regla \lstinline|ISL_Alloc1|,
 que permite reservar una dirección nueva respecto del fragmento local.
@@ -4935,9 +4933,8 @@ La diferencia está en el \emph{heap}, ya que la celda ya no se describe como \l
 
 El fallo ocurre en la tercera instrucción,
 cuando el programa intenta realizar una escritura en la dirección indicada por el puntero invalidado.
-Entre las reglas disponibles para la instrucción de escritura está \lstinline|ISL_StoreEr|,
-la cual exige tener estrictamente el recurso \lstinline|points_to_empty|,
-nuestro estado actual.
+La regla \lstinline|ISL_StoreEr| permite justificar este fallo porque \lstinline|post_free| garantiza
+que la dirección indicada por \lstinline|x| está descrita mediante \lstinline|points_to_empty|.
 %\guido{no podemos mostrar primero la derivación a alto nivel,
 %en sintaxis matematica? algo como
 %$emp \rightarrow x -> algo \rightarrow x -/-> \rightarrow Error$}
@@ -4957,7 +4954,7 @@ sino que contiene la información espacial necesaria para mostrar que se debe a 
 
 La construcción de esta demostración en \fstar{} se realiza componiendo los axiomas de nuestra lógica
 mediante constructores secuenciales y la regla de consecuencia.
-El árbol de prueba completo para este programa se codifica de la siguiente manera:
+El árbol de derivación completo para este programa se codifica de la siguiente manera:
 
 \begin{lstlisting}
 let proof_uaf : isl_triple (is_ok emp) prog_uaf post_uaf_err =
@@ -5079,9 +5076,10 @@ let post_free_y (ptr : var) (s : state) : prop =
     post_load_y ptr
       (s._1, override s._2 (eval_expr s (Var "y")) (Full v), s._3)
 \end{lstlisting}
-La dirección histórica está representada por \lstinline|points_to_empty|.
 
-La aserción \lstinline|post_store_v ptr| describe el estado posterior a escribir la nueva dirección en la celda de la estructura.
+La aserción \lstinline|points_to_empty| conserva la información de que la dirección original fue liberada.
+Después de reservar otra celda y escribir su dirección en la celda de la estructura,
+se obtiene el estado descrito por \lstinline|post_store_v ptr|.
 A partir de este estado,
 el cliente intenta una escritura mediante \lstinline|x|,
 que sigue almacenando la dirección original,
@@ -5100,9 +5098,9 @@ let post_err (ptr : var) (s : state) : prop =
 Esta postcondición describe estados finales con modo \lstinline|Er|
 y conserva la evidencia espacial de que la dirección utilizada mediante \lstinline|x| fue liberada.
 
-Desde el comienzo se mencionó que la prueba iba a abarcar solo una de las ramas posibles de ejecución.
-Denotamos por \lstinline|p_seq_pb1| la derivación de la rama de reasignación.
-La regla de elección y el ajuste de las aserciones se aplican de la siguiente manera:
+Con estas aserciones,
+denotamos por \lstinline|p_seq_pb1| la derivación de la rama de reasignación.
+La elección de esta rama y el ajuste de sus aserciones se expresan de la siguiente manera:
 
 \begin{lstlisting}
 let p_push_back_raw = ISL_ChoiceL p_seq_pb1 in
@@ -5112,26 +5110,25 @@ let p_push_back = ISL_Consequence (post_load_x ptr) (post_store_v ptr)
 Luego,
 la derivación de \lstinline|push_back| se compone con la lectura inicial y la escritura final.
 
-La rama \lstinline|Skip|,
-en la que el bloque no se reasigna, no forma parte de este árbol de prueba.
-Esto no implica que se la considere errónea o imposible.
-La subaproximación permite omitirla porque el objetivo consiste en justificar la existencia de una ejecución que produzca un fallo.
-
 Este caso muestra que la formalización puede relacionar un error temporal de memoria con una modificación intermedia realizada a través de otro alias.
 La celda negativa conserva la historia del bloque original,
 mientras que el no determinismo permite seleccionar la ejecución de reasignación.
 
 \section{No determinismo y razonamiento paramétrico sobre bucles}
 \label{sec:bucle}
-A lo largo del desarrollo de software,
-la presencia de bucles combinados con comportamientos no deterministas supone una barrera para las técnicas de verificación tradicionales.
-Para comprender los límites prácticos de dichas metodologías frente a la subaproximación,
-evaluaremos un programa semirrealista con una alta cantidad de iteraciones y decisiones no deterministas.
-El caso busca mostrar dos propiedades del sistema deductivo:
-\begin{enumerate}
-  \item una derivación subaproximada puede seleccionar un único camino entre varias alternativas (en la \autoref{sec:pushback} se vio en menor magnitud);
-  \item la regla de variante de Kleene permite representar paramétricamente una familia de iteraciones sin construir una derivación distinta para cada una.
-\end{enumerate}
+%A lo largo del desarrollo de software,
+%la presencia de bucles combinados con comportamientos no deterministas supone una barrera para las técnicas de verificación tradicionales.
+%Para comprender los límites prácticos de dichas metodologías frente a la subaproximación,
+%evaluaremos un programa semirrealista con una alta cantidad de iteraciones y decisiones no deterministas.
+%El caso busca mostrar dos propiedades del sistema deductivo:
+%\begin{enumerate}
+%  \item una derivación subaproximada puede seleccionar un único camino entre varias alternativas (en la \autoref{sec:pushback} se vio en menor magnitud);
+%  \item la regla de variante de Kleene permite representar paramétricamente una familia de iteraciones sin construir una derivación distinta para cada una.
+%\end{enumerate}
+El ejemplo anterior utilizó una elección no determinista para seleccionar la rama de reasignación.
+En este caso,
+esa elección se repite dentro de un bucle con una gran cantidad de iteraciones,
+lo que permite estudiar cómo construir una derivación paramétrica del camino que conduce al error.
 
 Consideremos el siguiente programa:
 
@@ -5162,10 +5159,8 @@ la probabilidad de incrementar \lstinline|j| en el millón de iteraciones sería
 Este cálculo no interviene en la demostración mecanizada.
 La lógica solo necesita establecer que la secuencia de elecciones existe.
 
-El primer paso es modelar la aleatoriedad de forma que podamos controlarla lógicamente.
-En nuestra sintaxis abstracta,
-la condición se modela mediante el operador de elección no determinista \lstinline|Choice|,
-codificado con el operador \lstinline{|||}:
+Esta elección no determinista se expresa en nuestra sintaxis mediante el operador \lstinline{|||},
+el cual abrevia \lstinline|Choice|:
 
 \begin{lstlisting}
 Assign "j" (Plus (Var "j") (Const 1)) ||| Skip
@@ -5270,7 +5265,7 @@ Para este caso,
 modelamos una lista enlazada de longitud arbitraria \lstinline|n|.
 La demostración es paramétrica en esta longitud y no requiere escribir una prueba distinta para cada cantidad de nodos.
 Además,
-se considera como precondición una lista cuyos elementos son todos iguales a 1.
+la presunción describe una lista cuyos elementos son todos iguales a 1.
 Esta condición es suficiente para garantizar que,
 al finalizar el recorrido,
 la suma de los elementos coincide con la longitud de la lista y la comprobación \lstinline|assert| falla.
@@ -5419,7 +5414,7 @@ La \autoref{fig:particion-lista} ilustra un caso de \lstinline|history| con \lst
 el puntero actual se encuentra en el tercer nodo,
 luego de realizar dos avances desde el inicio de la lista.
 
-La precondición ubica \lstinline|ptr| al inicio de la lista y exige que el estado tenga modo \lstinline|Ok|.
+La presunción ubica \lstinline|ptr| al inicio de la lista y exige que el estado tenga modo \lstinline|Ok|.
 Al utilizar \lstinline|history| con cero pasos,
 también establece que el \emph{heap} describe una lista de \lstinline|n| elementos iguales a uno:
 
@@ -5457,6 +5452,8 @@ que combina \lstinline|ISL_Load| con la Regla del Marco.
 Para construir el marco,
 se utilizan variables auxiliares que conservan el valor anterior de la variable modificada,
 la dirección leída y el contenido de la celda.
+Así,
+el marco puede describir el resto de la lista sin depender del valor actual de la variable que modifica la lectura.
 Estas variables se ocultan mediante \lstinline|ISL_Exists| y no forman parte del programa.
 La postcondición resultante relaciona el valor leído con un estado anterior obtenido al restablecer la variable modificada:
 
@@ -5469,7 +5466,10 @@ let load_post (pre : cond) (x : var) (e : expr) : cond =
       pre (override s._1 x x_old, s._2, Ok)
 \end{lstlisting}
 
-Una vez leído el valor del nodo,
+La primera lectura establece \lstinline|post_load_v|,
+donde ambos acumuladores valen \lstinline|Nat k| y \lstinline|v| contiene \lstinline|Nat 1|,
+junto con las condiciones del recorrido.
+A continuación,
 el programa actualiza los acumuladores mediante dos asignaciones.
 Durante estas actualizaciones,
 el puntero permanece en el mismo nodo y el \emph{heap} no cambia.
@@ -5503,9 +5503,6 @@ let post_len (start_ptr : loc) (n : nat) (k : nat) : cond =
   step_state start_ptr n k (k + 1) (k + 1)
 \end{lstlisting}
 
-Antes de estas asignaciones,
-\lstinline|post_load_v| establece que ambos acumuladores valen \lstinline|Nat k| y que \lstinline|v| contiene \lstinline|Nat 1|,
-junto con las condiciones del recorrido.
 Para justificar la actualización de la suma mediante \lstinline|ISL_Assign|,
 el siguiente lema reconstruye,
 a partir de un estado que satisface \lstinline|post_sum|,
@@ -5643,10 +5640,8 @@ let proof_prog_list_sum_len (start_ptr : loc) (n : nat)
 La tripleta justifica que cada estado descrito por \lstinline|post_error| es alcanzable mediante el programa desde algún estado que satisface
 \lstinline|is_ok (pre_init start_ptr n)|.
 
-Este caso de estudio combina los principales componentes espaciales e iterativos de la formalización.
-Estos son los \emph{heaps} con muchas celdas,
-la conjunción separadora, los predicados recursivos, la Regla del Marco,
-lectura de memoria, asignaciones sobre el \emph{store}, la regla de variante de Kleene y la selección de una rama de error.
+Este caso de estudio combina los predicados espaciales recursivos y la Regla del Marco con las asignaciones,
+las lecturas de memoria y el razonamiento paramétrico mediante la regla de variante de Kleene.
 La derivación muestra que el sistema puede razonar sobre una estructura enlazada de longitud paramétrica
 sin escribir manualmente una prueba distinta para cada nodo.
 
@@ -5878,7 +5873,7 @@ También difieren en el grado de automatización.
 VeriFast selecciona automáticamente los pasos de ejecución simbólica y aplica las reglas necesarias para procesar la estructura del programa.
 Aunque el usuario debe dar contratos,
 invariantes y predicados auxiliares,
-no construye manualmente un árbol de prueba para cada instrucción.
+no construye manualmente un árbol de derivación para cada instrucción.
 En esta tesina,
 las derivaciones de \lstinline|isl_triple| se construyen de forma explícita con los constructores del tipo inductivo.
 \fstar{} y Z3 verifican los refinamientos y condiciones laterales,
@@ -5941,15 +5936,14 @@ Construyó una derivación de la ISL usando las reglas de la formalización
 y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
 La demostración generada fue aceptada por \fstar{}.
 
-Este experimento es una prueba preliminar y no pretende evaluar la capacidad de los LLM para construir pruebas formales.
-Sin embargo,
+Este experimento constituye una prueba preliminar de uso y no una evaluación sistemática de la capacidad de los LLM para construir pruebas formales.
+En este caso,
 muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático
 construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
 
 \subsection*{Resumen}
-La formalización propuesta en este trabajo se encuentra de alguna forma entre todos los desarrollos antes mencionados.
 Al igual que varios de los desarrollos anteriores,
-se concentra en dar una representación mecanizada de la semántica,
+esta formalización se concentra en dar una representación mecanizada de la semántica,
 las reglas lógicas y sus propiedades.
 Al igual que VeriFast,
 incorpora aserciones espaciales y predicados sobre memoria mutable.
@@ -5957,7 +5951,8 @@ Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpre
 junto con el razonamiento local de la SL,
 incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos.
 
-El resultado no alcanza todavía el nivel de IsaBIL o VeriFast ni pretende analizar un lenguaje industrial.
+A diferencia de IsaBIL y VeriFast,
+el desarrollo no incorpora un procedimiento integrado de automatización de las derivaciones ni pretende analizar un lenguaje industrial.
 Su aporte consiste en dar un núcleo formal en el que las derivaciones de la IL e ISL son objetos explícitos y sus propiedades de solidez,
 localidad y descomposición por huellas son verificadas dentro de \fstar{}.
 
@@ -5966,9 +5961,10 @@ localidad y descomposición por huellas son verificadas dentro de \fstar{}.
 Detallamos a continuación algunas líneas de investigación que permitirían extender el desarrollo realizado.
 
 \subsection*{Automatización de las derivaciones}
-Actualmente,
-los caminos de ejecución,
-las aserciones intermedias y los constructores utilizados en los árboles de prueba son seleccionados manualmente.
+Aunque el experimento motivado por Mizzle mostró que un agente puede construir una derivación,
+la formalización no incorpora un procedimiento de búsqueda:
+las reglas que se aplican,
+las aserciones intermedias y los constructores deben proporcionarse explícitamente.
 Una extensión consiste en desarrollar un procedimiento que recorra la sintaxis del programa y construya automáticamente derivaciones de \lstinline|isl_triple|.
 Este procedimiento podría calcular postcondiciones,
 seleccionar ramas de elección no determinista,
@@ -5988,7 +5984,8 @@ También podría desarrollarse un modelo de memoria con bloques de distintos tam
 direcciones interiores,
 alineamiento y una representación más detallada de los valores almacenados.
 
-Cada extensión requeriría agregar las reglas operacionales correspondientes y demostrar que estas nuevas reglas deductivas preservan el Teorema de Soundness.
+Cada extensión requeriría agregar las reglas operacionales y deductivas correspondientes,
+y demostrar la solidez de las nuevas reglas deductivas respecto de la semántica ampliada.
 
 \subsection*{Generación de trazas de error}
 La función \lstinline|soundness| proporciona evidencia de que cada estado final derivado en error es alcanzable desde algún estado inicial.

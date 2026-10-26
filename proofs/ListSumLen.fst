@@ -5,21 +5,10 @@ open FStar.Classical
 open FStar.FunctionalExtensionality
 open FStar.IndefiniteDescription
 
-#push-options "--fuel 3 --ifuel 1 --z3rlimit 100"
-
-// Utils
 let ( ||| ) = Choice
 let enot (e : expr) : expr = Minus (Const 1) e
 
-let heap_only (hp : heap) : state = on var (fun _ -> Nat 0), hp, Ok
-
-let lemma_points_to_flex_store (st1 st2 : store) (hp : heap) 
-  (m : term_mode) (v : value) (l : loc)
-  : Lemma (ensures (points_to_flex l v (st1, hp, m) <==> points_to_flex l v (st2, hp, m))) =
-  lemma_points_to_flex l v (st1, hp, m);
-  lemma_points_to_flex l v (st2, hp, m)
-
-// Definición del programa
+// Programa
 let init_vars =
   Assign "sum" (Const 0) `Seq`
   Assign "len" (Const 0)
@@ -51,10 +40,12 @@ let rec list_seg (i j : loc) (xs : list value) : Tot cond (decreases xs) =
 let rec ones (n : nat) : list value =
   if n = 0 then [] else Nat 1 :: ones (n - 1)
 
-// Lectura con marco
-let g_old = "list_old"
-let g_addr = "list_addr"
-let g_value = "list_value"
+let heap_only (hp : heap) : state = on var (fun _ -> Nat 0), hp, Ok
+
+// Load con marco (framed_load): las tres partes, en forma generica
+let g_old = "list_old" // valor viejo
+let g_addr = "list_addr" // dirección leída
+let g_value = "list_value" // valor leído
 
 let ghost_free (pre : cond) : prop =
   forall (st : store) (hp : heap) (m : term_mode) (g : var) (v : value).
@@ -76,10 +67,15 @@ let ghost_updates (pre : cond) (st : store) (hp : heap) (m : term_mode)
             <==> pre (st, hp, m))) =
   let st1 = override st g_value wv in
   let st2 = override st1 g_addr wa in
-  assert (pre (st1, hp, m) <==> pre (st, hp, m));
-  assert (pre (override st2 g_old wo, hp, m) <==> pre (st2, hp, m));
-  assert (pre (st2, hp, m) <==> pre (st1, hp, m))
+  ()
 
+let load_fresh (x : var) (e : expr) : prop =
+  x <> g_old /\ x <> g_addr /\ x <> g_value /\
+  ~(fv_expr e g_old) /\ ~(fv_expr e g_addr) /\ ~(fv_expr e g_value)
+
+let load_addr (st : store) = eval_expr' st (Var g_addr)
+
+// Postcondicion que da framed_load (la forma "global" del load)
 let load_post (pre : cond) (x : var) (e : expr) : cond =
   fun s -> s._3 == Ok /\
     exists (x_old : value) (l : loc) (v : value).
@@ -94,68 +90,98 @@ let load_post_intro (pre : cond) (x : var) (e : expr) (s : state)
                     pre (override s._1 x x_old, s._2, Ok) /\ s._3 == Ok)
           (ensures load_post pre x e s) = ()
 
-let load_fresh (x : var) (e : expr) : prop =
-  x <> g_old /\ x <> g_addr /\ x <> g_value /\
-  ~(fv_expr e g_old) /\ ~(fv_expr e g_addr) /\ ~(fv_expr e g_value)
-
-let load_addr (st : store) = eval_expr' st (Var g_addr)
-
-let load_local_pre (x : var) (e : expr) : cond =
+// ---------- 1. Parte local: solo la celda leida ----------
+let read_cell (x : var) (e : expr) : cond =
   fun s -> s._3 == Ok /\ s._1 x == s._1 g_old /\
     eval_expr s e == load_addr s._1 /\
     points_to (load_addr s._1) (s._1 g_value) s
 
-let load_local_post (x : var) (e : expr) : cond =
+let read_cell_post (x : var) (e : expr) : cond =
   fun s -> s._3 == Ok /\ s._1 x == s._1 g_value /\
     eval_expr (override s._1 x (s._1 g_old), s._2, Ok) e == load_addr s._1 /\
     points_to (load_addr s._1) (s._1 g_value) s
 
-let load_frame (pre : cond) (x : var) : cond =
+let lemma_read_back (x : var) (e : expr)
+  (#fresh : squash (load_fresh x e)) (s : state)
+  : Lemma (requires read_cell_post x e s)
+          (ensures exists (l : loc) (v old : value).
+            eval_expr (override s._1 x old, s._2, Ok) e == l /\
+            points_to l v s /\ s._1 x == v /\
+            read_cell x e (override s._1 x old, s._2, Ok)) =
+  eval_expr_fresh s (Var g_addr) x (s._1 g_old);
+  exists_intro (fun old ->
+    eval_expr (override s._1 x old, s._2, Ok) e == load_addr s._1 /\
+    points_to (load_addr s._1) (s._1 g_value) s /\ s._1 x == s._1 g_value /\
+    read_cell x e (override s._1 x old, s._2, Ok)) (s._1 g_old);
+  exists_intro (fun v -> exists (old : value).
+    eval_expr (override s._1 x old, s._2, Ok) e == load_addr s._1 /\
+    points_to (load_addr s._1) v s /\ s._1 x == v /\
+    read_cell x e (override s._1 x old, s._2, Ok)) (s._1 g_value);
+  exists_intro (fun l -> exists (v old : value).
+    eval_expr (override s._1 x old, s._2, Ok) e == l /\
+    points_to l v s /\ s._1 x == v /\
+    read_cell x e (override s._1 x old, s._2, Ok)) (load_addr s._1)
+
+// ---------- 2. Marco: pre vale sobre el heap completo ----------
+let frame_load (pre : cond) (x : var) : cond =
   fun s -> s._2 (load_addr s._1) == Unknown /\
     pre (override s._1 x (s._1 g_old), override s._2 (load_addr s._1) (Full (s._1 g_value)), Ok)
 
+let frame_load_indep_aux (pre : cond) (x : var) (e : expr)
+  (#fresh : squash (load_fresh x e))
+  (st1 st2 : store) (hp : heap) (m1 m2 : term_mode)
+  : Lemma (requires match_except_vars (modifies (Load x e)) st1 st2)
+          (ensures (frame_load pre x (st1, hp, m1) <==>
+            frame_load pre x (st2, hp, m2))) =
+  state_equiv_eq (override st1 x (st1 g_old), hp, Ok) (override st2 x (st2 g_old), hp, Ok)
+
+let frame_load_indep (pre : cond) (x : var) (e : expr) (#fresh : squash (load_fresh x e))
+  : Lemma (independent_on_vars (modifies (Load x e)) (frame_load pre x)) =
+  forall_intro (fun st1 -> forall_intro (fun st2 -> forall_intro (fun hp ->
+    forall_intro (fun m1 -> forall_intro (move_requires (frame_load_indep_aux pre x e #() st1 st2 hp m1))))))
+
+// ---------- 3. Consequence: local ** marco <-> aserciones ----------
 let split_cell (hp : heap) (l : loc) (v : value)
   : Lemma (requires hp l == Full v)
           (ensures heaps_disjoint (singleton_full_heap l v) (heap_without hp l) /\
             hp == heap_union (singleton_full_heap l v) (heap_without hp l)) =
   extensionality loc (fun _ -> cell) hp ((singleton_full_heap l v) <+> (heap_without hp l))
 
-let lemma_load_back (x : var) (e : expr)
-  (#fresh : squash (load_fresh x e)) (s : state)
-  : Lemma (requires load_local_post x e s)
-          (ensures exists (l : loc) (v old : value).
-            eval_expr (override s._1 x old, s._2, Ok) e == l /\
-            points_to l v s /\ s._1 x == v /\
-            load_local_pre x e (override s._1 x old, s._2, Ok)) =
-  eval_expr_fresh s (Var g_addr) x (s._1 g_old);
-  exists_intro (fun old ->
-    eval_expr (override s._1 x old, s._2, Ok) e == load_addr s._1 /\
-    points_to (load_addr s._1) (s._1 g_value) s /\ s._1 x == s._1 g_value /\
-    load_local_pre x e (override s._1 x old, s._2, Ok)) (s._1 g_old);
-  exists_intro (fun v -> exists (old : value).
-    eval_expr (override s._1 x old, s._2, Ok) e == load_addr s._1 /\
-    points_to (load_addr s._1) v s /\ s._1 x == v /\
-    load_local_pre x e (override s._1 x old, s._2, Ok)) (s._1 g_value);
-  exists_intro (fun l -> exists (v old : value).
-    eval_expr (override s._1 x old, s._2, Ok) e == l /\
-    points_to l v s /\ s._1 x == v /\
-    load_local_pre x e (override s._1 x old, s._2, Ok)) (load_addr s._1)
+#push-options "--fuel 3 --ifuel 1 --z3rlimit 100"
 
-let lemma_load_frame_independent (pre : cond) (x : var) (e : expr)
-  (#fresh : squash (load_fresh x e))
-  (st1 st2 : store) (hp : heap) (m1 m2 : term_mode)
-  : Lemma (requires match_except_vars (modifies (Load x e)) st1 st2)
-          (ensures (load_frame pre x (st1, hp, m1) <==>
-            load_frame pre x (st2, hp, m2))) =
-  state_equiv_eq (override st1 x (st1 g_old), hp, Ok) (override st2 x (st2 g_old), hp, Ok)
+let join_load (pre : cond) (x : var) (e : expr)
+  (#free : squash (ghost_free pre)) (s : state)
+  : Lemma (requires exists_var g_value
+            (exists_var g_addr (exists_var g_old (read_cell x e ** frame_load pre x))) s)
+          (ensures pre s) =
+  let wv = indefinite_description_ghost value (fun wv ->
+    exists_var g_addr (exists_var g_old (read_cell x e ** frame_load pre x)) (override s._1 g_value wv, s._2, s._3))
+  in
+  let wa = indefinite_description_ghost value (fun wa ->
+    exists_var g_old (read_cell x e ** frame_load pre x) (override (override s._1 g_value wv) g_addr wa, s._2, s._3))
+  in
+  let wo = indefinite_description_ghost value (fun wo ->
+    (read_cell x e ** frame_load pre x) (override (override (override s._1 g_value wv) g_addr wa) g_old wo, s._2, s._3))
+  in
+  let st = override (override (override s._1 g_value wv) g_addr wa) g_old wo in
+  let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
+    heaps_disjoint h1 h2 /\ s._2 == heap_union h1 h2 /\
+    read_cell x e (st, h1, s._3) /\ frame_load pre x (st, h2, s._3))
+  in
+  let h2 = indefinite_description_ghost heap (fun h2 ->
+    heaps_disjoint h1 h2 /\ s._2 == heap_union h1 h2 /\
+    read_cell x e (st, h1, s._3) /\ frame_load pre x (st, h2, s._3))
+  in
+  state_equiv_eq (override st x (st g_old), override h2 (load_addr st) (Full (st g_value)), Ok) (st, s._2, Ok);
+  ghost_updates pre s._1 s._2 Ok wv wa wo #()
 
-let lemma_load_post_implies (pre : cond) (x : var) (e : expr)
+let split_load (pre : cond) (x : var) (e : expr)
   (#fresh : squash (load_fresh x e)) (#free : squash (ghost_free pre))
   (s : state)
   : Lemma (requires load_post pre x e s)
           (ensures exists_var g_value
             (exists_var g_addr (exists_var g_old
-              (load_local_post x e ** load_frame pre x))) s) =
+              (read_cell_post x e ** frame_load pre x))) s) =
   let old = indefinite_description_ghost value (fun old ->
     exists (l : loc) (v : value). points_to_flex l v s /\
       s._1 x == v /\ eval_expr (override s._1 x old, s._2, Ok) e == l /\
@@ -163,7 +189,6 @@ let lemma_load_post_implies (pre : cond) (x : var) (e : expr)
   in
   let l = eval_expr (override s._1 x old, s._2, Ok) e in
   let v = s._1 x in
-  lemma_points_to_flex l v s;
   let st = override (override (override s._1 g_value v) g_addr (Loc l)) g_old old in
   let h1 = singleton_full_heap l v in
   let h2 = heap_without s._2 l in
@@ -175,64 +200,30 @@ let lemma_load_post_implies (pre : cond) (x : var) (e : expr)
   state_equiv_eq (override st x (st g_old), s._2, Ok)
     (override (override (override (override s._1 x old) g_value v) g_addr (Loc l)) g_old old, s._2, Ok);
   ghost_updates pre (override s._1 x old) s._2 Ok v (Loc l) old #();
-  exists_intro (fun a -> exists b.
-    heaps_disjoint a b /\ s._2 == heap_union a b /\
-    load_local_post x e (st, a, Ok) /\ load_frame pre x (st, b, Ok)) h1;
-  exists_intro (fun b -> heaps_disjoint h1 b /\ s._2 == heap_union h1 b /\
-    load_local_post x e (st, h1, Ok) /\ load_frame pre x (st, b, Ok)) h2;
-  exists_intro (fun w -> (load_local_post x e ** load_frame pre x)
+  introduce_frame (read_cell_post x e) (frame_load pre x) (st, s._2, Ok) h1 h2;
+  exists_intro (fun w -> (read_cell_post x e ** frame_load pre x)
     (override (override (override s._1 g_value v) g_addr (Loc l)) g_old w, s._2, s._3)) old;
-  exists_intro (fun w -> exists_var g_old (load_local_post x e ** load_frame pre x)
+  exists_intro (fun w -> exists_var g_old (read_cell_post x e ** frame_load pre x)
     (override (override s._1 g_value v) g_addr w, s._2, s._3)) (Loc l);
   exists_intro (fun w -> exists_var g_addr
-    (exists_var g_old (load_local_post x e ** load_frame pre x))
+    (exists_var g_old (read_cell_post x e ** frame_load pre x))
     (override s._1 g_value w, s._2, s._3)) v
 
-let lemma_load_pre_implies (pre : cond) (x : var) (e : expr)
-  (#free : squash (ghost_free pre)) (s : state)
-  : Lemma (requires exists_var g_value
-            (exists_var g_addr (exists_var g_old (load_local_pre x e ** load_frame pre x))) s)
-          (ensures pre s) =
-  let wv = indefinite_description_ghost value (fun wv ->
-    exists_var g_addr (exists_var g_old (load_local_pre x e ** load_frame pre x)) (override s._1 g_value wv, s._2, s._3))
-  in
-  let wa = indefinite_description_ghost value (fun wa ->
-    exists_var g_old (load_local_pre x e ** load_frame pre x) (override (override s._1 g_value wv) g_addr wa, s._2, s._3))
-  in
-  let wo = indefinite_description_ghost value (fun wo ->
-    (load_local_pre x e ** load_frame pre x) (override (override (override s._1 g_value wv) g_addr wa) g_old wo, s._2, s._3))
-  in
-  let st = override (override (override s._1 g_value wv) g_addr wa) g_old wo in
-  let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
-    heaps_disjoint h1 h2 /\ s._2 == heap_union h1 h2 /\
-    load_local_pre x e (st, h1, s._3) /\ load_frame pre x (st, h2, s._3))
-  in
-  let h2 = indefinite_description_ghost heap (fun h2 ->
-    heaps_disjoint h1 h2 /\ s._2 == heap_union h1 h2 /\
-    load_local_pre x e (st, h1, s._3) /\ load_frame pre x (st, h2, s._3))
-  in
-  state_equiv_eq (override st x (st g_old), override h2 (load_addr st) (Full (st g_value)), Ok) (st, s._2, Ok);
-  ghost_updates pre s._1 s._2 Ok wv wa wo #()
-
-let lemma_load_frame_indep (pre : cond) (x : var) (e : expr) (#fresh : squash (load_fresh x e))
-  : Lemma (independent_on_vars (modifies (Load x e)) (load_frame pre x)) =
-  forall_intro (fun st1 -> forall_intro (fun st2 -> forall_intro (fun hp ->
-    forall_intro (fun m1 -> forall_intro (move_requires (lemma_load_frame_independent pre x e #() st1 st2 hp m1))))))
-
+// ---------- Las tres partes juntas ----------
 let framed_load (pre : cond) (x : var) (e : expr)
   (#fresh : squash (load_fresh x e)) (#free : squash (ghost_free pre))
   : isl_triple (is_ok pre) (Load x e) (load_post pre x e) =
-  let local_pf = ISL_Consequence (load_local_pre x e) (load_local_post x e)
-    (ISL_Load #(load_local_pre x e) x e) ()
-    (forall_intro (move_requires (lemma_load_back x e #()))) in
-  let framed = ISL_Frame (load_frame pre x) local_pf (lemma_load_frame_indep pre x e #()) in
+  let local_pf = ISL_Consequence (read_cell x e) (read_cell_post x e)
+    (ISL_Load #(read_cell x e) x e) ()
+    (forall_intro (move_requires (lemma_read_back x e #()))) in
+  let framed = ISL_Frame (frame_load pre x) local_pf (frame_load_indep pre x e #()) in
   let hidden = ISL_Exists g_value
     (ISL_Exists g_addr (ISL_Exists g_old framed ()) ()) () in
   ISL_Consequence pre (load_post pre x e) hidden
-    (forall_intro (move_requires (lemma_load_pre_implies pre x e #())))
-    (forall_intro (move_requires (lemma_load_post_implies pre x e #() #())))
+    (forall_intro (move_requires (join_load pre x e #())))
+    (forall_intro (move_requires (split_load pre x e #() #())))
 
-// Aserciones de la prueba
+// Aserciones
 let rec history (start_ptr curr_ptr : loc) (n : nat) (k : nat) (hp : heap)
   : GTot prop (decreases k) =
   let s = heap_only hp in
@@ -249,7 +240,7 @@ let pre_init (start_ptr : loc) (n : nat) : cond =
     s._1 "ptr" == Loc start_ptr /\
     history start_ptr start_ptr n 0 s._2
 
-let mid_sum (start_ptr : loc) (n : nat) : cond =
+let post_init_sum (start_ptr : loc) (n : nat) : cond =
   fun s -> pre_init start_ptr n s /\ s._1 "sum" == Nat 0
 
 let variant (start_ptr : loc) (n : nat) (k : nat) : cond =
@@ -261,7 +252,7 @@ let variant (start_ptr : loc) (n : nat) (k : nat) : cond =
       s._1 "ptr" == Loc curr_ptr /\
       history start_ptr curr_ptr n k s._2
 
-let mid_assume (start_ptr : loc) (n : nat) (k : nat) : cond =
+let post_assume (start_ptr : loc) (n : nat) (k : nat) : cond =
   fun s -> variant start_ptr n k s /\ eval_expr s (enot (Eq (Var "ptr") (Const 0))) <> 0
 
 let step_state (start_ptr : loc) (n : nat) (k : nat) (sum len : nat) : cond =
@@ -275,7 +266,7 @@ let step_state (start_ptr : loc) (n : nat) (k : nat) (sum len : nat) : cond =
       points_to_flex curr_ptr (Nat 1) s
 
 let post_load_v (start_ptr : loc) (n : nat) (k : nat) : cond =
-  fun s -> mid_assume start_ptr n k s /\ step_state start_ptr n k k k s
+  fun s -> post_assume start_ptr n k s /\ step_state start_ptr n k k k s
 
 let post_sum (start_ptr : loc) (n : nat) (k : nat) : cond =
   step_state start_ptr n k (k + 1) k
@@ -283,42 +274,42 @@ let post_sum (start_ptr : loc) (n : nat) (k : nat) : cond =
 let post_len (start_ptr : loc) (n : nat) (k : nat) : cond =
   step_state start_ptr n k (k + 1) (k + 1)
 
-let pre_assert (start_ptr : loc) (n : nat) : cond =
+let post_loop (start_ptr : loc) (n : nat) : cond =
   fun s -> exists (k : nat). variant start_ptr n k s
 
-let pre_error (start_ptr : loc) (n : nat) : cond =
+let post_exit (start_ptr : loc) (n : nat) : cond =
   fun s ->
     variant start_ptr n n s /\ s._1 "ptr" == Loc 0 /\
     eval_expr s (Eq (Var "sum") (Var "len")) <> 0
 
-let post_error (start_ptr : loc) (n : nat) : cond =
-  fun s -> s._3 == Er /\ pre_error start_ptr n (s._1, s._2, Ok)
+let post_err (start_ptr : loc) (n : nat) : cond =
+  fun s -> s._3 == Er /\ post_exit start_ptr n (s._1, s._2, Ok)
 
-// Lemas del cuerpo del bucle
-let lemma_mid_assume_ghost (start_ptr : loc) (n : nat) (k : nat)
+// Lemas
+let ghost_free_post_assume (start_ptr : loc) (n : nat) (k : nat)
   (st : store) (hp : heap) (m : term_mode) (g : var) (v : value)
   : Lemma (requires (g == g_old \/ g == g_addr \/ g == g_value))
-          (ensures (mid_assume start_ptr n k (override st g v, hp, m) <==>
-            mid_assume start_ptr n k (st, hp, m))) =
+          (ensures (post_assume start_ptr n k (override st g v, hp, m) <==>
+            post_assume start_ptr n k (st, hp, m))) =
   eval_expr_fresh (st, hp, m) (enot (Eq (Var "ptr") (Const 0))) g v
 
-let lemma_post_len_ghost (start_ptr : loc) (n : nat) (k : nat)
+let ghost_free_post_len (start_ptr : loc) (n : nat) (k : nat)
   (st : store) (hp : heap) (m : term_mode) (g : var) (v : value)
   : Lemma (requires (g == g_old \/ g == g_addr \/ g == g_value))
           (ensures (post_len start_ptr n k (override st g v, hp, m) <==>
             post_len start_ptr n k (st, hp, m))) =
-  forall_intro (lemma_points_to_flex_store st (override st g v) hp m (Nat 1))
+  ()
 
-let lemma_prove_load_v (start_ptr : loc) (n : nat) (k : nat) (s : state)
+let lemma_load_v (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires post_load_v start_ptr n k s)
-          (ensures load_post (mid_assume start_ptr n k) "v" (Var "ptr") s) =
+          (ensures load_post (post_assume start_ptr n k) "v" (Var "ptr") s) =
   let curr_ptr = indefinite_description_ghost
     loc (fun curr_ptr -> s._1 "ptr" == Loc curr_ptr /\ points_to_flex curr_ptr (Nat 1) s)
   in
   state_equiv_eq (override s._1 "v" (s._1 "v"), s._2, Ok) s;
-  load_post_intro (mid_assume start_ptr n k) "v" (Var "ptr") s (s._1 "v") curr_ptr (Nat 1)
+  load_post_intro (post_assume start_ptr n k) "v" (Var "ptr") s (s._1 "v") curr_ptr (Nat 1)
 
-let lemma_prove_sum_step (start_ptr : loc) (n : nat) (k : nat) (s : state)
+let lemma_sum (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
@@ -330,7 +321,7 @@ let lemma_prove_sum_step (start_ptr : loc) (n : nat) (k : nat) (s : state)
     s._1 "sum" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "sum") (Var "v"))) /\
     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
 
-let lemma_prove_len_step (start_ptr : loc) (n : nat) (k : nat) (s : state)
+let lemma_len (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_len start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_sum start_ptr n k (st_init, s0._2, s0._3) /\
@@ -347,7 +338,7 @@ let eval_pointer (st : store) (hp : heap) (p : loc)
   assert_norm (eval_expr (override st "ptr" (Loc p), hp, Ok)
     (Plus (Var "ptr") (Const 1)) == p + 1)
 
-let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
+let lemma_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires variant start_ptr n (k + 1) s)
           (ensures load_post (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) s) =
   let curr_ptr = indefinite_description_ghost
@@ -359,10 +350,6 @@ let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
     points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs /\
     history start_ptr prev_ptr n k s._2)
   in
-  lemma_points_to_flex prev_ptr (Nat 1) hs;
-  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs;
-  lemma_points_to_flex prev_ptr (Nat 1) (override s._1 "ptr" (Loc prev_ptr), s._2, Ok);
-  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) s;
   exists_intro (fun p ->
     (override s._1 "ptr" (Loc prev_ptr)) "ptr" == Loc p /\
     history start_ptr p n k s._2 /\
@@ -370,82 +357,111 @@ let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
   eval_pointer s._1 s._2 prev_ptr;
   load_post_intro (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) s (Loc prev_ptr) (prev_ptr + 1) (Loc curr_ptr)
 
-// Derivaciones
+#pop-options
+
+// Inicializacion
+// sum := 0
+let step_init_sum (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (pre_init start_ptr n)) (Assign "sum" (Const 0)) (post_init_sum start_ptr n) =
+  ISL_Consequence (pre_init start_ptr n) (post_init_sum start_ptr n)
+    (ISL_Assign #(pre_init start_ptr n) "sum" (Const 0)) () ()
+
+// len := 0
+let step_init_len (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (post_init_sum start_ptr n)) (Assign "len" (Const 0))
+      (kleene_pre (variant start_ptr n)) =
+  ISL_Consequence (post_init_sum start_ptr n) (kleene_pre (variant start_ptr n))
+    (ISL_Assign #(post_init_sum start_ptr n) "len" (Const 0)) () ()
+
 let proof_init (start_ptr : loc) (n : nat)
   : isl_triple (is_ok (pre_init start_ptr n)) init_vars (kleene_pre (variant start_ptr n)) =
-  let pre = pre_init start_ptr n in
-  let mid = mid_sum start_ptr n in
-  let post = kleene_pre (variant start_ptr n) in
-  
-  let p_sum_raw = ISL_Assign #pre "sum" (Const 0) in
-  let p_sum = ISL_Consequence pre mid p_sum_raw () () in
-  
-  let p_len_raw = ISL_Assign #mid "len" (Const 0) in
-  let p_len = ISL_Consequence mid post p_len_raw () () in
-  
-  let p_seq = ISL_Seq p_sum p_len in
-  ISL_Consequence pre post p_seq () ()
+  ISL_Consequence (pre_init start_ptr n) (kleene_pre (variant start_ptr n))
+    (ISL_Seq (step_init_sum start_ptr n) (step_init_len start_ptr n)) () ()
+
+// Cuerpo del bucle: un paso por funcion (vuelta k -> k + 1)
+// 1. assume(ptr <> 0): todavia no se llego al final de la lista.
+let step_assume (start_ptr : loc) (n : nat) (k : nat)
+  : isl_triple (is_ok (variant start_ptr n k)) (Assume (enot (Eq (Var "ptr") (Const 0))))
+      (post_assume start_ptr n k) =
+  ISL_Consequence (variant start_ptr n k) (post_assume start_ptr n k)
+    (ISL_Assume #(variant start_ptr n k) (enot (Eq (Var "ptr") (Const 0)))) () ()
+
+// 2. v := [ptr]: leer el valor del nodo actual (load con marco).
+let step_load_v (start_ptr : loc) (n : nat) (k : nat)
+  : isl_triple (is_ok (post_assume start_ptr n k)) (Load "v" (Var "ptr"))
+      (post_load_v start_ptr n k) =
+  let load = framed_load (post_assume start_ptr n k) "v" (Var "ptr") #()
+    #(ghost_free_intro (post_assume start_ptr n k) (ghost_free_post_assume start_ptr n k)) in
+  ISL_Consequence (post_assume start_ptr n k) (post_load_v start_ptr n k) load ()
+    (forall_intro (move_requires (lemma_load_v start_ptr n k)))
+
+// 3. sum := sum + v
+let step_sum (start_ptr : loc) (n : nat) (k : nat)
+  : isl_triple (is_ok (post_load_v start_ptr n k)) (Assign "sum" (Plus (Var "sum") (Var "v")))
+      (post_sum start_ptr n k) =
+  ISL_Consequence (post_load_v start_ptr n k) (post_sum start_ptr n k)
+    (ISL_Assign #(post_load_v start_ptr n k) "sum" (Plus (Var "sum") (Var "v"))) ()
+    (forall_intro (move_requires (lemma_sum start_ptr n k)))
+
+// 4. len := len + 1
+let step_len (start_ptr : loc) (n : nat) (k : nat)
+  : isl_triple (is_ok (post_sum start_ptr n k)) (Assign "len" (Plus (Var "len") (Const 1)))
+      (post_len start_ptr n k) =
+  ISL_Consequence (post_sum start_ptr n k) (post_len start_ptr n k)
+    (ISL_Assign #(post_sum start_ptr n k) "len" (Plus (Var "len") (Const 1))) ()
+    (forall_intro (move_requires (lemma_len start_ptr n k)))
+
+// 5. ptr := [ptr + 1]: avanzar al siguiente nodo (load con marco).
+let step_load_ptr (start_ptr : loc) (n : nat) (k : nat)
+  : isl_triple (is_ok (post_len start_ptr n k)) (Load "ptr" (Plus (Var "ptr") (Const 1)))
+      (variant start_ptr n (k + 1)) =
+  let load = framed_load (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) #()
+    #(ghost_free_intro (post_len start_ptr n k) (ghost_free_post_len start_ptr n k)) in
+  ISL_Consequence (post_len start_ptr n k) (variant start_ptr n (k + 1)) load ()
+    (forall_intro (move_requires (lemma_load_ptr start_ptr n k)))
 
 let proof_loop_step (start_ptr : loc) (n : nat) (k : nat)
   : isl_triple (is_ok (variant start_ptr n k)) loop_body (variant start_ptr n (k + 1)) =
-  let p_assume_raw = ISL_Assume #(variant start_ptr n k) (enot (Eq (Var "ptr") (Const 0))) in
-  let p_assume = 
-    ISL_Consequence (variant start_ptr n k) (mid_assume start_ptr n k) p_assume_raw () ()
-  in
+  let body = ISL_Seq (step_assume start_ptr n k)
+              (ISL_Seq (step_load_v start_ptr n k)
+              (ISL_Seq (step_sum start_ptr n k)
+              (ISL_Seq (step_len start_ptr n k) (step_load_ptr start_ptr n k)))) in
+  ISL_Consequence (variant start_ptr n k) (variant start_ptr n (k + 1)) body () ()
 
-  let p_v_raw =
-    framed_load (mid_assume start_ptr n k) "v" (Var "ptr") #()
-      #(ghost_free_intro (mid_assume start_ptr n k) (lemma_mid_assume_ghost start_ptr n k))
-  in
-  let pf_load = forall_intro (move_requires (lemma_prove_load_v start_ptr n k)) in
-  let p_v =
-    ISL_Consequence (mid_assume start_ptr n k) (post_load_v start_ptr n k) p_v_raw () pf_load
-  in
-
-  let p_sum_raw = ISL_Assign #(post_load_v start_ptr n k) "sum" (Plus (Var "sum") (Var "v")) in
-  let pf_sum = forall_intro (move_requires (lemma_prove_sum_step start_ptr n k)) in
-  let p_sum = ISL_Consequence (post_load_v start_ptr n k) (post_sum start_ptr n k) p_sum_raw () pf_sum in
-
-  let p_len_raw = ISL_Assign #(post_sum start_ptr n k) "len" (Plus (Var "len") (Const 1)) in
-  let pf_len = forall_intro (move_requires (lemma_prove_len_step start_ptr n k)) in
-  let p_len = ISL_Consequence (post_sum start_ptr n k) (post_len start_ptr n k) p_len_raw () pf_len in
-
-  let p_ptr_raw =
-    framed_load (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) #()
-      #(ghost_free_intro (post_len start_ptr n k) (lemma_post_len_ghost start_ptr n k))
-  in
-  let pf_ptr = forall_intro (move_requires (lemma_prove_load_ptr start_ptr n k)) in
-  let p_ptr = ISL_Consequence (post_len start_ptr n k) (variant start_ptr n (k + 1)) p_ptr_raw () pf_ptr in
-  
-  let p_seq1 = ISL_Seq p_len p_ptr in
-  let p_seq2 = ISL_Seq p_sum p_seq1 in
-  let p_seq3 = ISL_Seq p_v p_seq2 in
-  let p_raw = ISL_Seq p_assume p_seq3 in
-  ISL_Consequence (variant start_ptr n k) (variant start_ptr n (k + 1)) p_raw () ()
-
+// El bucle: con el variante, n vueltas llevan de variant 0 a variant n.
 let proof_loop (start_ptr : loc) (n : nat)
-  : isl_triple (kleene_pre (variant start_ptr n)) (Kleene loop_body) (kleene_post (variant start_ptr n)) =
+  : isl_triple (kleene_pre (variant start_ptr n)) (Kleene loop_body)
+      (kleene_post (variant start_ptr n)) =
   ISL_KleeneVariant (proof_loop_step start_ptr n)
 
+// Salida del bucle y assert
+// assume(ptr = 0): se llego al final de la lista, despues de n vueltas.
+let step_exit (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (post_loop start_ptr n)) (Assume (Eq (Var "ptr") (Const 0)))
+      (post_exit start_ptr n) =
+  ISL_Consequence (post_loop start_ptr n) (post_exit start_ptr n)
+    (ISL_Assume #(post_loop start_ptr n) (Eq (Var "ptr") (Const 0))) () ()
+
+// assert: se toma la rama de error, porque sum = len.
+let step_assert (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (post_exit start_ptr n)) assert_stmt (post_err start_ptr n) =
+  let branch_err = ISL_Seq (ISL_Assume #(post_exit start_ptr n) (Eq (Var "sum") (Var "len")))
+                           ISL_Error in
+  ISL_ChoiceL branch_err
+
 let proof_assert (start_ptr : loc) (n : nat)
-  : isl_triple (is_ok (pre_assert start_ptr n))
+  : isl_triple (is_ok (post_loop start_ptr n))
     (Seq (Assume (Eq (Var "ptr") (Const 0))) assert_stmt)
-    (post_error start_ptr n) =
-  let p_exit_raw = ISL_Assume #(pre_assert start_ptr n) (Eq (Var "ptr") (Const 0)) in
-  let p_exit = ISL_Consequence (pre_assert start_ptr n) (pre_error start_ptr n) p_exit_raw () () in
-  let p_cond_err = ISL_Assume #(pre_error start_ptr n) (Eq (Var "sum") (Var "len")) in
-  let p_branch_err = ISL_Seq p_cond_err ISL_Error in
-  
-  let p_raw = ISL_Seq p_exit (ISL_ChoiceL p_branch_err) in
-  ISL_Consequence (pre_assert start_ptr n) (post_error start_ptr n) p_raw () ()
+    (post_err start_ptr n) =
+  ISL_Consequence (post_loop start_ptr n) (post_err start_ptr n)
+    (ISL_Seq (step_exit start_ptr n) (step_assert start_ptr n)) () ()
 
-let proof_prog_list_sum_len (start_ptr : loc) (n : nat)
-  : isl_triple (is_ok (pre_init start_ptr n)) prog_list_sum_len (post_error start_ptr n) =
-  let p_assert = ISL_Consequence (kleene_post (variant start_ptr n)) (post_error start_ptr n) (proof_assert start_ptr n) () () in
-  let p_kleene_assert_raw = ISL_Seq (proof_loop start_ptr n) p_assert in
-  let p_kleene_assert = ISL_Consequence (kleene_pre (variant start_ptr n)) (post_error start_ptr n) p_kleene_assert_raw () () in
-  
-  let p_raw = ISL_Seq (proof_init start_ptr n) p_kleene_assert in
-  ISL_Consequence (pre_init start_ptr n) (post_error start_ptr n) p_raw () ()
-
-#pop-options
+// Composicion
+let proof_list_sum_len (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (pre_init start_ptr n)) prog_list_sum_len (post_err start_ptr n) =
+  let p_assert = ISL_Consequence (kleene_post (variant start_ptr n)) (post_err start_ptr n)
+    (proof_assert start_ptr n) () () in
+  let p_loop = ISL_Consequence (kleene_pre (variant start_ptr n)) (post_err start_ptr n)
+    (ISL_Seq (proof_loop start_ptr n) p_assert) () () in
+  ISL_Consequence (pre_init start_ptr n) (post_err start_ptr n)
+    (ISL_Seq (proof_init start_ptr n) p_loop) () ()

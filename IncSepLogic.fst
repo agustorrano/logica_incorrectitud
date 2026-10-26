@@ -407,6 +407,17 @@ let sep_conj (p q : cond) : cond =
 
 unfold let ( ** ) = sep_conj
 
+let introduce_frame (p fr : cond) (s : state) (h_local h_frame : heap)
+  : Lemma (requires h_local >< h_frame /\
+            (forall l. s._2 l == (h_local <+> h_frame) l) /\
+            p (s._1, h_local, s._3) /\ fr (s._1, h_frame, s._3))
+          (ensures (p ** fr) s) =
+  extensionality loc (fun _ -> cell) s._2 (h_local <+> h_frame);
+  exists_intro (fun h -> h_local >< h /\ s._2 == (h_local <+> h) /\
+    p (s._1, h_local, s._3) /\ fr (s._1, h, s._3)) h_frame;
+  exists_intro (fun h -> exists f. h >< f /\ s._2 == (h <+> f) /\
+    p (s._1, h, s._3) /\ fr (s._1, f, s._3)) h_local
+
 let points_to_flex (l : loc) (v : value) : cond =
   points_to l v ** (fun _ -> True)
 

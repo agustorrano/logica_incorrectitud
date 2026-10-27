@@ -36,7 +36,7 @@ let post_err (ptr : var) (l_v l_a l_b : loc) (val_b : value) : cond =
   fun s -> s._3 == Er /\
     s._1 ptr == Loc l_v /\ s._1 "x" == Loc l_a /\ s._1 "y" == Loc l_b /\
     (points_to_empty l_a **
-      (points_to l_v (Nat l_b) ** points_to l_b val_b)) s
+      (points_to l_v (Loc l_b) ** points_to l_b val_b)) s
 
 // Descripcion concreta del heap: solo l_v, l_a, l_b pueden ser conocidas
 let heap3 (c : ctx) (c1 c2 c3 : cell) : heap =
@@ -70,7 +70,7 @@ let post_alloc_y (c : ctx) : cond = fun s ->
 
 let final_resources (c : ctx) : cond = fun s ->
   s._1 c.ptr == Loc c.l_v /\ s._1 "x" == Loc c.l_a /\ s._1 "y" == Loc c.l_b /\
-  cells c (Full (Nat c.l_b)) Empty (Full c.val_b) s
+  cells c (Full (Loc c.l_b)) Empty (Full c.val_b) s
 
 let post_store_v (c : ctx) : cond = is_ok (final_resources c)
 
@@ -100,7 +100,7 @@ let store_pre (c : ctx) : cond = fun s ->
 
 let store_post (c : ctx) : cond = fun s ->
   s._1 c.ptr == Loc c.l_v /\ s._1 "y" == Loc c.l_b /\
-  points_to c.l_v (Nat c.l_b) s
+  points_to c.l_v (Loc c.l_b) s
 
 let err_pre (c : ctx) : cond = fun s ->
   s._1 "x" == Loc c.l_a /\ points_to_empty c.l_a s
@@ -126,7 +126,7 @@ let frame_store (c : ctx) : cond = fun s ->
 
 let frame_error (c : ctx) : cond = fun s ->
   s._1 c.ptr == Loc c.l_v /\ s._1 "y" == Loc c.l_b /\
-  cells c (Full (Nat c.l_b)) Unknown (Full c.val_b) s
+  cells c (Full (Loc c.l_b)) Unknown (Full c.val_b) s
 
 // Lemas "hacia atras": las posts locales implican las de los axiomas
 let lemma_read_back (c : ctx) (target : var { target <> c.ptr }) (s : state)
@@ -172,7 +172,7 @@ let lemma_alloc_back (c : ctx) (s : state)
 let lemma_store_back (c : ctx) (s : state)
   : Lemma (requires is_ok (store_post c) s)
           (ensures is_ok (fun t ->
-            points_to (eval_expr t (Var c.ptr)) (Nat (eval_expr t (Var "y"))) t /\
+            points_to (eval_expr t (Var c.ptr)) (eval_value t (Var "y")) t /\
             (exists old. store_pre c (t._1, override t._2 (eval_expr t (Var c.ptr)) (Full old), Ok))) s) =
   exists_intro (fun old -> store_pre c
     (s._1, override s._2 (eval_expr s (Var c.ptr)) (Full old), Ok)) (Loc c.l_a)
@@ -221,7 +221,7 @@ let split_store (c : ctx) (s : state)
   : Lemma (requires post_store_v c s)
           (ensures (is_ok (store_post c) ** frame_store c) s) =
   introduce_frame (is_ok (store_post c)) (frame_store c) s
-    (singleton_full_heap c.l_v (Nat c.l_b))
+    (singleton_full_heap c.l_v (Loc c.l_b))
     (heap3 c Unknown Empty (Full c.val_b))
 
 let split_error (c : ctx) (s : state)
@@ -229,7 +229,7 @@ let split_error (c : ctx) (s : state)
           (ensures (err_post c ** frame_error c) s) =
   introduce_frame (err_post c) (frame_error c) s
     (singleton_empty_heap c.l_a)
-    (heap3 c (Full (Nat c.l_b)) Unknown (Full c.val_b))
+    (heap3 c (Full (Loc c.l_b)) Unknown (Full c.val_b))
 
 // Un paso por funcion
 let step_load_x (c : ctx)

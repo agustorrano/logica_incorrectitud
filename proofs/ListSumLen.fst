@@ -143,8 +143,8 @@ let frame_load_indep (pre : cond) (x : var) (e : expr) (#fresh : squash (load_fr
 // ---------- 3. Consequence: local ** marco <-> aserciones ----------
 let split_cell (hp : heap) (l : loc) (v : value)
   : Lemma (requires hp l == Full v)
-          (ensures heaps_disjoint (singleton_full_heap l v) (heap_without hp l) /\
-            hp == heap_union (singleton_full_heap l v) (heap_without hp l)) =
+          (ensures (singleton_full_heap l v) >< (heap_without hp l) /\
+            hp == ((singleton_full_heap l v) <+> (heap_without hp l))) =
   extensionality loc (fun _ -> cell) hp ((singleton_full_heap l v) <+> (heap_without hp l))
 
 #push-options "--fuel 3 --ifuel 1 --z3rlimit 100"
@@ -165,11 +165,11 @@ let join_load (pre : cond) (x : var) (e : expr)
   in
   let st = override (override (override s._1 g_value wv) g_addr wa) g_old wo in
   let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
-    heaps_disjoint h1 h2 /\ s._2 == heap_union h1 h2 /\
+    h1 >< h2 /\ s._2 == (h1 <+> h2) /\
     read_cell x e (st, h1, s._3) /\ frame_load pre x (st, h2, s._3))
   in
   let h2 = indefinite_description_ghost heap (fun h2 ->
-    heaps_disjoint h1 h2 /\ s._2 == heap_union h1 h2 /\
+    h1 >< h2 /\ s._2 == (h1 <+> h2) /\
     read_cell x e (st, h1, s._3) /\ frame_load pre x (st, h2, s._3))
   in
   state_equiv_eq (override st x (st g_old), override h2 (load_addr st) (Full (st g_value)), Ok) (st, s._2, Ok);
@@ -313,24 +313,24 @@ let lemma_sum (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v"))) /\
+            s0._1 "sum" == eval_value (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v")) /\
             (forall (y : var). y <> "sum" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "sum" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_load_v start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "sum" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "sum") (Var "v"))) /\
+    s._1 "sum" == eval_value (st_init, s._2, s._3) (Plus (Var "sum") (Var "v")) /\
     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
 
 let lemma_len (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_len start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_sum start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "len" == Nat (eval_expr (st_init, s0._2, s0._3) (Plus (Var "len") (Const 1))) /\
+            s0._1 "len" == eval_value (st_init, s0._2, s0._3) (Plus (Var "len") (Const 1)) /\
             (forall (y : var). y <> "len" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "len" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_sum start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "len" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "len") (Const 1))) /\
+    s._1 "len" == eval_value (st_init, s._2, s._3) (Plus (Var "len") (Const 1)) /\
     (forall (y : var). y <> "len" ==> s._1 y == st_init y)) st_init
 
 let eval_pointer (st : store) (hp : heap) (p : loc)
@@ -427,7 +427,7 @@ let proof_loop_step (start_ptr : loc) (n : nat) (k : nat)
     (ISL_Seq (step_len start_ptr n k) (step_load_ptr start_ptr n k)))) in
   ISL_Consequence (variant start_ptr n k) (is_ok (variant start_ptr n (k + 1))) body () ()
 
-// El bucle: con el variante, n vueltas llevan de variant 0 a variant n.
+// El bucle reúne los resultados de una cantidad finita de iteraciones.
 let proof_loop (start_ptr : loc) (n : nat)
   : isl_triple (kleene_pre (variant start_ptr n)) (Kleene loop_body)
       (kleene_post (variant start_ptr n)) =

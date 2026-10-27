@@ -3558,6 +3558,27 @@ type stmt =
   | Store : expr -> expr -> stmt
 \end{lstlisting}
 
+\changed{Esta extensión también requiere adaptar la evaluación de expresiones a los nuevos valores.
+La función \lstinline|eval_expr| sigue devolviendo un natural:
+para una variable,
+utiliza el número contenido en \lstinline|Nat n| o en \lstinline|Loc l|.
+Para conservar el valor de una variable al copiarlo mediante una asignación o una escritura en memoria,
+se incorpora \lstinline|eval_value|:}
+
+\begin{lstlisting}
+let eval_value (s : state) (e : expr) : GTot value =
+  match e with
+  | Var x -> s._1 x
+  | _ -> Nat (eval_expr s e)
+\end{lstlisting}
+\changed{Cuando la expresión es una variable,
+esta función conserva su constructor.
+Para las demás expresiones devuelve el resultado numérico mediante \lstinline|Nat|.
+Luego,
+copiar una variable que contiene \lstinline|Loc l| conserva ese valor.
+La evaluación de las direcciones de acceso y de las comparaciones sigue utilizando \lstinline|eval_expr|,
+por lo que esta adaptación no impone una separación de tipos entre números y punteros.}
+
 \section{Álgebra de \emph{heaps} y aserciones espaciales}
 \label{sec:isl-aserciones}
 Para representar la conjunción separadora de la Definición~\ref{def:sep-conj}
@@ -3724,7 +3745,11 @@ El lema \lstinline|state_equiv_eq| aplica este principio tanto al \emph{store} c
 En este capítulo se utiliza una versión generalizada de \lstinline|override| que permite actualizar tanto el \emph{store} como el \emph{heap},
 ya que ambos se representan mediante funciones.
 
-Analizamos los constructores operacionales que difieren de aquellos vistos en el \autoref{cap:formalizacion-il}.
+Con respecto al \autoref{cap:formalizacion-il},
+\lstinline|R_Assign| utiliza ahora \lstinline|eval_value| para actualizar la variable destino.
+A contunuación,
+presentamos los constructores operacionales de las nuevas operaciones de memoria.
+
 Al igual que antes,
 se utiliza \lstinline|ok_state| para restringir los estados iniciales al modo \lstinline|Ok|.
 %\guido{borraría esta última oración, es obvio, y la primera vez que la lei
@@ -3831,7 +3856,7 @@ La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza 
   l : loc { l =!= 0 } -> v : value ->
   #(squash (s._2 l == Full v)) ->
   #(squash (eval_expr s e1 == l)) ->
-  runsto (Store e1 e2) s (s._1, override s._2 l (Full (Nat (eval_expr s e2))), s._3)
+  runsto (Store e1 e2) s (s._1, override s._2 l (Full (eval_value s e2)), Ok)
 \end{lstlisting}
 
 Los constructores \lstinline|R_StoreEr| y \lstinline|R_StoreNull| representan,
@@ -3933,6 +3958,9 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 
 Los constructores correspondientes a la asignación,
 no determinismo, secuencia, elección, consecuencia, disyunción y estrella de Kleene mantienen la estructura presentada para la IL.
+\changed{En particular,
+la asignación adapta el valor de la variable destino mediante \lstinline|eval_value|,
+de acuerdo con la semántica operacional.}
 Omitimos aquí los constructores compartidos con la IL y nos concentramos en las reglas de memoria dinámica y en la Regla del Marco.
 %\guido{Omitimos detallarlos aquí.}
 
@@ -4347,7 +4375,8 @@ La diferencia con \lstinline|runsto| es que sus constructores restringen los \em
 Para representar los comandos que no acceden a memoria dinámica se define el \emph{heap} vacío:
 
 \begin{lstlisting}
-let empty_heap : heap = fun _ -> Unknown
+let empty_heap : heap =
+  on loc (fun _ -> Unknown)
 \end{lstlisting}
 
 Todas sus ubicaciones son \lstinline|Unknown|,
@@ -4369,10 +4398,10 @@ Para las operaciones de memoria se definen \emph{heaps} formados por una única 
 
 \begin{lstlisting}
 let singleton_empty_heap (l : loc) : heap =
-  fun l' -> if l' = l then Empty else Unknown
+  on loc (fun l' -> if l' = l then Empty else Unknown)
 
 let singleton_full_heap (l : loc) (v : value) : heap =
-  fun l' -> if l' = l then Full v else Unknown
+  on loc (fun l' -> if l' = l then Full v else Unknown)
 \end{lstlisting}
 La primera describe exactamente una celda negativa,
 mientras que la segunda describe exactamente una celda activa en una dirección específica.
@@ -4438,10 +4467,12 @@ pero reemplaza su contenido:
   l : loc { l =!= 0 } -> v : value ->
   #(squash (eval_expr' st e1 == l)) ->
   footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
-    (st, singleton_full_heap l (Nat (eval_expr' st e2)), Ok)
+    (st, singleton_full_heap l (eval_value (st, empty_heap, Ok) e2), Ok)
 \end{lstlisting}
 %\guido{indentá los argumentos de footprint así se lee mejor, agregué dos espacios
 %arriba, no toco más para no causar conflictos}
+\changed{El estado auxiliar \lstinline|(st, empty_heap, Ok)| solo aporta el \emph{store} a \lstinline|eval_value|,
+cuya evaluación no depende del \emph{heap} ni del modo de terminación.}
 Los accesos a la dirección nula utilizan \lstinline|empty_heap|,
 dado que el error se produce por el valor evaluado por la expresión y no requiere tener ninguna celda del \emph{heap}.
 
@@ -4663,7 +4694,9 @@ Para ello se define:
 
 \begin{lstlisting}
 let heap_without (h : heap) (l : loc) : heap =
-  fun l' -> if l' = l then Unknown else h l'
+  on loc (fun l' ->
+    if l' = l then Unknown
+    else h l')
 \end{lstlisting}
 En los casos de liberación,
 lectura o escritura sobre una dirección no nula \lstinline|l|,
@@ -5232,7 +5265,7 @@ let post_err (ptr : var) (l_v l_a l_b : loc) (val_b : value) : cond =
   fun s -> s._3 == Er /\
     s._1 ptr == Loc l_v /\ s._1 "x" == Loc l_a /\ s._1 "y" == Loc l_b /\
     (points_to_empty l_a **
-      (points_to l_v (Nat l_b) ** points_to l_b val_b)) s
+      (points_to l_v (Loc l_b) ** points_to l_b val_b)) s
 \end{lstlisting}
 \changed{La postcondición conserva tres recursos separados:
 la celda original liberada,
@@ -5667,12 +5700,12 @@ let lemma_sum (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v"))) /\
+            s0._1 "sum" == eval_value (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v")) /\
             (forall (y : var). y <> "sum" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "sum" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_load_v start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "sum" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "sum") (Var "v"))) /\
+    s._1 "sum" == eval_value (st_init, s._2, s._3) (Plus (Var "sum") (Var "v")) /\
     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
 \end{lstlisting}
 El \emph{store} anterior se obtiene restableciendo únicamente \lstinline|sum| a \lstinline|Nat k|.
@@ -6109,6 +6142,10 @@ donde abstrajo el efecto relevante de \lstinline|realloc|.
 Construyó una derivación de la ISL usando las reglas de la formalización
 y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
 La demostración generada fue aceptada por \fstar{}.
+
+Esta demostración corresponde al programa abstracto que modela la invalidación de la celda referenciada por \lstinline|lowest|
+y la escritura posterior sobre ella.
+No se mecanizó la traducción desde C ni su correspondencia completa con \lstinline|realloc|.
 
 Este experimento constituye una prueba preliminar de uso y no una evaluación sistemática de la capacidad de los LLM para construir pruebas formales.
 En este caso,

@@ -120,7 +120,7 @@ let lemma_kleene : isl_triple (kleene_pre variant) (Kleene loop_body) (kleene_po
   let step (n : nat) =
     ISL_Consequence
       (variant n)
-      (variant (n + 1))
+      (is_ok (variant (n + 1)))
       (proof_loop_step n)
       () ()
   in 

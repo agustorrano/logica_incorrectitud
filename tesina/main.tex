@@ -152,8 +152,8 @@ aunque otras ejecuciones puedan terminar normalmente.
 Esta demostración puede comprobarse sin ejecutar el programa ni depender de que se repitan las elecciones que producen el fallo.
 
 La IL presentada por O'Hearn es análoga a la HL clásica,
-\changed{pero se orienta a demostrar que ciertos resultados pueden alcanzarse,
-en particular aquellos que corresponden a errores.}
+pero se orienta a demostrar que ciertos resultados pueden alcanzarse,
+en particular aquellos que corresponden a errores.
 %ya que se define sobre un lenguaje de comandos cuyo estado está representado con un \emph{store},
 %pero sin un \emph{heap}.
 %\guido{al final no estaba mal esto?}
@@ -163,7 +163,7 @@ la SL fue desarrollada como una extensión a la HL que soporta razonamiento comp
 %A diferencia de la HL, su modelo de estado incorpora,
 %además del \emph{store}, un \emph{heap},
 %y sus aserciones permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
-\changed{La SL incorpora aserciones espaciales que permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.}
+La SL incorpora aserciones espaciales que permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL),
 cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
 Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
@@ -1895,10 +1895,10 @@ donde si $h \in \mathsf{HeapExt}$:
   \item $\ell \notin \operatorname{dom}(h)$ indica que el \emph{heap} no posee información sobre esa dirección.
 \end{itemize}
 \end{definicion}
-\changed{Al igual que en el modelo de \emph{heaps} de la SL,
+Al igual que en el modelo de \emph{heaps} de la SL,
 la finitud se refiere al dominio de cada \emph{heap}.
 En este caso,
-dicho dominio incluye tanto las celdas activas como las marcadas como liberadas.}
+dicho dominio incluye tanto las celdas activas como las marcadas como liberadas.
 
 A partir de este punto,
 los estados de la ISL se interpretan sobre el \emph{heap} extendido
@@ -2047,10 +2047,10 @@ La monotonía puede observarse en las operaciones básicas:
 Por lo tanto, el dominio puede crecer o permanecer igual,
 pero nunca disminuir.
 
-\changed{Sobre esta semántica,
+Sobre esta semántica,
 una ejecución puede extenderse con un fragmento de memoria disjunto de sus \emph{heaps} inicial y final,
 conservando el modo de terminación.
-Esta propiedad se expresa mediante el siguiente lema.}
+Esta propiedad se expresa mediante el siguiente lema.
 
 \begin{lema}[Localidad semántica]
 \label{lem:localidad}
@@ -2614,7 +2614,7 @@ let override (st : store) (x : var) (v : value) : store =
 %\guido{y si fijamos a/b a var y value? si no, hay que explicar eqtype. En el codigo
 %puede ser general, aca puede ser monomorfica}
 La expresión
-\changed{\lstinline|override st x v| devuelve un \emph{store} que asigna \lstinline|v| a \lstinline|x| y conserva el valor de las demás variables.}
+\lstinline|override st x v| devuelve un \emph{store} que asigna \lstinline|v| a \lstinline|x| y conserva el valor de las demás variables.
 La operación \lstinline|on| permite construir el resultado con la representación extensional requerida.
 
 El lenguaje considerado distingue entre ejecuciones que continúan normalmente y ejecuciones que han alcanzado un error.
@@ -2641,8 +2641,8 @@ En la presentación abstracta del \autoref{cap:conceptos-previos},
 el modo de terminación $\varepsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
 En esta formalización se incorpora directamente en el estado.
 %\guido{y la semántica no permite que un estado de error avance en su ejecucion?}.
-\changed{Las reglas operacionales exigen que el estado inicial tenga modo \lstinline|Ok|,
-por lo que no permiten iniciar otra ejecución desde un estado con modo \lstinline|Er|.}
+Las reglas operacionales exigen que el estado inicial tenga modo \lstinline|Ok|,
+por lo que no permiten iniciar otra ejecución desde un estado con modo \lstinline|Er|.
 De esta manera,
 una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
 
@@ -2769,8 +2769,8 @@ sin necesidad de agregar una regla a la semántica operacional.
 
 A continuación,
 se presentan los constructores de \lstinline|runsto| que describen la ejecución de los comandos.
-\changed{Para simplificar sus signaturas,
-se definen dos abreviaturas para los estados según su modo de terminación:}
+Para simplificar sus signaturas,
+se definen dos abreviaturas para los estados según su modo de terminación:
 
 \begin{lstlisting}
 type ok_state = s : state { s._2 == Ok }
@@ -3048,7 +3048,7 @@ let kleene_post (variant : nat -> cond) : cond =
   il_triple (kleene_pre variant) (Kleene p) (kleene_post variant)
 \end{lstlisting}
 
-\changed{La familia de aserciones se representa mediante el parámetro \lstinline|variant : nat -> cond|,
+La familia de aserciones se representa mediante el parámetro \lstinline|variant : nat -> cond|,
 mientras que la premisa inductiva se codifica como una función que,
 para cada natural \lstinline|n|,
 proporciona una derivación de la tripleta correspondiente.
@@ -3056,7 +3056,7 @@ A partir de esta familia,
 las definiciones auxiliares \lstinline|kleene_pre| y \lstinline|kleene_post| expresan las aserciones de la conclusión:
 la primera corresponde a cero iteraciones y la segunda utiliza un cuantificador existencial sobre el número de iteraciones.
 En ambas,
-el uso de \lstinline|is_ok| restringe los estados a aquellos con terminación normal.}
+el uso de \lstinline|is_ok| restringe los estados a aquellos con terminación normal.
 %\guido{Acá parece que la estas explicando desde cero, pero ya lo explicamos (mas o menos)
 %en 2.3 cuando se introduce IL. Lo ideal acá es que expliques como se escriben esas reglas
 %como tipo inductivo y si tomaste decisiones interesantes (e.g. usar el xinit en asignacion).
@@ -3081,8 +3081,8 @@ La regla permite combinar derivaciones obtenidas a partir de conjuntos diferente
 %\guido{merece realmente otra sección? es porque hacés referencia
 %a esto más adelante?}
 %\label{sec:il-consecuencia}
-\changed{La Regla de Consecuencia se representa mediante un constructor que recibe una derivación
-y las pruebas de las dos implicaciones requeridas:}  
+La Regla de Consecuencia se representa mediante un constructor que recibe una derivación
+y las pruebas de las dos implicaciones requeridas:
 %\guido{de nuevo, esto ya está explicado, acá deberías presentar
 %la formalización nomás. Podés explicar que las implicaciones
 %se modelan como una implicación squasheada y que generalmente
@@ -3123,9 +3123,9 @@ para todo estado final \lstinline|s1| que satisface \lstinline|post|,
 existe un estado inicial \lstinline|s0| que satisface \lstinline|pre| y una ejecución operacional de \lstinline|p| desde \lstinline|s0| hasta \lstinline|s1|:
 $$\forall \text{\lstinline|s1|}. \ \text{\lstinline|post s1|} \implies \exists \text{\lstinline|s0|}. \ \text{\lstinline|pre s0|} \land \text{\lstinline|runsto p s0 s1|}$$
 \end{teorema}
-\changed{En este enunciado,
+En este enunciado,
 el modo de terminación está incluido en los estados y puede restringirse mediante las aserciones,
-en lugar de aparecer como un índice separado de la tripleta.}
+en lugar de aparecer como un índice separado de la tripleta.
 %\guido{ya explicaste que \lstinline`x:s & t` es un par dependiendente / tipo sigma?}
 %\guido{me parece que habria que recordar que el modo
 %de terminación se modela distinto}
@@ -3139,10 +3139,10 @@ let rec soundness
   (pf : il_triple pre p post) (s1 : state { post s1 })
   : GTot (s0 : state { pre s0 } & runsto p s0 s1) (decreases pf)
 \end{lstlisting}
-\changed{El resultado es un par dependiente:
+El resultado es un par dependiente:
 su primera componente es un estado \lstinline|s0| que satisface \lstinline|pre|,
 y la segunda es una derivación de \lstinline|runsto p s0 s1| cuyo tipo depende de ese estado.
-La notación \lstinline{(|s0, r|)} utilizada en la prueba construye dicho par.}
+La notación \lstinline{(|s0, r|)} utilizada en la prueba construye dicho par.
 
 La signatura constituye una traducción directa del Lema~\ref{lem:caracterizacion}:
 \begin{itemize}
@@ -3157,15 +3157,15 @@ y produce un habitante de \lstinline|runsto|,
 que certifica la existencia de una ejecución.
 
 La demostración se realiza por inducción estructural sobre \lstinline|pf|.
-\changed{A partir del estado final \lstinline|s1| que satisface \lstinline|post| y de la derivación recibida,
-cada caso obtiene un estado inicial que satisface \lstinline|pre| y una ejecución que conecta ambos estados.}
+A partir del estado final \lstinline|s1| que satisface \lstinline|post| y de la derivación recibida,
+cada caso obtiene un estado inicial que satisface \lstinline|pre| y una ejecución que conecta ambos estados.
 %\guido{``A continuación, detallamos algunos casos de la prueba.
 %A grandes rasgos, la prueba consiste en usar $s_1$, que cumple $post$
 %la derivación de $\itriple{pre}{s}{post}$ para
 %encontrar un $s_0$ que cumpla $pre$.''}
 La cláusula \lstinline|decreases pf| indica que cada llamada recursiva se realiza sobre una subderivación menor.
-\changed{A continuación,
-detallamos algunos casos de la prueba.}
+A continuación,
+detallamos algunos casos de la prueba.
 
 Los casos de \lstinline|I_Skip|,
 \lstinline|I_Error| e \lstinline|I_Assume| permiten reconstruir la ejecución de forma directa:
@@ -3195,13 +3195,13 @@ el \emph{store} inicial coincide con el final,
 pero se reemplaza su modo de terminación por \lstinline|Ok| para reconstruir el estado inicial.
 Por último,
 en \lstinline|I_Assume|,
-\changed{recordamos que la regla tiene \lstinline|pre s| en su postcondición,
+recordamos que la regla tiene \lstinline|pre s| en su postcondición,
 con lo cual \lstinline|s1| satisface \lstinline|pre|,
 y podemos tomar \lstinline|s0 = s1|.
 Esto tiene sentido intuitivo:
 los estados finales están más restringidos que los estados iniciales,
 y la operación \lstinline|Assume| no modifica el estado,
-con lo cual es trivial demostrar la solidez de esta regla.}
+con lo cual es trivial demostrar la solidez de esta regla.
 
 Las reglas de asignación y asignación no determinista contienen cuantificadores existenciales en sus postcondiciones.
 Sus testigos permiten reconstruir un estado inicial desde el cual se alcanza el estado final recibido.
@@ -3228,8 +3228,8 @@ sin formar parte de un programa extraído ejecutable.
 %te quedes en Prop podés eliminar a gusto. \fstar{} lo hace distinto
 %con Tot/GTot}
 
-\changed{Con el valor elegido se reconstruye el \emph{store} inicial
-mediante \lstinline|override st1 x x_init| y se define \lstinline|s0 = (st0, Ok):|}
+Con el valor elegido se reconstruye el \emph{store} inicial
+mediante \lstinline|override st1 x x_init| y se define \lstinline|s0 = (st0, Ok):|
 %\guido{Dado esto, construimos $s_1 = s_0 [ x \leftarrow xinit ] $,
 %o algo asi}
 
@@ -3305,11 +3305,11 @@ Si \lstinline|s1| no satisface \lstinline|post|,
 la postcondición de \lstinline|I_Seq| garantiza que tiene modo \lstinline|Er| y satisface \lstinline|mid|.
 En ese caso,
 se reconstruye únicamente la ejecución de \lstinline|p| y se utiliza \lstinline|R_SeqEr| para propagar el fallo.
-\changed{Si el estado final satisface tanto \lstinline|post| como \lstinline|mid| y tiene modo \lstinline|Er|,
+Si el estado final satisface tanto \lstinline|post| como \lstinline|mid| y tiene modo \lstinline|Er|,
 ambas reconstrucciones son posibles.
 Cuando esto ocurre,
 la prueba utiliza la ejecución de ambos comandos,
-pues basta con justificar una ejecución que llegue a ese estado.}
+pues basta con justificar una ejecución que llegue a ese estado.
 
 Los casos de elección no determinista aplican la hipótesis inductiva solo en la rama seleccionada por la derivación:
 
@@ -3322,7 +3322,7 @@ Los casos de elección no determinista aplican la hipótesis inductiva solo en l
 El caso derecho es análogo.
 No es necesario reconstruir una ejecución de la rama descartada.
 
-\changed{Los casos del desenrollado de bucles son también simples.}
+Los casos del desenrollado de bucles son también simples.
 El caso de \lstinline|I_Kleene0| es análogo al de \lstinline|I_Skip|:
 se toma el estado final como estado inicial y se utiliza \lstinline|R_Kleene0| para justificar una ejecución sin iteraciones.
 Para \lstinline|I_KleeneS|,
@@ -3332,11 +3332,11 @@ que \lstinline|R_KleeneS| convierte en una derivación de \lstinline|Kleene p| e
 
 El tratamiento de la iteración mediante \lstinline|I_KleeneVariant| usa una función auxiliar \lstinline|aux|,
 recursiva sobre el número de iteraciones.
-\changed{Esta recibe un natural \lstinline|m| y un estado que satisface \lstinline|variant m|,
+Esta recibe un natural \lstinline|m| y un estado que satisface \lstinline|variant m|,
 y obtiene un estado inicial que satisface \lstinline|variant 0|,
 junto con una ejecución de \lstinline|Kleene p| hasta el estado recibido.
 Ambos estados tienen modo \lstinline|Ok|.
-Este caso se define de la siguiente manera:}
+Este caso se define de la siguiente manera:
 
 \begin{lstlisting}
 | I_KleeneVariant #variant #p pf_var ->
@@ -3381,9 +3381,9 @@ Finalmente,
 en \lstinline|I_Disjunction|,
 el estado final satisface al menos una de las dos postcondiciones.
 La prueba distingue los casos mediante \lstinline|t2b| y aplica la hipótesis inductiva a la derivación correspondiente.
-\changed{Si ambas postcondiciones se cumplen,
+Si ambas postcondiciones se cumplen,
 cualquiera de las dos derivaciones permite justificar el resultado;
-la prueba utiliza la primera.}
+la prueba utiliza la primera.
 El estado inicial obtenido satisface la presunción de esa derivación y,
 por lo tanto,
 también la disyunción de las presunciones,
@@ -3392,9 +3392,9 @@ por lo que puede devolverse con la misma derivación operacional.
 
 La función \lstinline|soundness| instancia el Teorema~\ref{teo:sound-il} para el lenguaje concreto de este capítulo.
 En particular,
-\changed{demuestra,
+demuestra,
 en el contexto fantasma,
-la existencia del estado inicial y de la derivación operacional}
+la existencia del estado inicial y de la derivación operacional
 %\guido{mas o menos, en ghost, así que realmente solo
 %demuestra la existencia}
 exigidos por la caracterización del Lema~\ref{lem:caracterizacion}:
@@ -3532,22 +3532,22 @@ type state = store & heap & term_mode
 type cond = state -> prop
 \end{lstlisting}
 
-\changed{La formalización no impone un único \emph{heap} inicial:
+La formalización no impone un único \emph{heap} inicial:
 el fragmento de memoria considerado depende de la presunción de cada tripleta.
 Un \emph{heap} que asigna \lstinline|Unknown| a todas las ubicaciones representa un fragmento vacío,
-mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.}
+mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.
 %\guido{el heap inicial está en Empty o en Unknown?}
 %\guido{entiendo.. pero en general hay un estado inicial cuando
 %uno define una semántica operacional. supongo que es todo empty,
 %si fuera todo unknown no se puede alocar, no?}
 %\guido{hmmm la regla no requiere Empty...}
 
-\changed{Sobre este modelo de estado,
+Sobre este modelo de estado,
 el lenguaje conserva los comandos del \autoref{cap:formalizacion-il} e incorpora cuatro operaciones de memoria:
 \lstinline|Alloc| para reservar una celda,
 \lstinline|Free| para liberarla,
 \lstinline|Load| para leer su contenido y \lstinline|Store| para modificarlo.
-La extensión se representa mediante:}
+La extensión se representa mediante:
 
 \begin{lstlisting}
 type stmt =
@@ -3614,8 +3614,8 @@ let heap_union (h1 h2 : heap { h1 >< h2 }) : heap =
 El refinamiento exige una prueba de que los \emph{heaps} son disjuntos antes de construir la unión.
 Por lo tanto,
 \lstinline|heap_union h1 h2| representa la unión disjunta $h_1 \uplus h_2$ definida en la \autoref{sec:logsep}.
-\changed{Es trivial demostrar que esta operación es conmutativa y asociativa,
-siempre que las expresiones estén bien definidas.}
+Es trivial demostrar que esta operación es conmutativa y asociativa,
+siempre que las expresiones estén bien definidas.
 
 De manera análoga a lo hecho para \lstinline|heaps_disjoint|,
 definimos el operador infijo \texttt{<+>} como abreviatura de \lstinline|heap_union| y lo representamos mediante $\uplus$ en los fragmentos de código.
@@ -3648,14 +3648,14 @@ let points_to_empty (l : loc) : cond =
 %\guido{serviría usar sintaxis de operadores? \lstinline`points_to_empty` podría
 %llamarse \lstinline`is_empty` o algo mas claro?}
 
-\changed{El predicado \lstinline|points_to l v| describe un \emph{heaplet} formado exclusivamente por una celda activa en la ubicación no nula \lstinline|l|,
+El predicado \lstinline|points_to l v| describe un \emph{heaplet} formado exclusivamente por una celda activa en la ubicación no nula \lstinline|l|,
 con contenido \lstinline|v|.
 La condición sobre las demás ubicaciones exige que todas sean \lstinline|Unknown|,
 lo que corresponde a la interpretación exacta del points-to de la Definición~\ref{def:points_to}.
 Por su parte,
 \lstinline|points_to_empty l| describe un \emph{heaplet} cuya única ubicación conocida es \lstinline|l|,
 también no nula,
-marcada como \lstinline|Empty|.}
+marcada como \lstinline|Empty|.
 Este predicado representa la aserción de \emph{heap} negativo de la Definición~\ref{def:heap_negativo}.
 %\guido{si vas a usar cursiva para ``heap'' también hace falta en heaplet,
 %podemos anotarlo y hacer una pasada al final}
@@ -3681,19 +3681,19 @@ de forma que \lstinline|p| se satisfaga sobre el primer fragmento y \lstinline|q
 Ambas aserciones se evalúan con el mismo \emph{store} y el mismo modo de terminación;
 solo se divide el \emph{heap}.
 
-\changed{A partir de la conjunción separadora,
+A partir de la conjunción separadora,
 se define \lstinline|points_to_flex|,
-que permite describir una celda sin exigir que sea la única del fragmento considerado:}
+que permite describir una celda sin exigir que sea la única del fragmento considerado:
 
 \begin{lstlisting}
 let points_to_flex (l : loc) (v : value) : cond =
   points_to l v ** (fun _ -> True)
 \end{lstlisting}
-\changed{La aserción \lstinline|points_to l v| describe la celda,
+La aserción \lstinline|points_to l v| describe la celda,
 mientras que \lstinline|True| permite cualquier contenido en el fragmento restante,
 disjunto de ella.
 De esta forma,
-el \emph{heap} puede contener otras ubicaciones conocidas.}
+el \emph{heap} puede contener otras ubicaciones conocidas.
 
 \section{Semántica operacional y metateoría}
 \label{sec:isl-semantica}
@@ -3717,9 +3717,9 @@ let state_equiv (s1 s2 : state) : prop =
 \end{lstlisting}
 %\guido{esto es simplemente $==$ creo, porque podemos usar extensionalidad,
 %aunque no importa mucho}
-\changed{Al igual que en el \autoref{cap:formalizacion-il},
+Al igual que en el \autoref{cap:formalizacion-il},
 la extensionalidad funcional permite obtener la igualdad de los estados a partir de esta equivalencia.
-El lema \lstinline|state_equiv_eq| aplica este principio tanto al \emph{store} como al \emph{heap}.}
+El lema \lstinline|state_equiv_eq| aplica este principio tanto al \emph{store} como al \emph{heap}.
 
 En este capítulo se utiliza una versión generalizada de \lstinline|override| que permite actualizar tanto el \emph{store} como el \emph{heap},
 ya que ambos se representan mediante funciones.
@@ -3747,8 +3747,8 @@ la regla operacional de reserva es:
 La ubicación seleccionada debe ser no nula.
 Además,
 debe ser una dirección sobre la cual el \emph{heap} no poseía información o una dirección conocida que no estaba asignada.
-\changed{Admitir \lstinline|Unknown| permite reservar una celda desde un fragmento vacío.
-Exigir únicamente \lstinline|Empty| requeriría que la ubicación ya estuviera descrita como no asignada.}
+Admitir \lstinline|Unknown| permite reservar una celda desde un fragmento vacío.
+Exigir únicamente \lstinline|Empty| requeriría que la ubicación ya estuviera descrita como no asignada.
 %El primer caso representa la reserva de una ubicación nueva respecto del fragmento local.
 %El segundo permite reutilizar una ubicación marcada como \lstinline|Empty|.
 %\changed{Ambos casos corresponden a la semántica de alocación presentada en la \autoref{fig:semantica-isl}.}
@@ -3782,9 +3782,9 @@ De esta manera,
 se preserva el recurso negativo requerido por la ISL.
 
 Si la dirección
-\changed{está marcada como \lstinline|Empty|,
+está marcada como \lstinline|Empty|,
 la liberación termina con error.
-Este caso permite representar un \emph{double free} cuando la celda ya había sido liberada.}
+Este caso permite representar un \emph{double free} cuando la celda ya había sido liberada.
 El \emph{heap} se conserva y el modo de terminación cambia a \texttt{Er}:
 
 \begin{lstlisting}
@@ -3836,7 +3836,7 @@ La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza 
 
 Los constructores \lstinline|R_StoreEr| y \lstinline|R_StoreNull| representan,
 respectivamente, una escritura sobre una celda marcada como \lstinline|Empty| y una escritura sobre la dirección nula.
-\changed{Los omitimos por ser análogos.}
+Los omitimos por ser análogos.
 
 Estos constructores distinguen los accesos a celdas activas,
 los accesos a ubicaciones marcadas como \lstinline|Empty| y los accesos a la dirección nula,
@@ -3864,10 +3864,10 @@ Como resultado se obtiene una nueva derivación:
 \begin{center}
 \lstinline|runsto p (s0| $\bullet$ \lstinline|h_fr) (s1| $\bullet$ \lstinline|h_fr)|,
 \end{center}
-\changed{donde $\bullet$ denota la extensión de un estado por un marco,
+donde $\bullet$ denota la extensión de un estado por un marco,
 presentada en la Definición~\ref{def:state-ext}:
 se conserva el \emph{store} y el modo de terminación,
-y se agrega el marco al \emph{heap} mediante la unión disjunta $\uplus$.}
+y se agrega el marco al \emph{heap} mediante la unión disjunta $\uplus$.
 %\guido{$\bullet$ no era $\uplus$ antes?}
 
 La condición de que el marco sea disjunto del \emph{heap} final es especialmente relevante para la alocación.
@@ -3884,7 +3884,7 @@ la condición del \emph{heap} final también impide que el marco contenga una ub
 La demostración se hace por inducción estructural sobre \lstinline|r|,
 reconstruyendo en cada caso una derivación sobre los \emph{heaps} extendidos.
 %\guido{``La mayoría se los casos son triviales.''?}
-\changed{La mayoría de los casos se resuelven de manera directa.}
+La mayoría de los casos se resuelven de manera directa.
 El caso secuencial requiere,
 además,
 conocer que el marco también es disjunto del \emph{heap} intermedio.
@@ -3933,14 +3933,14 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 
 Los constructores correspondientes a la asignación,
 no determinismo, secuencia, elección, consecuencia, disyunción y estrella de Kleene mantienen la estructura presentada para la IL.
-\changed{Omitimos aquí los constructores compartidos con la IL y nos concentramos en las reglas de memoria dinámica y en la Regla del Marco.}
+Omitimos aquí los constructores compartidos con la IL y nos concentramos en las reglas de memoria dinámica y en la Regla del Marco.
 %\guido{Omitimos detallarlos aquí.}
 
 El poder de los \emph{heaps} negativos se ilustra al analizar la instrucción de liberación de memoria correspondiente a \lstinline|Free|.
 En nuestra formalización,
 el comportamiento de esta instrucción se divide en constructores independientes según su modo de terminación.
 
-\changed{La regla para la liberación exitosa describe el paso de una celda activa a una celda negativa.
+La regla para la liberación exitosa describe el paso de una celda activa a una celda negativa.
 Tras la ejecución de \lstinline|Free e|,
 la postcondición exige que la ubicación liberada esté marcada como \lstinline|Empty|
 y que exista un valor \lstinline|v| tal que,
@@ -3949,7 +3949,7 @@ se obtenga un estado que satisface \lstinline|pre|.
 Así se justifica que cada estado final descrito proviene de un estado inicial en el que la celda estaba asignada,
 sin exigir una forma particular para \lstinline|pre|.
 El cuantificador existencial permite que el valor anterior de la celda sea distinto para cada estado final.
-La regla se representa mediante:}
+La regla se representa mediante:
 
 \begin{lstlisting}
 | ISL_Free : #pre : cond -> e : expr ->
@@ -3973,11 +3973,11 @@ La regla se representa mediante:}
 %\lstinline`(exists v. isl_triple (pre v) c post)
 %==> isl_triple (exists v. pre v) c post`... creo}
 
-\changed{La regla \lstinline|ISL_FreeEr| permite justificar un resultado de error al intentar liberar una ubicación marcada como \lstinline|Empty|.
+La regla \lstinline|ISL_FreeEr| permite justificar un resultado de error al intentar liberar una ubicación marcada como \lstinline|Empty|.
 En particular,
 permite representar errores temporales como el \emph{double free},
 cuando esa marca proviene de una liberación anterior.
-Este caso se representa mediante:}
+Este caso se representa mediante:
 %\guido{la semantica capta el error, ok, pero estamos
 %hablando de la regla de la logica?}
 
@@ -4002,7 +4002,7 @@ Las familias de \lstinline|Load| y \lstinline|Store| siguen la misma estructura.
 Las reglas exitosas reconstruyen el \emph{store} o el \emph{heap} anterior mediante valores existenciales,
 mientras que las reglas de error conservan la celda negativa o la condición de nulidad que explica la transición a \lstinline|Er|.
 
-\changed{Por su parte,
+Por su parte,
 la alocación se representa mediante los constructores \lstinline|ISL_Alloc1| e \lstinline|ISL_Alloc2|,
 correspondientes a las dos reglas presentadas en la \autoref{sec:logincsep}.
 El primero contempla la reserva de una ubicación marcada como \lstinline|Unknown|,
@@ -4011,15 +4011,15 @@ En ambos casos,
 la reconstrucción del estado inicial debe recuperar tanto el valor anterior de la variable destino
 como el estado previo de la celda reservada.
 Omitimos el código de estos constructores,
-ya que siguen el mismo esquema de reconstrucción del estado inicial ilustrado en \lstinline|ISL_Free|.}
+ya que siguen el mismo esquema de reconstrucción del estado inicial ilustrado en \lstinline|ISL_Free|.
 
-\changed{La regla \textsc{Exist} de la \autoref{fig:reglas-isl} se representa mediante \lstinline|ISL_Exists|.
+La regla \textsc{Exist} de la \autoref{fig:reglas-isl} se representa mediante \lstinline|ISL_Exists|.
 Esta permite cuantificar existencialmente una variable del \emph{store} en la presunción y postcondición,
 siempre que dicha variable no aparezca en el comando.
 El predicado \lstinline|fv_stmt p x| indica que \lstinline|x| aparece libre en \lstinline|p|.
 Para expresar la cuantificación,
 \lstinline|exists_var x c| establece que existe un valor para \lstinline|x| con el cual se satisface \lstinline|c|,
-manteniendo el resto del estado:}
+manteniendo el resto del estado:
 
 \begin{lstlisting}
 let exists_var (x : var) (c : cond) : cond =
@@ -4030,13 +4030,13 @@ let exists_var (x : var) (c : cond) : cond =
   squash (~(fv_stmt p x)) ->
   isl_triple (is_ok (exists_var x pre)) p (exists_var x post)
 \end{lstlisting}
-\changed{La condición sobre \lstinline|fv_stmt| garantiza que el comando no lee ni modifica la variable cuantificada.
-Esto permite omitir su valor concreto en las aserciones sin alterar el comportamiento del comando.}
+La condición sobre \lstinline|fv_stmt| garantiza que el comando no lee ni modifica la variable cuantificada.
+Esto permite omitir su valor concreto en las aserciones sin alterar el comportamiento del comando.
 
 Por otro lado, la Regla del Marco debe preservar no solo el \emph{heap} adicional,
 sino también la validez de la aserción enmarcada respecto del \emph{store}.
-\changed{Aunque ese \emph{heap} no cambie,
-la aserción podría dejar de cumplirse si el comando modifica una variable de la que depende.}
+Aunque ese \emph{heap} no cambie,
+la aserción podría dejar de cumplirse si el comando modifica una variable de la que depende.
 %\guido{explicalo un poco más, creo que más que la validez del frame
 %es el \emph{significado} del frame como proposición, que depende del store}
 Para expresar esta condición se calcula el conjunto de variables que un comando puede modificar:
@@ -4085,12 +4085,12 @@ Con esto, la Regla del Marco se codifica como el siguiente constructor:
   isl_triple (is_ok (pre ** fr)) p (post ** fr)
 \end{lstlisting}
 
-\changed{El constructor \lstinline|ISL_Frame| representa la Regla del Marco~\ref{eq:frame-isl}.
+El constructor \lstinline|ISL_Frame| representa la Regla del Marco~\ref{eq:frame-isl}.
 A partir de una derivación para \lstinline|pre| y \lstinline|post|,
 permite incorporar la aserción \lstinline|fr| a ambas mediante la conjunción separadora,
 que exige que los respectivos fragmentos del \emph{heap} sean disjuntos.
 La condición \lstinline|independent_on_vars (modifies p) fr| garantiza que
-los cambios en las variables modificables por \lstinline|p| y en el modo de terminación no alteren la verdad de \lstinline|fr|.}
+los cambios en las variables modificables por \lstinline|p| y en el modo de terminación no alteren la verdad de \lstinline|fr|.
 
 \section{El Teorema de Soundness}
 \label{sec:isl-soundness}
@@ -4111,10 +4111,10 @@ $$\forall \text{\lstinline|s1|}. \ \text{\lstinline|post s1|} \implies
 %\guido{me olvidé del término ``presunción'', al final hagamos una
 %pasada para usarlo consistentemente en vez de precondicion}
 
-\changed{De manera análoga a la IL,
+De manera análoga a la IL,
 el teorema se codifica en \fstar{} mediante una función con tipos dependientes.
 La signatura mantiene la misma forma,
-reemplazando \lstinline|il_triple| por \lstinline|isl_triple| y utilizando los estados y la semántica operacional de la ISL:}
+reemplazando \lstinline|il_triple| por \lstinline|isl_triple| y utilizando los estados y la semántica operacional de la ISL:
 %En \fstar{}, el teorema se codifica mediante la siguiente función con tipos dependientes:
 %\guido{similarmente a IL? o igual en realidad}
 
@@ -4147,8 +4147,8 @@ La prueba extrae ese valor mediante una operación fantasma de elección clásic
 y reconstruye el \emph{heap} inicial reemplazando \lstinline|Empty| por \lstinline|Full v|.
 Luego,
 usa \lstinline|R_Free| para construir la ejecución operacional.
-\changed{La equivalencia entre el estado final obtenido y el estado final recibido se convierte en igualdad mediante \lstinline|state_equiv_eq|,
-lo que permite reutilizar esa derivación.}
+La equivalencia entre el estado final obtenido y el estado final recibido se convierte en igualdad mediante \lstinline|state_equiv_eq|,
+lo que permite reutilizar esa derivación.
 
 Los casos \lstinline|ISL_FreeEr|,
 \lstinline|ISL_LoadEr| e \lstinline|ISL_StoreEr| son más directos.
@@ -4158,9 +4158,9 @@ los casos de acceso a la dirección nula utilizan la prueba de que la expresión
 \lstinline|R_LoadNull| o \lstinline|R_StoreNull|.
 %\guido{demos un ejemplo de alguno?}
 
-\changed{Como ejemplo,
+Como ejemplo,
 mostramos las ramas de la demostración correspondientes a la liberación de memoria,
-cuyas reglas deductivas se presentaron en la \autoref{sec:isl-tipoind}:}
+cuyas reglas deductivas se presentaron en la \autoref{sec:isl-tipoind}:
 
 \begin{lstlisting}
 | ISL_Free #pre e -> 
@@ -4190,21 +4190,21 @@ cuyas reglas deductivas se presentaron en la \autoref{sec:isl-tipoind}:}
   (|s0, r|)
 \end{lstlisting}
 
-\changed{En el caso \lstinline|ISL_Exists|,
+En el caso \lstinline|ISL_Exists|,
 se elige un valor testigo de la cuantificación existencial en la postcondición
 y se aplica la hipótesis inductiva al estado final con ese valor en la variable cuantificada.
 Como la variable no aparece en el comando,
 la ejecución obtenida puede adaptarse para conservar el valor de esa variable en el estado final original.
-El estado inicial resultante satisface la presunción existencialmente cuantificada.}
+El estado inicial resultante satisface la presunción existencialmente cuantificada.
 
-\changed{Para esta construcción,
+Para esta construcción,
 \lstinline|set_var| actualiza una variable del \emph{store} sin modificar el \emph{heap} ni el modo de terminación.
 Por otro lado,
 el lema \lstinline|r_fresh| permite reemplazar por un mismo valor esa variable en ambos extremos de una ejecución,
 siempre que no aparezca en el comando.
 Por último,
 \lstinline|exists_intro| permite justificar un existencial proporcionando un testigo.
-El caso se demuestra de la siguiente manera:}
+El caso se demuestra de la siguiente manera:
 
 \begin{lstlisting}
 | ISL_Exists #p #pre #post x pf_p _ ->
@@ -4239,7 +4239,7 @@ el \emph{heap} final puede dividirse en dos fragmentos disjuntos:
 \begin{center}
 \lstinline|hp1 = h_local <+> h_fr|,
 \end{center}
-\changed{donde \lstinline|p_post| se satisface sobre \lstinline|h_local| y \lstinline|fr| sobre \lstinline|h_fr|.}
+donde \lstinline|p_post| se satisface sobre \lstinline|h_local| y \lstinline|fr| sobre \lstinline|h_fr|.
 %\guido{por que no usar nombres consistentes?}
 
 En la prueba se define esta información mediante un predicado auxiliar:
@@ -4251,11 +4251,11 @@ let p_two (h_local : heap) (h_fr : heap) : prop =
   p_post (st1, h_local, m) /\ fr (st1, h_fr, m)
 in
 \end{lstlisting}
-\changed{La definición de \lstinline|sep_conj| garantiza la existencia de dos \emph{heaps} que satisfacen \lstinline|p_two|.
+La definición de \lstinline|sep_conj| garantiza la existencia de dos \emph{heaps} que satisfacen \lstinline|p_two|.
 %\guido{instanciar qué? no tenemos una prueba de que \emph{existen}?}
 Para utilizarlos en la construcción de la derivación,
 expresamos esta existencia sobre un par de \emph{heaps} y seleccionamos un testigo mediante \lstinline|indefinite_description_ghost|.
-Esta elección se realiza en el contexto fantasma de la prueba.}
+Esta elección se realiza en el contexto fantasma de la prueba.
 
 Una vez aislado el fragmento local del \emph{heap},
 aplicamos la hipótesis inductiva de nuestro teorema:
@@ -4447,8 +4447,8 @@ dado que el error se produce por el valor evaluado por la expresión y no requie
 
 De esta forma,
 los constructores básicos de \lstinline|footprint| describen
-\changed{las ejecuciones sobre los fragmentos de \emph{heap} requeridos por cada operación.
-Las celdas adicionales que pueden aparecer en una derivación de \lstinline|runsto| se incorporan por separado mediante un marco.}
+las ejecuciones sobre los fragmentos de \emph{heap} requeridos por cada operación.
+Las celdas adicionales que pueden aparecer en una derivación de \lstinline|runsto| se incorporan por separado mediante un marco.
 %\guido{esta bien pensar en \lstinline`footprint` como
 %runsto pero sin permitir celdas que no se usan en el heap?}
 
@@ -4526,8 +4526,8 @@ La propagación de un error producido por el primer comando se representa con un
 Como el primer comando termina en error,
 el segundo no se ejecuta y no incorpora nuevos requisitos espaciales.
 
-\changed{Al igual que para \lstinline|runsto|,
-se utiliza \lstinline|state_equiv_eq| para reutilizar una derivación de \lstinline|footprint| sobre estados equivalentes.}
+Al igual que para \lstinline|runsto|,
+se utiliza \lstinline|state_equiv_eq| para reutilizar una derivación de \lstinline|footprint| sobre estados equivalentes.
 %\guido{esta no es admisible tambien?}
 
 \subsection*{Corrección operacional de las huellas}
@@ -4868,10 +4868,10 @@ Como se mencionó en el \autoref{cap:formalizacion-isl},
 la operación \lstinline|Free| transforma una celda \lstinline|Full v| en una celda \lstinline|Empty|.
 Este recurso negativo permite conservar la información de que la dirección fue liberada y usarla después para justificar una ejecución errónea.
 
-\changed{El ejemplo consiste en reservar una celda,
+El ejemplo consiste en reservar una celda,
 liberarla y luego intentar escribir sobre ella.
 En la notación matemática de la ISL,
-estos pasos se describen mediante las siguientes tripletas:}
+estos pasos se describen mediante las siguientes tripletas:
 
 \[
 \begin{array}{c}
@@ -4882,9 +4882,9 @@ estos pasos se describen mediante las siguientes tripletas:}
   \itriple{x \nmapsto}{[x] := 1}{er : x \nmapsto}.
 \end{array}
 \]
-\changed{La alocación produce una celda activa y la liberación la transforma en una celda negativa.
+La alocación produce una celda activa y la liberación la transforma en una celda negativa.
 Esta última permite justificar que la escritura posterior termina con error,
-conservando la información de que la dirección fue liberada.}
+conservando la información de que la dirección fue liberada.
 
 En nuestra sintaxis,
 este programa se representa mediante:
@@ -5005,18 +5005,18 @@ push_back(v); // Puede no hacer nada, o hacer free(*v) y reasignar
 *x = 88;      // Posible uso de puntero colgante
 \end{lstlisting}
 %\guido{aclarar que v tiene tipo $int**$?}
-\changed{Aquí,
+Aquí,
 \lstinline|v| tiene tipo \lstinline|int**| y apunta a una celda que almacena el puntero a la memoria de la estructura.
 El cliente guarda una copia de ese puntero en \lstinline|x|,
 que no se actualiza si \lstinline|push_back| modifica el contenido de \lstinline|*v|.
 El ejemplo se centra en este cambio de referencia,
 sin modelar los elementos,
-la longitud ni la capacidad de un vector.}
+la longitud ni la capacidad de un vector.
 
-\changed{En nuestra formalización,
+En nuestra formalización,
 la memoria referenciada se representa mediante una única celda.
 El parámetro \lstinline|ptr| identifica la variable del programa que cumple el papel de \lstinline|v|.
-El comportamiento del cliente se codifica mediante:}
+El comportamiento del cliente se codifica mediante:
 
 \begin{lstlisting}
 let client (ptr : var) : stmt =
@@ -5048,9 +5048,63 @@ let push_back (ptr : var) : stmt =
   el cliente intenta escribir en la dirección que contiene mediante \lstinline|Store|.
 \end{enumerate}
 
-La primera lectura almacena en \lstinline|x| la dirección original de la estructura.
-La postcondición \lstinline|post_load_x ptr| registra el valor cargado en \lstinline|x|,
-la celda que contiene la referencia de la estructura y la memoria activa a la que apunta dicha referencia.
+\changed{La presunción \lstinline|pre_client ptr| describe dos celdas separadas:
+una contiene la referencia de la estructura y la otra,
+su contenido inicial.
+Para construir la derivación se fija un contexto lógico \lstinline|c : ctx|,
+que reúne el nombre \lstinline|c.ptr|,
+las direcciones de la estructura (\lstinline|c.l_v|),
+de la celda original (\lstinline|c.l_a|) y de la nueva celda (\lstinline|c.l_b|),
+y sus contenidos.
+Las tres direcciones son no nulas y distintas,
+y \lstinline|c.ptr| es diferente de} \lstinline|"x"| y de \lstinline|"y"|.
+Estos parámetros describen el caso considerado y no son variables adicionales del programa:
+
+\begin{lstlisting}
+type ctx = {
+  ptr   : p : var { p <> "x" /\ p <> "y" };
+  l_v   : l : loc { l <> 0 };
+  l_a   : l : loc { l <> 0 /\ l <> l_v };
+  l_b   : l : loc { l <> 0 /\ l <> l_v /\ l <> l_a };
+  val_a : value;
+  val_b : value;
+}
+\end{lstlisting}
+
+\changed{A partir de este contexto,
+\lstinline|heap3 c c1 c2 c3| construye un \emph{heap} con esos contenidos en las tres ubicaciones y \lstinline|Unknown| en las restantes.
+La aserción \lstinline|cells c c1 c2 c3| compara el \emph{heap} del estado con esa representación:}
+
+\begin{lstlisting}
+let heap3 (c : ctx) (c1 c2 c3 : cell) : heap =
+  on loc (fun l ->
+    if l = c.l_v then c1 else if l = c.l_a then c2
+    else if l = c.l_b then c3 else Unknown)
+
+let cells (c : ctx) (c1 c2 c3 : cell) : cond =
+  fun s -> forall l. s._2 l == heap3 c c1 c2 c3 l
+\end{lstlisting}
+
+\changed{La derivación parte de \lstinline|pre_fixed c|,
+que fija la referencia de la estructura y de las dos celdas iniciales,
+dejando \lstinline|c.l_b| como \lstinline|Unknown|.
+La primera lectura almacena en} \lstinline|"x"|
+\changed{la dirección original.
+La aserción \lstinline|post_load_x c| conserva ese \emph{heap} y registra el valor leído.
+La lectura posterior de} \lstinline|"y"|
+\changed{agrega la misma dirección en \lstinline|post_load_y c|.}
+
+\begin{lstlisting}
+let pre_fixed (c : ctx) : cond = fun s ->
+  s._1 c.ptr == Loc c.l_v /\
+  cells c (Full (Loc c.l_a)) (Full c.val_a) Unknown s
+
+let post_load_x (c : ctx) : cond = fun s ->
+  is_ok (pre_fixed c) s /\ s._1 "x" == Loc c.l_a
+
+let post_load_y (c : ctx) : cond = fun s ->
+  post_load_x c s /\ s._1 "y" == Loc c.l_a
+\end{lstlisting}
 
 Para demostrar el error no es necesario analizar las dos ramas de \lstinline|push_back|.
 La interpretación subaproximada permite seleccionar la rama que conduce al estado de interés.
@@ -5063,52 +5117,150 @@ Para justificar el error,
 se consideran las ejecuciones de esta rama en las que la alocación elige una dirección distinta de la liberada.
 Así,
 la estructura pasa a referenciar la nueva celda,
-mientras que la dirección conservada en \lstinline|x| permanece marcada como liberada.
-Esta información se conserva mediante las aserciones históricas producidas por las reglas.
-La aserción \lstinline|post_load_y ptr| describe el estado después de cargar la dirección original en \lstinline|y|.
-A partir de ella se expresa la postcondición de la liberación:
+mientras que la dirección conservada en \lstinline|"x"| permanece marcada como liberada.
+
+\changed{Esta información se registra en las aserciones intermedias,
+que describen el \emph{heap} en el caso considerado después de cada operación.
+La regla local se aplica a la celda utilizada y después \lstinline|ISL_Frame| incorpora los recursos restantes.
+En particular,
+\lstinline|post_load_y c| describe el estado después de cargar la dirección original en} \lstinline|"y"|.
+Tras liberarla se obtiene:
 
 \begin{lstlisting}
-let post_free_y (ptr : var) (s : state) : prop =
-  exists (v : value).
-    s._3 == Ok /\
-    points_to_empty (eval_expr s (Var "y")) s /\
-    post_load_y ptr
-      (s._1, override s._2 (eval_expr s (Var "y")) (Full v), s._3)
+let post_free_y (c : ctx) : cond = fun s ->
+  s._3 == Ok /\ s._1 c.ptr == Loc c.l_v /\
+  s._1 "x" == Loc c.l_a /\ s._1 "y" == Loc c.l_a /\
+  cells c (Full (Loc c.l_a)) Empty Unknown s
 \end{lstlisting}
+\changed{La ubicación \lstinline|c.l_a| queda marcada como \lstinline|Empty|,
+mientras que la celda de la estructura conserva la referencia original.}
 
-La aserción \lstinline|points_to_empty| conserva la información de que la dirección original fue liberada.
-Después de reservar otra celda y escribir su dirección en la celda de la estructura,
-se obtiene el estado descrito por \lstinline|post_store_v ptr|.
-A partir de este estado,
-el cliente intenta una escritura mediante \lstinline|x|,
-que sigue almacenando la dirección original,
-marcada como liberada.
-Por ello,
-se aplica el axioma de fallo \lstinline|ISL_StoreEr|.
-En nuestro código,
-la postcondición de error tiene la forma:
+\changed{Para justificar esta transición mediante la regla local,
+se separa la celda que se libera del resto del \emph{heap}.
+Las aserciones \lstinline|free_pre c| y \lstinline|free_post c| describen esa celda antes y después de la operación.
+Por otro lado,
+\lstinline|frame_free c| conserva la celda de la estructura y los valores de \lstinline|c.ptr| y de} \lstinline|"x"|:
 
 \begin{lstlisting}
-let post_err (ptr : var) (s : state) : prop =
-  s._3 == Er /\
-  points_to_empty (eval_expr s (Var "x")) s /\
-  post_store_v ptr (s._1, s._2, Ok)
-\end{lstlisting}
-Esta postcondición describe estados finales con modo \lstinline|Er|
-y conserva la evidencia espacial de que la dirección utilizada mediante \lstinline|x| fue liberada.
+let free_pre (c : ctx) : cond = fun s ->
+  s._3 == Ok /\ s._1 "y" == Loc c.l_a /\ points_to c.l_a c.val_a s
 
-Con estas aserciones,
-denotamos por \lstinline|p_seq_pb1| la derivación de la rama de reasignación.
-La elección de esta rama y el ajuste de sus aserciones se expresan de la siguiente manera:
+let free_post (c : ctx) : cond = fun s ->
+  s._1 "y" == Loc c.l_a /\ points_to_empty c.l_a s
+
+let frame_free (c : ctx) : cond = fun s ->
+  s._1 c.ptr == Loc c.l_v /\ s._1 "x" == Loc c.l_a /\
+  cells c (Full (Loc c.l_a)) Unknown Unknown s
+\end{lstlisting}
+
+\changed{La regla \lstinline|ISL_Free| exige que,
+al restaurar algún contenido en la celda liberada,
+se obtenga un estado que satisfaga la presunción.
+Para adaptar esa postcondición a \lstinline|free_post c|,
+el lema \lstinline|lemma_free_back| elige \lstinline|c.val_a| como contenido anterior:}
 
 \begin{lstlisting}
-let p_push_back_raw = ISL_ChoiceL p_seq_pb1 in
-let p_push_back = ISL_Consequence (post_load_x ptr) (post_store_v ptr)
-                  p_push_back_raw () () in
+let lemma_free_back (c : ctx) (s : state)
+  : Lemma (requires is_ok (free_post c) s)
+          (ensures is_ok (fun t -> exists w.
+            points_to_empty (eval_expr t (Var "y")) t /\
+            free_pre c (t._1, override t._2 (eval_expr t (Var "y"))
+              (Full w), Ok)) s) =
+  exists_intro (fun w -> points_to_empty (eval_expr s (Var "y")) s /\
+    free_pre c (s._1, override s._2 (eval_expr s (Var "y")) (Full w), Ok)) c.val_a
 \end{lstlisting}
+\changed{Como \lstinline|free_post c| fija el valor de} \lstinline|"y"|
+\changed{en \lstinline|Loc c.l_a|,
+la actualización reconstruye la celda \lstinline|c.l_a| con contenido \lstinline|Full c.val_a|.
+El estado reconstruido satisface \lstinline|free_pre c|,
+y \lstinline|exists_intro| aporta ese contenido como testigo.
+Esta reconstrucción pertenece a la prueba y no agrega una escritura al programa.}
+
+\changed{Una vez justificada la operación local,
+hay que relacionar su resultado con el estado completo descrito por \lstinline|post_free_y c|.
+Para ello,
+\lstinline|split_free| exhibe dos \emph{heaps}:
+uno que contiene solo la celda liberada y otro que conserva la celda de la estructura:}
+
+\begin{lstlisting}
+let split_free (c : ctx) (s : state)
+  : Lemma (requires post_free_y c s)
+          (ensures (is_ok (free_post c) ** frame_free c) s) =
+  introduce_frame (is_ok (free_post c)) (frame_free c) s
+    (singleton_empty_heap c.l_a)
+    (heap3 c (Full (Loc c.l_a)) Unknown Unknown)
+\end{lstlisting}
+\changed{\lstinline|singleton_empty_heap c.l_a| asigna \lstinline|Empty| a \lstinline|c.l_a| y \lstinline|Unknown| a las demás ubicaciones.
+El segundo \emph{heap} contiene la celda \lstinline|c.l_v| y deja \lstinline|c.l_a| como \lstinline|Unknown|.
+Como ambas direcciones son distintas,
+los fragmentos son disjuntos y su unión coincide con el \emph{heap} de \lstinline|post_free_y c|.
+El auxiliar \lstinline|introduce_frame| reúne esos testigos y las aserciones que satisfacen para concluir la conjunción separadora.}
+
+\changed{Con estas dos implicaciones,
+se construye la derivación de la liberación:}
+
+\begin{lstlisting}
+let step_free (c : ctx)
+  : isl_triple (is_ok (post_load_y c)) (Free (Var "y")) (post_free_y c) =
+  let local = ISL_Consequence (free_pre c) (is_ok (free_post c))
+    (ISL_Free #(free_pre c) (Var "y")) ()
+    (forall_intro (move_requires (lemma_free_back c))) in
+  ISL_Consequence (post_load_y c) (post_free_y c)
+    (ISL_Frame (frame_free c) local ()) ()
+    (forall_intro (move_requires (split_free c)))
+\end{lstlisting}
+\changed{La primera aplicación de \lstinline|ISL_Consequence| utiliza \lstinline|lemma_free_back| para obtener la derivación local
+con resultado \lstinline|is_ok (free_post c)|.
 Luego,
-la derivación de \lstinline|push_back| se compone con la lectura inicial y la escritura final.
+\lstinline|ISL_Frame| incorpora el marco,
+que se conserva porque \lstinline|Free| no modifica variables del \emph{store}.
+La última aplicación de \lstinline|ISL_Consequence| amplía la presunción a \lstinline|post_load_y c| y restringe el resultado a \lstinline|post_free_y c|,
+cuya descomposición justifica \lstinline|split_free|.
+Las combinaciones de \lstinline|move_requires| y \lstinline|forall_intro| presentan los lemas como implicaciones para todo estado.
+Los demás pasos utilizan las reglas y los marcos correspondientes a cada instrucción.}
+
+\changed{Después de esta liberación,
+la rama reserva otra celda y escribe su dirección en la celda de la estructura,
+alcanzando \lstinline|post_store_v c|.
+El cliente intenta entonces escribir mediante} \lstinline|"x"|,
+\changed{que conserva la dirección original liberada.
+La derivación \lstinline|step_error| aplica \lstinline|ISL_StoreEr| a esa celda y utiliza el marco para conservar los otros recursos.
+La postcondición final se expresa como:}
+
+\begin{lstlisting}
+let post_err (ptr : var) (l_v l_a l_b : loc) (val_b : value) : cond =
+  fun s -> s._3 == Er /\
+    s._1 ptr == Loc l_v /\ s._1 "x" == Loc l_a /\ s._1 "y" == Loc l_b /\
+    (points_to_empty l_a **
+      (points_to l_v (Nat l_b) ** points_to l_b val_b)) s
+\end{lstlisting}
+\changed{La postcondición conserva tres recursos separados:
+la celda original liberada,
+la celda de la estructura actualizada y la nueva celda reservada.
+La variable} \lstinline|"x"|
+\changed{mantiene la dirección original,
+por lo que la escritura sobre esa ubicación produce \lstinline|Er|.}
+
+\changed{Cada operación se justifica mediante una función \lstinline|step_*|.
+Las cuatro operaciones de la rama de reasignación se componen mediante \lstinline|ISL_Seq| en \lstinline|proof_push_back|,
+y \lstinline|ISL_ChoiceL| selecciona esa rama:}
+
+\begin{lstlisting}
+let proof_push_back (c : ctx)
+  : isl_triple (is_ok (post_load_x c)) (push_back c.ptr) (post_store_v c) =
+  let branch = ISL_Seq (step_load_y c) (ISL_Seq (step_free c)
+    (ISL_Seq (step_alloc c) (step_store c))) in
+  ISL_Consequence (post_load_x c) (post_store_v c) (ISL_ChoiceL branch) () ()
+\end{lstlisting}
+
+\changed{Finalmente,
+\lstinline|proof_client_ctx| compone esta derivación con \lstinline|step_load_x| y \lstinline|step_error|.
+Antes del ajuste final,
+la construcción parte de \lstinline|pre_fixed c| y concluye \lstinline|error_fixed c|,
+que describe los mismos valores del \emph{store} y las mismas tres celdas que \lstinline|post_err c.ptr c.l_v c.l_a c.l_b c.val_b| con modo \lstinline|Er|.
+Mediante \lstinline|initial_implies| y la regla \lstinline|ISL_Consequence|,
+se amplía la presunción a \lstinline|pre_client c.ptr| y se expresa el resultado con \lstinline|post_err c.ptr c.l_v c.l_a c.l_b c.val_b|.
+La función \lstinline|proof_client| recibe los parámetros por separado y construye el contexto.}
 
 Este caso muestra que la formalización puede relacionar un error temporal de memoria con una modificación intermedia realizada a través de otro alias.
 La celda negativa conserva la historia del bloque original,
@@ -5189,7 +5341,7 @@ tanto \lstinline|i| como \lstinline|j| son iguales a \lstinline|k|.
 
 Para aplicar \lstinline|ISL_KleeneVariant| debe construirse,
 para cada natural \lstinline|k|,
-una derivación del cuerpo desde \lstinline|is_ok (variant k)| hasta \lstinline|variant (k + 1)|.
+una derivación del cuerpo desde \lstinline|is_ok (variant k)| hasta \lstinline|is_ok (variant (k + 1))|.
 La demostración se realiza paramétricamente en \lstinline|k|.
 La rama izquierda de \lstinline|Choice| incrementa \lstinline|j|,
 mientras que las asignaciones restantes incrementan \lstinline|i|.
@@ -5226,11 +5378,11 @@ let post_er_bug : cond =
     st "j" == Nat 1000000 /\ m == Er
 \end{lstlisting}
 
-\changed{Una búsqueda exhaustiva que enumere las secuencias de decisiones tendría que considerar hasta $2^{1000000}$ combinaciones,
+Una búsqueda exhaustiva que enumere las secuencias de decisiones tendría que considerar hasta $2^{1000000}$ combinaciones,
 lo que hace inviable explorar por completo este espacio para localizar el error.
 La derivación presentada selecciona el camino que incrementa \lstinline|j| en todas las iteraciones
 y utiliza una familia de aserciones para justificarlo paramétricamente,
-sin enumerar las demás combinaciones.}
+sin enumerar las demás combinaciones.
 %\guido{las dos ultimas oraciones deberian ser una sola, y creo que en este
 %parrafo queres justificar que una busqueda exhaustiva tendria dificultad
 %para encontrar este error, decilo explicitamente}
@@ -5455,6 +5607,8 @@ la dirección leída y el contenido de la celda.
 Así,
 el marco puede describir el resto de la lista sin depender del valor actual de la variable que modifica la lectura.
 Estas variables se ocultan mediante \lstinline|ISL_Exists| y no forman parte del programa.
+Para que estas variables sean exclusivamente auxiliares,
+\lstinline|load_fresh| exige que no aparezcan en la lectura y \lstinline|ghost_free pre| garantiza que la presunción no dependa de sus valores.
 La postcondición resultante relaciona el valor leído con un estado anterior obtenido al restablecer la variable modificada:
 
 \begin{lstlisting}
@@ -5509,19 +5663,16 @@ a partir de un estado que satisface \lstinline|post_sum|,
 un \emph{store} anterior que satisface \lstinline|post_load_v|:
 
 \begin{lstlisting}
-let lemma_prove_sum_step (start_ptr : loc) (n : nat) (k : nat) (s : state)
+let lemma_sum (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "sum" ==
-              Nat (eval_expr (st_init, s0._2, s0._3)
-              (Plus (Var "sum") (Var "v"))) /\
+            s0._1 "sum" == Nat (eval_expr (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v"))) /\
             (forall (y : var). y <> "sum" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "sum" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_load_v start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "sum" == 
-      Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "sum") (Var "v"))) /\
+    s._1 "sum" == Nat (eval_expr (st_init, s._2, s._3) (Plus (Var "sum") (Var "v"))) /\
     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
 \end{lstlisting}
 El \emph{store} anterior se obtiene restableciendo únicamente \lstinline|sum| a \lstinline|Nat k|.
@@ -5540,16 +5691,17 @@ La última instrucción del cuerpo lee la dirección almacenada en \lstinline|pt
 Este paso permite alcanzar un estado que satisface \lstinline|variant start_ptr n (k + 1)|.
 
 Para justificar esta lectura,
-el lema \lstinline|lemma_prove_load_ptr| parte del estado posterior al avance.
+el lema \lstinline|lemma_load_ptr| parte del estado posterior al avance.
 Al desplegar \lstinline|history| para \lstinline|k + 1| pasos,
 se obtiene un nodo anterior cuya celda de enlace contiene la dirección actual.
 Esta información permite reconstruir el valor previo de \lstinline|ptr| y establecer la postcondición \lstinline|load_post| de la lectura.
-El lema \lstinline|lemma_points_to_flex| permite reutilizar la información de una celda en estados que comparten el mismo \emph{heap}.
-El auxiliar \lstinline|eval_pointer| justifica la dirección evaluada antes de la lectura,
-y \lstinline|load_post_intro| reúne los datos necesarios para establecer su postcondición:
+\changed{Como la consulta de la celda mediante \lstinline|points_to_flex| no depende del \emph{store},
+la información se conserva al restablecer el valor de} \lstinline|"ptr"|.
+\changed{El auxiliar \lstinline|eval_pointer| justifica la dirección evaluada antes de la lectura,
+y \lstinline|load_post_intro| reúne los datos necesarios para establecer su postcondición:}
 
 \begin{lstlisting}
-let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
+let lemma_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires variant start_ptr n (k + 1) s)
           (ensures load_post (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) s) =
   let curr_ptr = indefinite_description_ghost
@@ -5561,10 +5713,6 @@ let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
     points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs /\
     history start_ptr prev_ptr n k s._2)
   in
-  lemma_points_to_flex prev_ptr (Nat 1) hs;
-  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) hs;
-  lemma_points_to_flex prev_ptr (Nat 1) (override s._1 "ptr" (Loc prev_ptr), s._2, Ok);
-  lemma_points_to_flex (prev_ptr + 1) (Loc curr_ptr) s;
   exists_intro (fun p ->
     (override s._1 "ptr" (Loc prev_ptr)) "ptr" == Loc p /\
     history start_ptr p n k s._2 /\
@@ -5572,22 +5720,36 @@ let lemma_prove_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
   eval_pointer s._1 s._2 prev_ptr;
   load_post_intro (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) s (Loc prev_ptr) (prev_ptr + 1) (Loc curr_ptr)
 \end{lstlisting}
-
 En este caso,
 el testigo \lstinline|prev_ptr| proporciona el valor anterior del puntero.
 Al restablecerlo en el \emph{store},
 se obtiene un estado que satisface \lstinline|post_len|,
 con los acumuladores ya actualizados y el recorrido todavía en el índice \lstinline|k|.
 
+\changed{El lema anterior se utiliza en \lstinline|step_load_ptr|,
+que obtiene la derivación de la lectura mediante \lstinline|framed_load| y adapta su postcondición mediante \lstinline|ISL_Consequence|.
+Para aplicar esta derivación auxiliar,
+\lstinline|ghost_free_post_len| demuestra que \lstinline|post_len| no depende de las variables auxiliares,
+y \lstinline|ghost_free_intro| expresa esta propiedad en la forma requerida por \lstinline|framed_load|:}
+
+\begin{lstlisting}
+let step_load_ptr (start_ptr : loc) (n : nat) (k : nat)
+  : isl_triple (is_ok (post_len start_ptr n k)) (Load "ptr" (Plus (Var "ptr") (Const 1)))
+      (variant start_ptr n (k + 1)) =
+  let load = framed_load (post_len start_ptr n k) "ptr" (Plus (Var "ptr") (Const 1)) #()
+    #(ghost_free_intro (post_len start_ptr n k) (ghost_free_post_len start_ptr n k)) in
+  ISL_Consequence (post_len start_ptr n k) (variant start_ptr n (k + 1)) load ()
+    (forall_intro (move_requires (lemma_load_ptr start_ptr n k)))
+\end{lstlisting}
+
 Con esta última lectura se completa la justificación de una iteración del bucle.
-La derivación \lstinline|proof_loop_step| reúne los pasos anteriores mediante \lstinline|ISL_Seq|,
-comenzando por la comprobación de que \lstinline|ptr| no es nulo y continuando con las lecturas y las asignaciones.
-En cada paso \lstinline|ISL_Consequence| permite ajustar la postcondición de la regla a la aserción intermedia correspondiente.
-De esta manera,
-para cada \lstinline|k| se obtiene una derivación del cuerpo desde \lstinline|is_ok (variant start_ptr n k)|
-hasta \lstinline|variant start_ptr n (k + 1)|.
-A partir de estas derivaciones,
-\lstinline|ISL_KleeneVariant| permite justificar la repetición del cuerpo:
+\changed{La función \lstinline|proof_loop_step| compone mediante \lstinline|ISL_Seq| las derivaciones \lstinline|step_assume|,
+\lstinline|step_load_v|, \lstinline|step_sum|, \lstinline|step_len| y \lstinline|step_load_ptr|.
+Cada una adapta las aserciones de su instrucción mediante \lstinline|ISL_Consequence|.
+Así se obtiene,
+para cada \lstinline|k|,
+una derivación del cuerpo desde \lstinline|is_ok (variant start_ptr n k)| hasta \lstinline|is_ok (variant start_ptr n (k + 1))|.
+Esta familia proporciona la premisa de \lstinline|ISL_KleeneVariant|:}
 
 \begin{lstlisting}
 let proof_loop (start_ptr : loc) (n : nat)
@@ -5597,20 +5759,23 @@ let proof_loop (start_ptr : loc) (n : nat)
 \end{lstlisting}
 
 Después del bucle,
-el programa comprueba que \lstinline|ptr| contiene la dirección nula y ejecuta la comprobación \lstinline|assert| sobre los acumuladores.
-Para justificar la rama de error,
-\lstinline|pre_error| selecciona los estados correspondientes a \lstinline|n| iteraciones en los que el puntero es nulo.
-La aserción \lstinline|post_error| conserva el \emph{store} y el \emph{heap} descritos por esta condición,
+\changed{la aserción \lstinline|post_loop start_ptr n| describe los estados que satisfacen la variante para algún índice entre cero y \lstinline|n|.}
+El programa comprueba entonces que \lstinline|ptr| contiene la dirección nula.
+\changed{La derivación \lstinline|step_exit| selecciona como resultado \lstinline|post_exit start_ptr n|,
+que describe el recorrido de \lstinline|n| pasos con el puntero nulo.
+Desde esta condición,
+\lstinline|step_assert| justifica la rama de error de la comprobación sobre los acumuladores.}
+La aserción \lstinline|post_err| conserva el \emph{store} y el \emph{heap} descritos por \lstinline|post_exit|,
 pero exige el modo de terminación \lstinline|Er|:
 
 \begin{lstlisting}
-let pre_error (start_ptr : loc) (n : nat) : cond =
+let post_exit (start_ptr : loc) (n : nat) : cond =
   fun s ->
     variant start_ptr n n s /\ s._1 "ptr" == Loc 0 /\
     eval_expr s (Eq (Var "sum") (Var "len")) <> 0
 
-let post_error (start_ptr : loc) (n : nat) : cond =
-  fun s -> s._3 == Er /\ pre_error start_ptr n (s._1, s._2, Ok)
+let post_err (start_ptr : loc) (n : nat) : cond =
+  fun s -> s._3 == Er /\ post_exit start_ptr n (s._1, s._2, Ok)
 \end{lstlisting}
 La igualdad entre los acumuladores se deduce de \lstinline|variant start_ptr n n|,
 que exige que ambos tengan el valor \lstinline|Nat n|.
@@ -5622,22 +5787,31 @@ let assert_stmt =
   Assume (enot (Eq (Var "sum") (Var "len")))
 \end{lstlisting}
 
-Como \lstinline|pre_error| establece la igualdad entre \lstinline|sum| y \lstinline|len|,
+Como \lstinline|post_exit| establece la igualdad entre \lstinline|sum| y \lstinline|len|,
 la derivación selecciona la rama izquierda mediante \lstinline|ISL_ChoiceL|.
 El \lstinline|Assume| conserva el estado y \lstinline|Error| cambia el modo de terminación a \lstinline|Er|,
-obteniendo así \lstinline|post_error|.
+obteniendo así \lstinline|post_err|.
 
+\changed{La función \lstinline|proof_assert| compone la comprobación del puntero nulo con la derivación de la rama de error.
 Finalmente,
-\lstinline|proof_prog_list_sum_len| compone las derivaciones de la inicialización,
-el bucle y la comprobación final.
-Su tipo expresa la tripleta demostrada para una dirección inicial y una longitud dadas:
+\lstinline|proof_list_sum_len| reúne la inicialización,
+el bucle y esta comprobación final:}
 
 \begin{lstlisting}
-let proof_prog_list_sum_len (start_ptr : loc) (n : nat)
-  : isl_triple (is_ok (pre_init start_ptr n)) 
-  prog_list_sum_len (post_error start_ptr n)
+let proof_list_sum_len (start_ptr : loc) (n : nat)
+  : isl_triple (is_ok (pre_init start_ptr n)) prog_list_sum_len (post_err start_ptr n) =
+  let p_assert = ISL_Consequence (kleene_post (variant start_ptr n)) (post_err start_ptr n)
+    (proof_assert start_ptr n) () () in
+  let p_loop = ISL_Consequence (kleene_pre (variant start_ptr n)) (post_err start_ptr n)
+    (ISL_Seq (proof_loop start_ptr n) p_assert) () () in
+  ISL_Consequence (pre_init start_ptr n) (post_err start_ptr n)
+    (ISL_Seq (proof_init start_ptr n) p_loop) () ()
 \end{lstlisting}
-La tripleta justifica que cada estado descrito por \lstinline|post_error| es alcanzable mediante el programa desde algún estado que satisface
+\changed{La derivación \lstinline|p_assert| adapta la presunción de \lstinline|proof_assert| a la postcondición del bucle.
+Luego,
+\lstinline|p_loop| compone ambas derivaciones,
+y la última aplicación de \lstinline|ISL_Seq| incorpora la inicialización.}
+La tripleta justifica que cada estado descrito por \lstinline|post_err| es alcanzable mediante el programa desde algún estado que satisface
 \lstinline|is_ok (pre_init start_ptr n)|.
 
 Este caso de estudio combina los predicados espaciales recursivos y la Regla del Marco con las asignaciones,

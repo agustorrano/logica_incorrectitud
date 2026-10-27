@@ -421,12 +421,11 @@ let step_load_ptr (start_ptr : loc) (n : nat) (k : nat)
     (forall_intro (move_requires (lemma_load_ptr start_ptr n k)))
 
 let proof_loop_step (start_ptr : loc) (n : nat) (k : nat)
-  : isl_triple (is_ok (variant start_ptr n k)) loop_body (variant start_ptr n (k + 1)) =
+  : isl_triple (is_ok (variant start_ptr n k)) loop_body (is_ok (variant start_ptr n (k + 1))) =
   let body = ISL_Seq (step_assume start_ptr n k)
-              (ISL_Seq (step_load_v start_ptr n k)
-              (ISL_Seq (step_sum start_ptr n k)
-              (ISL_Seq (step_len start_ptr n k) (step_load_ptr start_ptr n k)))) in
-  ISL_Consequence (variant start_ptr n k) (variant start_ptr n (k + 1)) body () ()
+    (ISL_Seq (step_load_v start_ptr n k) (ISL_Seq (step_sum start_ptr n k)
+    (ISL_Seq (step_len start_ptr n k) (step_load_ptr start_ptr n k)))) in
+  ISL_Consequence (variant start_ptr n k) (is_ok (variant start_ptr n (k + 1))) body () ()
 
 // El bucle: con el variante, n vueltas llevan de variant 0 a variant n.
 let proof_loop (start_ptr : loc) (n : nat)

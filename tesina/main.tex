@@ -4074,9 +4074,9 @@ let rec modifies (p : stmt) (x : var) : prop =
   match p with
   | Assign y _ -> x = y
   | Nondet y -> x = y
-  | Seq s1 s2 -> modifies s1 x \/ modifies s2 x
-  | Choice s1 s2 -> modifies s1 x \/ modifies s2 x
-  | Kleene s -> modifies s x
+  | Seq q r -> modifies q x \/ modifies r x
+  | Choice q r -> modifies q x \/ modifies r x
+  | Kleene q -> modifies q x
   | Alloc y -> x = y
   | Load y _ -> x = y
   | _ -> False
@@ -5405,7 +5405,7 @@ La derivación vuelve a usar \lstinline|ISL_ChoiceL| para seleccionar la rama qu
 La postcondición final es:
 
 \begin{lstlisting}
-let post_er_bug : cond =
+let post_err : cond =
   fun (st, _, m) ->
     st "n" == Nat 1000000 /\ st "i" == Nat 1000000 /\
     st "j" == Nat 1000000 /\ m == Er

@@ -241,9 +241,9 @@ let rec modifies (p : stmt) (x : var) : prop =
   match p with
   | Assign y _ -> x = y
   | Nondet y -> x = y
-  | Seq s1 s2 -> modifies s1 x \/ modifies s2 x
-  | Choice s1 s2 -> modifies s1 x \/ modifies s2 x
-  | Kleene s -> modifies s x
+  | Seq q r -> modifies q x \/ modifies r x
+  | Choice q r -> modifies q x \/ modifies r x
+  | Kleene q -> modifies q x
   | Alloc y -> x = y
   | Load y _ -> x = y
   | _ -> False
@@ -472,9 +472,9 @@ noeq
 type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
     isl_triple (is_ok pre) (Assign x e) 
-      (is_ok (fun s -> exists (x_init : store). 
-        pre (x_init, s._2, s._3) /\ (s._1 x == eval_value (x_init, s._2, s._3) e /\
-        (forall y. (y <> x) ==> s._1 y == x_init y))))
+      (is_ok (fun s -> exists (st_init : store). 
+        pre (st_init, s._2, s._3) /\ (s._1 x == eval_value (st_init, s._2, s._3) e /\
+        (forall y. (y <> x) ==> s._1 y == st_init y))))
   
   | ISL_Nondet : #pre : cond -> x : var -> 
     isl_triple (is_ok pre) (Nondet x)
@@ -760,10 +760,10 @@ let rec soundness
       p_two (fst hp_tup) (snd hp_tup) 
     in
     let h_parts = indefinite_description_ghost (heap & heap) logic_parts in
-    let h_ok = fst h_parts in
+    let h_local = fst h_parts in
     let h_fr = snd h_parts in
     let (|s0_local, r_local|) = 
-      soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_ok, m) in
+      soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
     let (st0, hp0, m0) = s0_local in
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, hp0 <+> h_fr, m0) in

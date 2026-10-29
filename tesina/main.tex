@@ -3554,12 +3554,12 @@ type stmt =
   | Store : expr -> expr -> stmt
 \end{lstlisting}
 
-\changed{Esta extensión también requiere adaptar la evaluación de expresiones a los nuevos valores.
+Esta extensión también requiere adaptar la evaluación de expresiones a los nuevos valores.
 La función \lstinline|eval_expr| sigue devolviendo un natural:
 para una variable,
 utiliza el número contenido en \lstinline|Nat n| o en \lstinline|Loc l|.
 Para conservar el valor de una variable al copiarlo mediante una asignación o una escritura en memoria,
-se incorpora \lstinline|eval_value|:}
+se incorpora \lstinline|eval_value|:
 
 \begin{lstlisting}
 let eval_value (s : state) (e : expr) : GTot value =
@@ -3567,13 +3567,13 @@ let eval_value (s : state) (e : expr) : GTot value =
   | Var x -> s._1 x
   | _ -> Nat (eval_expr s e)
 \end{lstlisting}
-\changed{Cuando la expresión es una variable,
+Cuando la expresión es una variable,
 esta función conserva su constructor.
 Para las demás expresiones devuelve el resultado numérico mediante \lstinline|Nat|.
 Luego,
 copiar una variable que contiene \lstinline|Loc l| conserva ese valor.
 La evaluación de las direcciones de acceso y de las comparaciones sigue utilizando \lstinline|eval_expr|,
-por lo que esta adaptación no impone una separación de tipos entre números y punteros.}
+por lo que esta adaptación no impone una separación de tipos entre números y punteros.
 
 \section{Álgebra de \emph{heaps} y aserciones espaciales}
 \label{sec:isl-aserciones}
@@ -3730,8 +3730,6 @@ let state_equiv (s1 s2 : state) : prop =
   (forall l. s1._2 l == s2._2 l) /\
   s1._3 == s2._3
 \end{lstlisting}
-%\guido{esto es simplemente $==$ creo, porque podemos usar extensionalidad,
-%aunque no importa mucho}
 Al igual que en el \autoref{cap:formalizacion-il},
 la extensionalidad funcional permite obtener la igualdad de los estados a partir de esta equivalencia.
 El lema \lstinline|state_equiv_eq| aplica este principio tanto al \emph{store} como al \emph{heap}.
@@ -3746,8 +3744,6 @@ presentamos los constructores operacionales de las nuevas operaciones de memoria
 
 Al igual que antes,
 se utiliza \lstinline|ok_state| para restringir los estados iniciales al modo \lstinline|Ok|.
-%\guido{borraría esta última oración, es obvio, y la primera vez que la lei
-%no entendí que estaba hablando de la definicion de okstate}
 Luego,
 la regla operacional de reserva es:
 
@@ -3756,34 +3752,12 @@ la regla operacional de reserva es:
   #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
   runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
 \end{lstlisting}
-%\guido{realmente la pre es unknown o empty? como puede
-%ser que el caso unknown funcione con el marco?}
-%\guido{ahora me acordé que el unknown está bien porque
-%después la celda queda ``quemada'' y la regla del marco
-%funca. Pero, se pierde algo si requerimos empty? Eso me suena
-%MUCHO mas natural}
 
 La ubicación seleccionada debe ser no nula.
 Además,
 debe ser una dirección sobre la cual el \emph{heap} no poseía información o una dirección conocida que no estaba asignada.
 Admitir \lstinline|Unknown| permite reservar una celda desde un fragmento vacío.
 Exigir únicamente \lstinline|Empty| requeriría que la ubicación ya estuviera descrita como no asignada.
-%El primer caso representa la reserva de una ubicación nueva respecto del fragmento local.
-%El segundo permite reutilizar una ubicación marcada como \lstinline|Empty|.
-%\changed{Ambos casos corresponden a la semántica de alocación presentada en la \autoref{fig:semantica-isl}.}
-%\guido{estas 3 últimas oraciones no agregan mucho?}
-%\guido{me confunde referenciar a la logica porque estamos hablando
-%de la semantica. por ahi estoy confundido yo}
-
-%\changed{El caso \lstinline|Unknown| es compatible con la extensión por marcos
-%porque esta exige disjunción también con el \emph{heap} final.
-%Tras la alocación,
-%la ubicación contiene \lstinline|Full v|,
-%por lo que no puede pertenecer al marco.
-%Esta condición se explicita más adelante en \lstinline|r_frame|.}
-%\guido{eso es claro, pero el programa también puede hacer free
-%de esa misma celda. Lo que no permite que pertenezca al marco
-%es que queda quemada como Empty}
 
 La liberación exitosa se formaliza mediante:
 
@@ -3948,15 +3922,13 @@ pero ahora las aserciones también pueden describir el \emph{heap}:
 \begin{lstlisting}
 type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type
 \end{lstlisting}
-%\guido{saca el noeq, son detalles}
 
 Los constructores correspondientes a la asignación,
 no determinismo, secuencia, elección, consecuencia, disyunción y estrella de Kleene mantienen la estructura presentada para la IL.
-\changed{En particular,
+En particular,
 la asignación adapta el valor de la variable destino mediante \lstinline|eval_value|,
-de acuerdo con la semántica operacional.}
+de acuerdo con la semántica operacional.
 Omitimos aquí los constructores compartidos con la IL y nos concentramos en las reglas de memoria dinámica y en la Regla del Marco.
-%\guido{Omitimos detallarlos aquí.}
 
 El poder de los \emph{heaps} negativos se ilustra al analizar la instrucción de liberación de memoria correspondiente a \lstinline|Free|.
 En nuestra formalización,
@@ -4470,14 +4442,10 @@ pero reemplaza su contenido:
   footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
     (st, singleton_full_heap l (eval_value (st, empty_heap, Ok) e2), Ok)
 \end{lstlisting}
-%\guido{indentá los argumentos de footprint así se lee mejor, agregué dos espacios
-%arriba, no toco más para no causar conflictos}
-\changed{El estado auxiliar \lstinline|(st, empty_heap, Ok)| solo aporta el \emph{store} a \lstinline|eval_value|,
-cuya evaluación no depende del \emph{heap} ni del modo de terminación.}
+El estado auxiliar \lstinline|(st, empty_heap, Ok)| solo aporta el \emph{store} a \lstinline|eval_value|,
+cuya evaluación no depende del \emph{heap} ni del modo de terminación.
 Los accesos a la dirección nula utilizan \lstinline|empty_heap|,
 dado que el error se produce por el valor evaluado por la expresión y no requiere tener ninguna celda del \emph{heap}.
-%\guido{esta bien pensar en \lstinline`footprint` como
-%runsto pero sin permitir celdas que no se usan en el heap?}
 
 El caso más complejo de la definición es la composición secuencial.
 Las huellas de dos comandos consecutivos no tienen por qué usar los mismos recursos en el estado intermedio.
@@ -5290,7 +5258,7 @@ let push_back (ptr : var) : stmt =
   el cliente intenta escribir en la dirección que contiene mediante \lstinline|Store|.
 \end{enumerate}
 
-\changed{La presunción \lstinline|pre_client ptr| describe dos celdas separadas:
+La presunción \lstinline|pre_client ptr| describe dos celdas separadas:
 una contiene la referencia de la estructura y la otra,
 su contenido inicial.
 Para construir la derivación se fija un contexto lógico \lstinline|c : ctx|,
@@ -5299,7 +5267,7 @@ las direcciones de la estructura (\lstinline|c.l_v|),
 de la celda original (\lstinline|c.l_a|) y de la nueva celda (\lstinline|c.l_b|),
 y sus contenidos.
 Las tres direcciones son no nulas y distintas,
-y \lstinline|c.ptr| es diferente de} \lstinline|"x"| y de \lstinline|"y"|.
+y \lstinline|c.ptr| es diferente de \lstinline|"x"| y de \lstinline|"y"|.
 Estos parámetros describen el caso considerado y no son variables adicionales del programa:
 
 \begin{lstlisting}
@@ -5313,9 +5281,9 @@ type ctx = {
 }
 \end{lstlisting}
 
-\changed{A partir de este contexto,
+A partir de este contexto,
 \lstinline|heap3 c c1 c2 c3| construye un \emph{heap} con esos contenidos en las tres ubicaciones y \lstinline|Unknown| en las restantes.
-La aserción \lstinline|cells c c1 c2 c3| compara el \emph{heap} del estado con esa representación:}
+La aserción \lstinline|cells c c1 c2 c3| compara el \emph{heap} del estado con esa representación:
 
 \begin{lstlisting}
 let heap3 (c : ctx) (c1 c2 c3 : cell) : heap =
@@ -5327,14 +5295,12 @@ let cells (c : ctx) (c1 c2 c3 : cell) : cond =
   fun s -> forall l. s._2 l == heap3 c c1 c2 c3 l
 \end{lstlisting}
 
-\changed{La derivación parte de \lstinline|pre_fixed c|,
+La derivación parte de \lstinline|pre_fixed c|,
 que fija la referencia de la estructura y de las dos celdas iniciales,
 dejando \lstinline|c.l_b| como \lstinline|Unknown|.
-La primera lectura almacena en} \lstinline|"x"|
-\changed{la dirección original.
+La primera lectura almacena en \lstinline|"x"| la dirección original.
 La aserción \lstinline|post_load_x c| conserva ese \emph{heap} y registra el valor leído.
-La lectura posterior de} \lstinline|"y"|
-\changed{agrega la misma dirección en \lstinline|post_load_y c|.}
+La lectura posterior de \lstinline|"y"| agrega la misma dirección en \lstinline|post_load_y c|.
 
 \begin{lstlisting}
 let pre_fixed (c : ctx) : cond = fun s ->
@@ -5361,11 +5327,11 @@ Así,
 la estructura pasa a referenciar la nueva celda,
 mientras que la dirección conservada en \lstinline|"x"| permanece marcada como liberada.
 
-\changed{Esta información se registra en las aserciones intermedias,
+Esta información se registra en las aserciones intermedias,
 que describen el \emph{heap} en el caso considerado después de cada operación.
 La regla local se aplica a la celda utilizada y después \lstinline|ISL_Frame| incorpora los recursos restantes.
 En particular,
-\lstinline|post_load_y c| describe el estado después de cargar la dirección original en} \lstinline|"y"|.
+\lstinline|post_load_y c| describe el estado después de cargar la dirección original en \lstinline|"y"|.
 Tras liberarla se obtiene:
 
 \begin{lstlisting}
@@ -5374,14 +5340,14 @@ let post_free_y (c : ctx) : cond = fun s ->
   s._1 "x" == Loc c.l_a /\ s._1 "y" == Loc c.l_a /\
   cells c (Full (Loc c.l_a)) Empty Unknown s
 \end{lstlisting}
-\changed{La ubicación \lstinline|c.l_a| queda marcada como \lstinline|Empty|,
-mientras que la celda de la estructura conserva la referencia original.}
+La ubicación \lstinline|c.l_a| queda marcada como \lstinline|Empty|,
+mientras que la celda de la estructura conserva la referencia original.
 
-\changed{Para justificar esta transición mediante la regla local,
+Para justificar esta transición mediante la regla local,
 se separa la celda que se libera del resto del \emph{heap}.
 Las aserciones \lstinline|free_pre c| y \lstinline|free_post c| describen esa celda antes y después de la operación.
 Por otro lado,
-\lstinline|frame_free c| conserva la celda de la estructura y los valores de \lstinline|c.ptr| y de} \lstinline|"x"|:
+\lstinline|frame_free c| conserva la celda de la estructura y los valores de \lstinline|c.ptr| y de \lstinline|"x"|:
 
 \begin{lstlisting}
 let free_pre (c : ctx) : cond = fun s ->
@@ -5395,11 +5361,11 @@ let frame_free (c : ctx) : cond = fun s ->
   cells c (Full (Loc c.l_a)) Unknown Unknown s
 \end{lstlisting}
 
-\changed{La regla \lstinline|ISL_Free| exige que,
+La regla \lstinline|ISL_Free| exige que,
 al restaurar algún contenido en la celda liberada,
 se obtenga un estado que satisfaga la presunción.
 Para adaptar esa postcondición a \lstinline|free_post c|,
-el lema \lstinline|lemma_free_back| elige \lstinline|c.val_a| como contenido anterior:}
+el lema \lstinline|lemma_free_back| elige \lstinline|c.val_a| como contenido anterior:
 
 \begin{lstlisting}
 let lemma_free_back (c : ctx) (s : state)
@@ -5411,18 +5377,17 @@ let lemma_free_back (c : ctx) (s : state)
   exists_intro (fun w -> points_to_empty (eval_expr s (Var "y")) s /\
     free_pre c (s._1, override s._2 (eval_expr s (Var "y")) (Full w), Ok)) c.val_a
 \end{lstlisting}
-\changed{Como \lstinline|free_post c| fija el valor de} \lstinline|"y"|
-\changed{en \lstinline|Loc c.l_a|,
+Como \lstinline|free_post c| fija el valor de \lstinline|"y"| en \lstinline|Loc c.l_a|,
 la actualización reconstruye la celda \lstinline|c.l_a| con contenido \lstinline|Full c.val_a|.
 El estado reconstruido satisface \lstinline|free_pre c|,
 y \lstinline|exists_intro| aporta ese contenido como testigo.
-Esta reconstrucción pertenece a la prueba y no agrega una escritura al programa.}
+Esta reconstrucción pertenece a la prueba y no agrega una escritura al programa.
 
-\changed{Una vez justificada la operación local,
+Una vez justificada la operación local,
 hay que relacionar su resultado con el estado descrito por \lstinline|post_free_y c|.
 Para ello,
 \lstinline|split_free| exhibe dos \emph{heaps}:
-uno que contiene solo la celda liberada y otro que conserva la celda de la estructura:}
+uno que contiene solo la celda liberada y otro que conserva la celda de la estructura:
 
 \begin{lstlisting}
 let split_free (c : ctx) (s : state)
@@ -5432,14 +5397,14 @@ let split_free (c : ctx) (s : state)
     (singleton_empty_heap c.l_a)
     (heap3 c (Full (Loc c.l_a)) Unknown Unknown)
 \end{lstlisting}
-\changed{\lstinline|singleton_empty_heap c.l_a| asigna \lstinline|Empty| a \lstinline|c.l_a| y \lstinline|Unknown| a las demás ubicaciones.
+\lstinline|singleton_empty_heap c.l_a| asigna \lstinline|Empty| a \lstinline|c.l_a| y \lstinline|Unknown| a las demás ubicaciones.
 El segundo \emph{heap} contiene la celda \lstinline|c.l_v| y deja \lstinline|c.l_a| como \lstinline|Unknown|.
 Como ambas direcciones son distintas,
 los fragmentos son disjuntos y su unión coincide con el \emph{heap} de \lstinline|post_free_y c|.
-El auxiliar \lstinline|introduce_frame| reúne esos testigos y las aserciones que satisfacen para concluir la conjunción separadora.}
+El auxiliar \lstinline|introduce_frame| reúne esos testigos y las aserciones que satisfacen para concluir la conjunción separadora.
 
-\changed{Con estas dos implicaciones,
-se construye la derivación de la liberación:}
+Con estas dos implicaciones,
+se construye la derivación de la liberación:
 
 \begin{lstlisting}
 let step_free (c : ctx)
@@ -5451,7 +5416,7 @@ let step_free (c : ctx)
     (ISL_Frame (frame_free c) local ()) ()
     (forall_intro (move_requires (split_free c)))
 \end{lstlisting}
-\changed{La primera aplicación de \lstinline|ISL_Consequence| utiliza \lstinline|lemma_free_back| para obtener la derivación local
+La primera aplicación de \lstinline|ISL_Consequence| utiliza \lstinline|lemma_free_back| para obtener la derivación local
 con resultado \lstinline|is_ok (free_post c)|.
 Luego,
 \lstinline|ISL_Frame| incorpora el marco,
@@ -5459,15 +5424,15 @@ que se conserva porque \lstinline|Free| no modifica variables del \emph{store}.
 La última aplicación de \lstinline|ISL_Consequence| amplía la presunción a \lstinline|post_load_y c| y restringe el resultado a \lstinline|post_free_y c|,
 cuya descomposición justifica \lstinline|split_free|.
 Las combinaciones de \lstinline|move_requires| y \lstinline|forall_intro| presentan los lemas como implicaciones para todo estado.
-Los demás pasos utilizan las reglas y los marcos correspondientes a cada instrucción.}
+Los demás pasos utilizan las reglas y los marcos correspondientes a cada instrucción.
 
-\changed{Después de esta liberación,
+Después de esta liberación,
 la rama reserva otra celda y escribe su dirección en la celda de la estructura,
 alcanzando \lstinline|post_store_v c|.
-El cliente intenta entonces escribir mediante} \lstinline|"x"|,
-\changed{que conserva la dirección original liberada.
+El cliente intenta entonces escribir mediante \lstinline|"x"|,
+que conserva la dirección original liberada.
 La derivación \lstinline|step_error| aplica \lstinline|ISL_StoreEr| a esa celda y utiliza el marco para conservar los otros recursos.
-La postcondición final se expresa como:}
+La postcondición final se expresa como:
 
 \begin{lstlisting}
 let post_err (ptr : var) (l_v l_a l_b : loc) (val_b : value) : cond =
@@ -5476,16 +5441,15 @@ let post_err (ptr : var) (l_v l_a l_b : loc) (val_b : value) : cond =
     (points_to_empty l_a **
       (points_to l_v (Loc l_b) ** points_to l_b val_b)) s
 \end{lstlisting}
-\changed{La postcondición conserva tres recursos separados:
+La postcondición conserva tres recursos separados:
 la celda original liberada,
 la celda de la estructura actualizada y la nueva celda reservada.
-La variable} \lstinline|"x"|
-\changed{mantiene la dirección original,
-por lo que la escritura sobre esa ubicación produce \lstinline|Er|.}
+La variable \lstinline|"x"| mantiene la dirección original,
+por lo que la escritura sobre esa ubicación produce \lstinline|Er|.
 
-\changed{Cada operación se justifica mediante una función \lstinline|step_*|.
+Cada operación se justifica mediante una función \lstinline|step_*|.
 Las cuatro operaciones de la rama de reasignación se componen mediante \lstinline|ISL_Seq| en \lstinline|proof_push_back|,
-y \lstinline|ISL_ChoiceL| selecciona esa rama:}
+y \lstinline|ISL_ChoiceL| selecciona esa rama:
 
 \begin{lstlisting}
 let proof_push_back (c : ctx)
@@ -5495,14 +5459,14 @@ let proof_push_back (c : ctx)
   ISL_Consequence (post_load_x c) (post_store_v c) (ISL_ChoiceL branch) () ()
 \end{lstlisting}
 
-\changed{Finalmente,
+Finalmente,
 \lstinline|proof_client_ctx| compone esta derivación con \lstinline|step_load_x| y \lstinline|step_error|.
 Antes del ajuste final,
 la construcción parte de \lstinline|pre_fixed c| y concluye \lstinline|error_fixed c|,
 que describe los mismos valores del \emph{store} y las mismas tres celdas que \lstinline|post_err c.ptr c.l_v c.l_a c.l_b c.val_b| con modo \lstinline|Er|.
 Mediante \lstinline|initial_implies| y la regla \lstinline|ISL_Consequence|,
 se amplía la presunción a \lstinline|pre_client c.ptr| y se expresa el resultado con \lstinline|post_err c.ptr c.l_v c.l_a c.l_b c.val_b|.
-La función \lstinline|proof_client| recibe los parámetros por separado y construye el contexto.}
+La función \lstinline|proof_client| recibe los parámetros por separado y construye el contexto.
 
 Para obtener un certificado de error,
 se instancia la derivación con la variable \lstinline|"v"| y las direcciones \lstinline|1|,
@@ -5984,10 +5948,10 @@ el lema \lstinline|lemma_load_ptr| parte del estado posterior al avance.
 Al desplegar \lstinline|history| para \lstinline|k + 1| pasos,
 se obtiene un nodo anterior cuya celda de enlace contiene la dirección actual.
 Esta información permite reconstruir el valor previo de \lstinline|ptr| y establecer la postcondición \lstinline|load_post| de la lectura.
-\changed{Como la consulta de la celda mediante \lstinline|points_to_flex| no depende del \emph{store},
-la información se conserva al restablecer el valor de} \lstinline|"ptr"|.
-\changed{El auxiliar \lstinline|eval_pointer| justifica la dirección evaluada antes de la lectura,
-y \lstinline|load_post_intro| reúne los datos necesarios para establecer su postcondición:}
+Como la consulta de la celda mediante \lstinline|points_to_flex| no depende del \emph{store},
+la información se conserva al restablecer el valor de \lstinline|"ptr"|.
+El auxiliar \lstinline|eval_pointer| justifica la dirección evaluada antes de la lectura,
+y \lstinline|load_post_intro| reúne los datos necesarios para establecer su postcondición:
 
 \begin{lstlisting}
 let lemma_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
@@ -6015,11 +5979,11 @@ Al restablecerlo en el \emph{store},
 se obtiene un estado que satisface \lstinline|post_len|,
 con los acumuladores ya actualizados y el recorrido todavía en el índice \lstinline|k|.
 
-\changed{El lema anterior se utiliza en \lstinline|step_load_ptr|,
+El lema anterior se utiliza en \lstinline|step_load_ptr|,
 que obtiene la derivación de la lectura mediante \lstinline|framed_load| y adapta su postcondición mediante \lstinline|ISL_Consequence|.
 Para aplicar esta derivación auxiliar,
 \lstinline|ghost_free_post_len| demuestra que \lstinline|post_len| no depende de las variables auxiliares,
-y \lstinline|ghost_free_intro| expresa esta propiedad en la forma requerida por \lstinline|framed_load|:}
+y \lstinline|ghost_free_intro| expresa esta propiedad en la forma requerida por \lstinline|framed_load|:
 
 \begin{lstlisting}
 let step_load_ptr (start_ptr : loc) (n : nat) (k : nat)
@@ -6032,13 +5996,13 @@ let step_load_ptr (start_ptr : loc) (n : nat) (k : nat)
 \end{lstlisting}
 
 Con esta última lectura se completa la justificación de una iteración del bucle.
-\changed{La función \lstinline|proof_loop_step| compone mediante \lstinline|ISL_Seq| las derivaciones \lstinline|step_assume|,
+La función \lstinline|proof_loop_step| compone mediante \lstinline|ISL_Seq| las derivaciones \lstinline|step_assume|,
 \lstinline|step_load_v|, \lstinline|step_sum|, \lstinline|step_len| y \lstinline|step_load_ptr|.
 Cada una adapta las aserciones de su instrucción mediante \lstinline|ISL_Consequence|.
 Así se obtiene,
 para cada \lstinline|k|,
 una derivación del cuerpo desde \lstinline|is_ok (variant start_ptr n k)| hasta \lstinline|is_ok (variant start_ptr n (k + 1))|.
-Esta familia proporciona la premisa de \lstinline|ISL_KleeneVariant|:}
+Esta familia proporciona la premisa de \lstinline|ISL_KleeneVariant|:
 
 \begin{lstlisting}
 let proof_loop (start_ptr : loc) (n : nat)
@@ -6048,12 +6012,12 @@ let proof_loop (start_ptr : loc) (n : nat)
 \end{lstlisting}
 
 Después del bucle,
-\changed{la aserción \lstinline|post_loop start_ptr n| describe los estados que satisfacen la variante para algún índice entre cero y \lstinline|n|.}
+la aserción \lstinline|post_loop start_ptr n| describe los estados que satisfacen la variante para algún índice entre cero y \lstinline|n|.
 El programa comprueba entonces que \lstinline|ptr| contiene la dirección nula.
-\changed{La derivación \lstinline|step_exit| selecciona como resultado \lstinline|post_exit start_ptr n|,
+La derivación \lstinline|step_exit| selecciona como resultado \lstinline|post_exit start_ptr n|,
 que describe el recorrido de \lstinline|n| pasos con el puntero nulo.
 Desde esta condición,
-\lstinline|step_assert| justifica la rama de error de la comprobación sobre los acumuladores.}
+\lstinline|step_assert| justifica la rama de error de la comprobación sobre los acumuladores.
 La aserción \lstinline|post_err| conserva el \emph{store} y el \emph{heap} descritos por \lstinline|post_exit|,
 pero exige el modo de terminación \lstinline|Er|:
 
@@ -6081,10 +6045,10 @@ la derivación selecciona la rama izquierda mediante \lstinline|ISL_ChoiceL|.
 El \lstinline|Assume| conserva el estado y \lstinline|Error| cambia el modo de terminación a \lstinline|Er|,
 obteniendo así \lstinline|post_err|.
 
-\changed{La función \lstinline|proof_assert| compone la comprobación del puntero nulo con la derivación de la rama de error.
+La función \lstinline|proof_assert| compone la comprobación del puntero nulo con la derivación de la rama de error.
 Finalmente,
 \lstinline|proof_list_sum_len| reúne la inicialización,
-el bucle y esta comprobación final:}
+el bucle y esta comprobación final:
 
 \begin{lstlisting}
 let proof_list_sum_len (start_ptr : loc) (n : nat)
@@ -6096,10 +6060,10 @@ let proof_list_sum_len (start_ptr : loc) (n : nat)
   ISL_Consequence (pre_init start_ptr n) (post_err start_ptr n)
     (ISL_Seq (proof_init start_ptr n) p_loop) () ()
 \end{lstlisting}
-\changed{La derivación \lstinline|p_assert| adapta la presunción de \lstinline|proof_assert| a la postcondición del bucle.
+La derivación \lstinline|p_assert| adapta la presunción de \lstinline|proof_assert| a la postcondición del bucle.
 Luego,
 \lstinline|p_loop| compone ambas derivaciones,
-y la última aplicación de \lstinline|ISL_Seq| incorpora la inicialización.}
+y la última aplicación de \lstinline|ISL_Seq| incorpora la inicialización.
 La tripleta justifica que cada estado descrito por \lstinline|post_err| es alcanzable mediante el programa desde algún estado que satisface
 \lstinline|is_ok (pre_init start_ptr n)|.
 

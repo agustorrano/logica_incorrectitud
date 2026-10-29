@@ -22,14 +22,6 @@ type cell =
 type store = var ^-> value
 type heap = loc ^-> cell
 
-let heap_is_complete (h : heap) : prop =
-  forall l. ~(Unknown? (h l))
-
-let complete_heap : Type = h : heap { heap_is_complete h }
-
-let initial_heap : complete_heap =
-  on loc (fun _ -> Empty)
-
 type expr =
   | Var : var -> expr
   | Const : nat -> expr
@@ -110,10 +102,13 @@ let state_equiv_eq (s1 s2 : state)
 let cell_disjoint (c1 c2 : cell) : prop =
   c1 == Unknown \/ c2 == Unknown
 
-let cell_union (c1 c2 : cell { cell_disjoint c1 c2 }) : cell =
+let cell_merge (c1 c2 : cell) : cell =
   match c1 with
   | Unknown -> c2
   | _ -> c1
+
+let heap_merge (h1 h2 : heap) : heap =
+  on loc (fun l -> cell_merge (h1 l) (h2 l))
 
 let heaps_disjoint (h1 h2 : heap) : prop =
   forall l. cell_disjoint (h1 l) (h2 l)
@@ -122,7 +117,7 @@ let (><) (h1 h2 : heap) : prop =
   heaps_disjoint h1 h2
 
 let heap_union (h1 h2 : heap { h1 >< h2 }) : heap =
-  on loc (fun l -> cell_union (h1 l) (h2 l))
+  heap_merge h1 h2
 
 let (<+>) = heap_union
 
@@ -426,33 +421,6 @@ let introduce_frame (p fr : cond) (s : state) (h_local h_frame : heap)
 let points_to_flex (l : loc) (v : value) : cond =
   points_to l v ** (fun _ -> True)
 
-let lemma_points_to_flex (l : loc) (v : value) (s : state)
-  : Lemma (ensures (points_to_flex l v s <==> (l <> 0 /\ s._2 l == Full v))) =
-  if t2b (points_to_flex l v s) then
-    let h1 = indefinite_description_ghost heap (fun h1 -> exists h2.
-      h1 >< h2 /\
-      s._2 == (h1 <+> h2) /\
-      points_to l v (s._1, h1, s._3))
-    in
-    let h2 = indefinite_description_ghost heap (fun h2 ->
-      h1 >< h2 /\
-      s._2 == (h1 <+> h2) /\
-      points_to l v (s._1, h1, s._3))
-    in
-    assert (l <> 0 /\ s._2 l == Full v)
-  else if l <> 0 && s._2 l == Full v then
-    let h1 = singleton_full_heap l v in
-    let h2 = heap_without s._2 l in
-    extensionality loc (fun _ -> cell) s._2 (h1 <+> h2);
-    exists_intro (fun b ->
-      h1 >< b /\
-      s._2 == (h1 <+> b) /\
-      points_to l v (s._1, h1, s._3)) h2;
-    exists_intro (fun a -> exists b.
-      a >< b /\
-      s._2 == (a <+> b) /\
-      points_to l v (s._1, a, s._3)) h1
-
 let independent_on_vars (vars : string -> prop) (c : cond) : prop =
   forall (st1 st2 : store) (hp : heap) (m1 m2 : term_mode).
     match_except_vars vars st1 st2 ==> (c (st1, hp, m1) <==> c (st2, hp, m2))
@@ -713,14 +681,6 @@ let rec r_fresh (#p : stmt) (#s0 #s1 : state)
     eval_expr_fresh s e1 x v;
     R_StoreNull s0_f e1 e2
 
-let lemma_exists_tuple (#a #b : Type) (p : a -> b -> prop) :
-  Lemma (requires (exists (x : a) (y : b). p x y))
-        (ensures (exists (tup : a & b). p (fst tup) (snd tup))) = 
-  let x = indefinite_description_ghost a (fun x -> exists y. p x y) in
-  let y = indefinite_description_ghost b (fun y -> p x y) in
-  let tup : a & b = (x, y) in
-  assert (p (fst tup) (snd tup))
-
 let rec soundness
   (p : stmt) (pre : cond) (post : cond)
   (pf : isl_triple pre p post)
@@ -748,19 +708,16 @@ let rec soundness
 
   | ISL_Frame #p_pre #p_cmd #p_post fr pf_p _ ->
     let (st1, hp1, m) = s1 in
-    let unfold p_two (h_local : heap) (h_fr : heap) : prop = 
+    let unfold p_two (h_local h_fr : heap) : prop = 
       h_local >< h_fr /\ 
       hp1 == (h_local <+> h_fr) /\ 
       p_post (st1, h_local, m) /\ 
       fr (st1, h_fr, m)
     in
-    lemma_exists_tuple p_two;
-    let logic_parts (hp_tup : heap & heap) : prop = 
-      p_two (fst hp_tup) (snd hp_tup) 
-    in
-    let h_parts = indefinite_description_ghost (heap & heap) logic_parts in
-    let h_local = fst h_parts in
-    let h_fr = snd h_parts in
+    let h_local = indefinite_description_ghost heap (fun h_local ->
+      exists h_fr. p_two h_local h_fr) in
+    let h_fr = indefinite_description_ghost heap (fun h_fr ->
+      p_two h_local h_fr) in
     let (|s0_local, r_local|) = 
       soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
     let (st0, hp0, m0) = s0_local in
@@ -874,13 +831,10 @@ let rec soundness
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
     in
-    lemma_exists_tuple p_lv;
-    let logic_parts (lv : loc & value) : prop =
-      p_lv (fst lv) (snd lv)
-    in
-    let lv_w = indefinite_description_ghost (loc & value) logic_parts in
-    let l = fst lv_w in
-    let v = snd lv_w in
+    let l = indefinite_description_ghost loc (fun l ->
+      exists v. p_lv l v) in
+    let v = indefinite_description_ghost value (fun v ->
+      p_lv l v) in
     let p_xold (x_o : value) : prop =
       pre (override st1 x x_o, override hp1 l Unknown, Ok)
     in
@@ -897,13 +851,10 @@ let rec soundness
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
     in
-    lemma_exists_tuple p_lv;
-    let logic_parts (lv : loc & value) : prop =
-      p_lv (fst lv) (snd lv)
-    in
-    let lv_w = indefinite_description_ghost (loc & value) logic_parts in
-    let l = fst lv_w in
-    let v = snd lv_w in
+    let l = indefinite_description_ghost loc (fun l ->
+      exists v. p_lv l v) in
+    let v = indefinite_description_ghost value (fun v ->
+      p_lv l v) in
     let p_xold (x_o : value) : prop =
       pre (override st1 x x_o, override hp1 l Empty, Ok)
     in
@@ -955,11 +906,10 @@ let rec soundness
       points_to l_i v_i s1 /\ st1 x == v_i /\
       pre (override st1 x x_old, hp1, Ok)
     in
-    lemma_exists_tuple p_lv;
-    let logic_parts (lv : loc & value) : prop = p_lv (fst lv) (snd lv) in
-    let lv_w = indefinite_description_ghost (loc & value) logic_parts in
-    let l = fst lv_w in
-    let v = snd lv_w in
+    let l = indefinite_description_ghost loc (fun l ->
+      exists v. p_lv l v) in
+    let v = indefinite_description_ghost value (fun v ->
+      p_lv l v) in
     let st0 = override st1 x x_old in
     let hp0 = hp1 in
     let s0 : state = (st0, hp0, Ok) in
@@ -1252,14 +1202,6 @@ let footprint_starts_ok (#p : stmt) (#s0 #s1 : state) (fp : footprint p s0 s1)
   match fp with
   | _ -> ()
 
-let cell_merge (c1 c2 : cell) : cell =
-  match c1 with
-  | Unknown -> c2
-  | _ -> c1
-
-let heap_merge (h1 h2 : heap) : heap =
-  on loc (fun l -> cell_merge (h1 l) (h2 l))
-
 let cell_meet (c1 c2 : cell) : cell =
   match c1, c2 with
   | Unknown, _ -> Unknown
@@ -1391,64 +1333,28 @@ let framed_seq_er (#p #q : stmt) (#s0 : state) (#s1 : state { s1._3 == Er })
 // 11. Completitud de la descomposición en huellas
 // ============================================================
 
+let frame_local (#p : stmt) (#t0 #t1 : state) (fp : footprint p t0 t1)
+  (s0 s1 : state) (h_fr : heap)
+  (#_ : squash (t0._2 >< h_fr /\ t1._2 >< h_fr /\
+                state_equiv (t0._1, t0._2 <+> h_fr, t0._3) s0 /\
+                state_equiv (t1._1, t1._2 <+> h_fr, t1._3) s1))
+  : GTot (framed_footprint p s0 s1) =
+  state_equiv_eq (t0._1, t0._2 <+> h_fr, t0._3) s0;
+  state_equiv_eq (t1._1, t1._2 <+> h_fr, t1._3) s1;
+  FF_Frame p t0 t1 h_fr fp () ()
+
 let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) (decreases r) =
   match r with
-  | R_Skip s ->
-    let st = s._1 in
-    let h = s._2 in
-    let s_local = (st, empty_heap, Ok) in
-    let s_framed = (st, empty_heap <+> h, Ok) in
-    let ff = FF_Frame Skip s_local s_local h (F_Skip st) () () in
-    state_equiv_eq s_framed s;
-    ff
+  | R_Skip s -> frame_local (F_Skip s._1) s0 s1 s._2
 
-  | R_Error s ->
-    let st = s._1 in
-    let h = s._2 in
-    let s0_local = (st, empty_heap, Ok) in
-    let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, empty_heap <+> h, Ok) in
-    let s1_framed = (st, empty_heap <+> h, Er) in
-    let ff = FF_Frame Error s0_local s1_local h (F_Error st) () () in
-    state_equiv_eq s0_framed s;
-    state_equiv_eq s1_framed (st, h, Er);
-    ff
+  | R_Error s -> frame_local (F_Error s._1) s0 s1 s._2
   
-  | R_Assign x e s ->
-    let st = s._1 in
-    let h = s._2 in
-    let s0_local = (st, empty_heap, Ok) in
-    let st1 = override st x (eval_value (st, empty_heap, Ok) e) in
-    let s1_local = (st1, empty_heap, Ok) in
-    let s0_framed = (st, empty_heap <+> h, Ok) in
-    let s1_framed = (st1, empty_heap <+> h, Ok) in
-    let ff = FF_Frame (Assign x e) s0_local s1_local h (F_Assign st x e) () () in
-    state_equiv_eq s0_framed s;
-    state_equiv_eq s1_framed (st1, h, Ok);
-    ff
+  | R_Assign x e s -> frame_local (F_Assign s._1 x e) s0 s1 s._2
   
-  | R_Nondet s #x v ->
-    let st = s._1 in
-    let h = s._2 in
-    let s0_local = (st, empty_heap, Ok) in
-    let st1 = override st x v in
-    let s1_local = (st1, empty_heap, Ok) in
-    let s0_framed = (st, empty_heap <+> h, Ok) in
-    let s1_framed = (st1, empty_heap <+> h, Ok) in
-    let ff = FF_Frame (Nondet x) s0_local s1_local h (F_Nondet st x v) () () in
-    state_equiv_eq s0_framed s;
-    state_equiv_eq s1_framed (st1, h, Ok);
-    ff
+  | R_Nondet s #x v -> frame_local (F_Nondet s._1 x v) s0 s1 s._2
   
-  | R_Assume s #e _ ->
-    let st = s._1 in
-    let h = s._2 in
-    let s_local = (st, empty_heap, Ok) in
-    let s_framed = (st, empty_heap <+> h, Ok) in
-    let ff = FF_Frame (Assume e) s_local s_local h (F_Assume st e) () () in
-    state_equiv_eq s_framed s;
-    ff
+  | R_Assume s #e _ -> frame_local (F_Assume s._1 e) s0 s1 s._2
   
   | R_SeqEr #p #q #s #t r_p ->
     let ff_p = runsto_decompose r_p in
@@ -1508,14 +1414,7 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
       footprint_starts_ok fp_q;
       F_ChoiceR p q sl0 sl1 fp_q) ff_q
   
-  | R_Kleene0 #p #s ->
-    let st = s._1 in
-    let h = s._2 in
-    let s_local = (st, empty_heap, Ok) in
-    let s_framed = (st, empty_heap <+> h, Ok) in
-    let ff = FF_Frame (Kleene p) s_local s_local h (F_Kleene0 st p) () () in
-    state_equiv_eq s_framed s;
-    ff
+  | R_Kleene0 #p #s -> frame_local (F_Kleene0 s._1 p) s0 s1 s._2
   
   | R_KleeneS #p #s #t r_seq ->
     let ff_seq = runsto_decompose r_seq in
@@ -1524,164 +1423,271 @@ let rec runsto_decompose (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
       F_KleeneS p sl0 sl1 fp_seq) ff_seq
   
   | R_Alloc s #x l v ->
-    let st = s._1 in
-    let h = s._2 in
-    let h_fr = heap_without h l in
-    let st1 = override st x (Loc l) in
-    if Unknown? (h l) then
-      let s0_local = (st, empty_heap, Ok) in
-      let s1_local = (st1, singleton_full_heap l v, Ok) in
-      let s0_framed = (st, empty_heap <+> h_fr, Ok) in
-      let s1_framed = (st1, (singleton_full_heap l v) <+> h_fr, Ok) in
-      let fp_alloc = F_AllocFresh st x l v in
-      let ff = FF_Frame (Alloc x) s0_local s1_local h_fr fp_alloc () () in
-      state_equiv_eq s0_framed s0;
-      state_equiv_eq s1_framed s1;
-      ff
+    if Unknown? (s._2 l) then
+      frame_local (F_AllocFresh s._1 x l v) s0 s1 (heap_without s._2 l)
     else
-      let s0_local = (st, singleton_empty_heap l, Ok) in
-      let s1_local = (st1, singleton_full_heap l v, Ok) in
-      let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
-      let s1_framed = (st1, (singleton_full_heap l v) <+> h_fr, Ok) in
-      let fp_alloc = F_AllocReuse st x l v in
-      let ff = FF_Frame (Alloc x) s0_local s1_local h_fr fp_alloc () () in
-      state_equiv_eq s0_framed s0;
-      state_equiv_eq s1_framed s1;
-      ff
+      frame_local (F_AllocReuse s._1 x l v) s0 s1 (heap_without s._2 l)
   
-  | R_Free s e l v ->
-    let st = s._1 in
-    let h = s._2 in
-    let h_fr = heap_without h l in
-    let s0_local = (st, singleton_full_heap l v, Ok) in
-    let s1_local = (st, singleton_empty_heap l, Ok) in
-    let s0_framed = (st, (singleton_full_heap l v) <+> h_fr, Ok) in
-    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
-    let fp_free = F_Free st e l v in
-    let ff = FF_Frame (Free e) s0_local s1_local h_fr fp_free () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+  | R_Free s e l v -> frame_local (F_Free s._1 e l v) s0 s1 (heap_without s._2 l)
   
   | R_FreeEr s e ->
-    let st = s._1 in
-    let h = s._2 in
     let l = eval_expr s e in
-    let h_fr = heap_without h l in
-    let s0_local = (st, singleton_empty_heap l, Ok) in
-    let s1_local = (st, singleton_empty_heap l, Er) in
-    let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
-    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Er) in
-    let f_free = F_FreeEr st e l #() in
-    let ff = FF_Frame (Free e) s0_local s1_local h_fr f_free () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+    frame_local (F_FreeEr s._1 e l) s0 s1 (heap_without s._2 l)
   
-  | R_FreeNull s e ->
-    let st = s._1 in
-    let h = s._2 in
-    let s0_local = (st, empty_heap, Ok) in
-    let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, empty_heap <+> h, Ok) in
-    let s1_framed = (st, empty_heap <+> h, Er) in
-    let f_free = F_FreeNull st e #() in
-    let ff = FF_Frame (Free e) s0_local s1_local h f_free () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+  | R_FreeNull s e -> frame_local (F_FreeNull s._1 e) s0 s1 s._2
   
   | R_Load s x e v ->
-    let st = s._1 in
-    let h = s._2 in
     let l = eval_expr s e in
-    let h_fr = heap_without h l in
-    let s0_local = (st, singleton_full_heap l v, Ok) in
-    let st1 = override st x v in
-    let s1_local = (st1, singleton_full_heap l v, Ok) in
-    let s0_framed = (st, (singleton_full_heap l v) <+> h_fr, Ok) in
-    let s1_framed = (st1, (singleton_full_heap l v) <+> h_fr, Ok) in
-    let fp_load = F_Load st x e l v #() in
-    let ff = FF_Frame (Load x e) s0_local s1_local h_fr fp_load () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+    frame_local (F_Load s._1 x e l v) s0 s1 (heap_without s._2 l)
   
   | R_LoadEr s x e ->
-    let st = s._1 in
-    let h = s._2 in
     let l = eval_expr s e in
-    let h_fr = heap_without h l in
-    let s0_local = (st, singleton_empty_heap l, Ok) in
-    let s1_local = (st, singleton_empty_heap l, Er) in
-    let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
-    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Er) in
-    let f_load = F_LoadEr st x e l #() in
-    let ff = FF_Frame (Load x e) s0_local s1_local h_fr f_load () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+    frame_local (F_LoadEr s._1 x e l) s0 s1 (heap_without s._2 l)
   
-  | R_LoadNull s x e ->
-    let st = s._1 in
-    let h = s._2 in
-    let s0_local = (st, empty_heap, Ok) in
-    let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, empty_heap <+> h, Ok) in
-    let s1_framed = (st, empty_heap <+> h, Er) in
-    let f_load = F_LoadNull st x e #() in
-    let ff = FF_Frame (Load x e) s0_local s1_local h f_load () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+  | R_LoadNull s x e -> frame_local (F_LoadNull s._1 x e) s0 s1 s._2
   
-  | R_Store s e1 e2 l v ->
-    let st = s._1 in
-    let h = s._2 in
-    let h_fr = heap_without h l in
-    let s0_local = (st, singleton_full_heap l v, Ok) in
-    let h1 = singleton_full_heap l (eval_value (st, empty_heap, Ok) e2) in
-    let s1_local = (st, h1, Ok) in
-    let s0_framed = (st, (singleton_full_heap l v) <+> h_fr, Ok) in
-    let s1_framed = (st, h1 <+> h_fr, Ok) in
-    let fp_store = F_Store st e1 e2 l v in
-    let ff = FF_Frame (Store e1 e2) s0_local s1_local h_fr fp_store () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+  | R_Store s e1 e2 l v -> frame_local (F_Store s._1 e1 e2 l v) s0 s1 (heap_without s._2 l)
 
   | R_StoreEr s e1 e2 ->
-    let st = s._1 in
-    let h = s._2 in
     let l = eval_expr s e1 in
-    let h_fr = heap_without h l in
-    let s0_local = (st, singleton_empty_heap l, Ok) in
-    let s1_local = (st, singleton_empty_heap l, Er) in
-    let s0_framed = (st, (singleton_empty_heap l) <+> h_fr, Ok) in
-    let s1_framed = (st, (singleton_empty_heap l) <+> h_fr, Er) in
-    let f_store = F_StoreEr st e1 e2 l #() in
-    let ff = FF_Frame (Store e1 e2) s0_local s1_local h_fr f_store () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+    frame_local (F_StoreEr s._1 e1 e2 l) s0 s1 (heap_without s._2 l)
   
-  | R_StoreNull s e1 e2 ->
-    let st = s._1 in
-    let h = s._2 in
-    let s0_local = (st, empty_heap, Ok) in
-    let s1_local = (st, empty_heap, Er) in
-    let s0_framed = (st, empty_heap <+> h, Ok) in
-    let s1_framed = (st, empty_heap <+> h, Er) in
-    let f_store = F_StoreNull st e1 e2 #() in
-    let ff = FF_Frame (Store e1 e2) s0_local s1_local h f_store () () in
-    state_equiv_eq s0_framed s0;
-    state_equiv_eq s1_framed s1;
-    ff
+  | R_StoreNull s e1 e2 -> frame_local (F_StoreNull s._1 e1 e2) s0 s1 s._2
  
-let footprint_theorem_sound (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
+let framed_decomposition_sound (#p : stmt) (#s0 #s1 : state) (ff : framed_footprint p s0 s1)
   : GTot (runsto p s0 s1) =
   framed_footprint_sound p s0 s1 ff
 
-let footprint_theorem_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
+let framed_decomposition_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (framed_footprint p s0 s1) =
   runsto_decompose r
+
+// ============================================================
+// 12. Orden por marcos y minimalidad
+// ============================================================
+
+let runs (p : stmt) (s0 s1 : state) : prop = exists (_ : runsto p s0 s1). True
+
+let known (c : cell) : bool = not (Unknown? c)
+let nonempty (h : heap) : prop = exists l. known (h l)
+
+let framed_by (t0 t1 s0 s1 : state) (hf : heap) : prop =
+  t0._2 >< hf /\ t1._2 >< hf /\
+  s0 == (t0._1, t0._2 <+> hf, t0._3) /\
+  s1 == (t1._1, t1._2 <+> hf, t1._3)
+
+let minimal (p : stmt) (s0 s1 : state) : prop =
+  runs p s0 s1 /\
+  (forall (t0 t1 : state) (hf : heap).
+    (runs p t0 t1 /\ nonempty hf /\ framed_by t0 t1 s0 s1 hf) ==> False)
+
+let has_min_below (p : stmt) (s0 s1 : state) : prop =
+  exists (t0 t1 : state) (hf : heap).
+    minimal p t0 t1 /\ framed_by t0 t1 s0 s1 hf
+
+// ============================================================
+// 13. Cota
+// ============================================================
+
+let bounded (h : heap) (n : nat) : prop =
+  forall (l : loc). l >= n ==> h l == Unknown
+
+let rec count (h : heap) (n : nat) : GTot nat (decreases n) =
+  if n = 0 then 0
+  else count h (n - 1) + (
+    if known (h (n - 1)) then 1 else 0
+  )
+
+let rec count_mono (h h' : heap) (n : nat)
+  : Lemma (requires forall (l : loc). l < n /\ known (h l) ==> known (h' l))
+          (ensures count h n <= count h' n) (decreases n) =
+  if n = 0 then () else count_mono h h' (n - 1)
+
+let rec count_strict (h h' : heap) (n : nat) (l : loc)
+  : Lemma (requires (forall (l' : loc). l' < n /\ known (h l') ==> known (h' l')) /\
+            l < n /\ known (h' l) /\ not (known (h l)))
+          (ensures count h n < count h' n) (decreases n) =
+  if l = n - 1 then count_mono h h' (n - 1)
+  else count_strict h h' (n - 1) l
+
+let union_bounded (h1 h2 : heap) (n1 n2 : nat)
+  : Lemma (requires h1 >< h2 /\ bounded h1 n1 /\ bounded h2 n2)
+          (ensures bounded (h1 <+> h2) (if n1 >= n2 then n1 else n2)) =
+  ()
+
+let rec footprint_bounded (#p : stmt) (#s0 #s1 : state) (f : footprint p s0 s1)
+  : Lemma (ensures exists (n : nat). bounded s0._2 n) (decreases f) =
+  match f with
+  | F_Seq p q st0 stm st1 h_common h_p h_q h0 h1 m1 f_p f_q ->
+    footprint_bounded f_p;
+    footprint_bounded f_q;
+    let n0 = indefinite_description_ghost nat (fun n -> bounded h0 n) in
+    let nq = indefinite_description_ghost nat (fun n -> bounded (h_common <+> h_q) n) in
+    union_bounded h0 h_q n0 nq
+  | F_SeqEr _ _ _ _ f' -> footprint_bounded f'
+  | F_ChoiceL _ _ _ _ f' -> footprint_bounded f'
+  | F_ChoiceR _ _ _ _ f' -> footprint_bounded f'
+  | F_KleeneS _ _ _ f' -> footprint_bounded f'
+  | F_AllocReuse _ _ l _ -> assert (bounded s0._2 (l + 1))
+  | F_Free _ _ l _ -> assert (bounded s0._2 (l + 1))
+  | F_FreeEr _ _ l -> assert (bounded s0._2 (l + 1))
+  | F_Load _ _ _ l _ -> assert (bounded s0._2 (l + 1))
+  | F_LoadEr _ _ _ l -> assert (bounded s0._2 (l + 1))
+  | F_Store _ _ _ l _ -> assert (bounded s0._2 (l + 1))
+  | F_StoreEr _ _ _ l -> assert (bounded s0._2 (l + 1))
+  | _ -> assert (bounded s0._2 0)
+
+// ============================================================
+// 14. Composición de marcos
+// ============================================================
+
+let compose_frames (r0 r1 t0 t1 s0 s1 : state) (hf1 hf2 : heap)
+  : Lemma (requires framed_by r0 r1 t0 t1 hf1 /\ framed_by t0 t1 s0 s1 hf2)
+          (ensures hf1 >< hf2 /\ framed_by r0 r1 s0 s1 (hf1 <+> hf2)) =
+  state_equiv_eq (r0._1, r0._2 <+> (hf1 <+> hf2), r0._3) s0;
+  state_equiv_eq (r1._1, r1._2 <+> (hf1 <+> hf2), r1._3) s1
+
+let empty_frame (s0 s1 : state)
+  : Lemma (framed_by s0 s1 s0 s1 empty_heap) =
+  state_equiv_eq (s0._1, s0._2 <+> empty_heap, s0._3) s0;
+  state_equiv_eq (s1._1, s1._2 <+> empty_heap, s1._3) s1
+
+// ============================================================
+// 15. Existe transición mínima
+// ============================================================
+
+let rec minimize (p : stmt) (s0 s1 : state) (n : nat)
+  : Lemma (requires runs p s0 s1 /\ bounded s0._2 n)
+          (ensures has_min_below p s0 s1) (decreases (count s0._2 n)) =
+  empty_frame s0 s1;
+  if t2b (minimal p s0 s1) then ()
+  else
+    let t0 = indefinite_description_ghost state (fun t0 ->
+      exists (t1 : state) (hf : heap).
+        runs p t0 t1 /\ nonempty hf /\ framed_by t0 t1 s0 s1 hf) in
+    let t1 = indefinite_description_ghost state (fun t1 ->
+      exists (hf : heap).
+        runs p t0 t1 /\ nonempty hf /\ framed_by t0 t1 s0 s1 hf) in
+    let hf = indefinite_description_ghost heap (fun hf ->
+      runs p t0 t1 /\ nonempty hf /\ framed_by t0 t1 s0 s1 hf) in
+    let l = indefinite_description_ghost loc (fun l -> known (hf l)) in
+    count_strict t0._2 s0._2 n l;
+    minimize p t0 t1 n;
+    let r0 = indefinite_description_ghost state (fun r0 ->
+      exists (r1 : state) (hr : heap).
+        minimal p r0 r1 /\ framed_by r0 r1 t0 t1 hr) in
+    let r1 = indefinite_description_ghost state (fun r1 ->
+      exists (hr : heap).
+        minimal p r0 r1 /\ framed_by r0 r1 t0 t1 hr) in
+    let hr = indefinite_description_ghost heap (fun hr ->
+      minimal p r0 r1 /\ framed_by r0 r1 t0 t1 hr) in
+    compose_frames r0 r1 t0 t1 s0 s1 hr hf
+
+// ============================================================
+// 16. Teorema de la huella
+// ============================================================
+
+let footprint_theorem_minimal (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
+  : Lemma (has_min_below p s0 s1) =
+  let parts = flatten_framed (runsto_decompose r) in
+  let t0 = parts.local_start in
+  let t1 = parts.local_end in
+  let hf = parts.frame_heap in
+  footprint_bounded parts.local_footprint;
+  state_equiv_eq (t0._1, t0._2 <+> hf, t0._3) s0;
+  state_equiv_eq (t1._1, t1._2 <+> hf, t1._3) s1;
+  let r_loc = footprint_sound p t0 t1 parts.local_footprint in
+  exists_intro (fun (_ : runsto p t0 t1) -> True) r_loc;
+  let n = indefinite_description_ghost nat (fun n -> bounded t0._2 n) in
+  minimize p t0 t1 n;
+  let r0 = indefinite_description_ghost state (fun r0 ->
+    exists (r1 : state) (hr : heap).
+      minimal p r0 r1 /\ framed_by r0 r1 t0 t1 hr) in
+  let r1 = indefinite_description_ghost state (fun r1 ->
+    exists (hr : heap).
+      minimal p r0 r1 /\ framed_by r0 r1 t0 t1 hr) in
+  let hr = indefinite_description_ghost heap (fun hr ->
+    minimal p r0 r1 /\ framed_by r0 r1 t0 t1 hr) in
+  compose_frames r0 r1 t0 t1 s0 s1 hr hf
+
+let minimal_framed_runs (p : stmt) (r0 r1 : state) (hf : heap)
+  : Lemma (requires minimal p r0 r1 /\ r0._2 >< hf /\ r1._2 >< hf)
+          (ensures runs p (r0._1, r0._2 <+> hf, r0._3) (r1._1, r1._2 <+> hf, r1._3)) =
+  let r = indefinite_description_ghost (runsto p r0 r1) (fun _ -> True) in
+  exists_intro (fun (_ : runsto p (r0._1, r0._2 <+> hf, r0._3) (r1._1, r1._2 <+> hf, r1._3)) -> True)
+    (r_frame r hf #() #())
+
+// ============================================================
+// 17. Adecuación a heaps completos
+// ============================================================
+
+let heap_is_complete (h : heap) : prop =
+  forall l. known (h l)
+
+let complete_cell (c : cell) : cell =
+  match c with
+  | Unknown -> Empty
+  | _ -> c
+
+let complete (h : heap) : heap = on loc (fun l -> complete_cell (h l))
+
+let cstate (s : state) : state = (s._1, complete s._2, s._3)
+
+let complete_override (st : store) (h : heap) (m : term_mode)
+  (l : loc) (c : cell { known c })
+  : Lemma ((st, complete (override h l c), m) == (st, override (complete h) l c, m)) =
+  state_equiv_eq (st, complete (override h l c), m) (st, override (complete h) l c, m)
+
+let rec run_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
+  : GTot (runsto p (cstate s0) (cstate s1)) (decreases r) =
+  let c0 = cstate s0 in
+  match r with
+  | R_Skip _ -> R_Skip c0
+  | R_Error _ -> R_Error c0
+  | R_Assign x e _ -> R_Assign x e c0
+  | R_Nondet _ #x v -> R_Nondet c0 #x v
+  | R_Assume _ #e _ -> R_Assume c0 #e ()
+  | R_SeqEr #p #q r_p ->
+    R_SeqEr #p #q #c0 #(cstate s1) (run_complete r_p)
+  | R_Seq #p #q #s #t r_p r_q ->
+    R_Seq #p #q #c0 #(cstate t) #(cstate s1) (run_complete r_p) (run_complete r_q)
+  | R_ChoiceL #p #q r_p ->
+    R_ChoiceL #p #q #c0 #(cstate s1) (run_complete r_p)
+  | R_ChoiceR #p #q r_q ->
+    R_ChoiceR #p #q #c0 #(cstate s1) (run_complete r_q)
+  | R_Kleene0 #p -> R_Kleene0 #p #c0
+  | R_KleeneS #p r_seq ->
+    R_KleeneS #p #c0 #(cstate s1) (run_complete r_seq)
+  | R_Alloc _ #x l v ->
+    complete_override s1._1 s0._2 s1._3 l (Full v);
+    R_Alloc c0 #x l v
+  | R_Free _ e l v ->
+    complete_override s1._1 s0._2 s1._3 l Empty;
+    R_Free c0 e l v
+  | R_FreeEr _ e -> R_FreeEr c0 e
+  | R_FreeNull _ e -> R_FreeNull c0 e
+  | R_Load _ x e v -> R_Load c0 x e v
+  | R_LoadEr _ x e -> R_LoadEr c0 x e
+  | R_LoadNull _ x e -> R_LoadNull c0 x e
+  | R_Store _ e1 e2 l v ->
+    complete_override s1._1 s0._2 s1._3 l (Full (eval_value s0 e2));
+    R_Store c0 e1 e2 l v
+  | R_StoreEr _ e1 e2 -> R_StoreEr c0 e1 e2
+  | R_StoreNull _ e1 e2 -> R_StoreNull c0 e1 e2
+
+// ============================================================
+// 18. Certificado de existencia de error
+// ============================================================
+
+let error_reachable (pre : cond) (p : stmt) : prop =
+  exists (s0 s1 : state). pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
+    heap_is_complete (cstate s0)._2 /\ runs p (cstate s0) (cstate s1)
+
+let certify (#pre #post : cond) (#p : stmt) (pf : isl_triple pre p post) (s1 : state)
+  : Lemma (requires post s1 /\ s1._3 == Er)
+          (ensures error_reachable pre p) =
+  let (| s0, r |) = soundness p pre post pf s1 in
+  exists_intro (fun (_ : runsto p s0 s1) -> True) r;
+  exists_intro (fun (_ : runsto p (cstate s0) (cstate s1)) -> True) (run_complete r);
+  assert (pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
+    heap_is_complete (cstate s0)._2 /\ runs p (cstate s0) (cstate s1))

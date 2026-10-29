@@ -1,6 +1,7 @@
 module AllocFree
 
 open IncSepLogic
+open FStar.FunctionalExtensionality
 
 // Def del programa a verificar
 (*
@@ -36,13 +37,19 @@ let prog_uaf =
 let proof_uaf : isl_triple (is_ok emp) prog_uaf post_uaf_err =
   let p_alloc_raw = ISL_Alloc1 #emp "x" in
   let p_alloc = ISL_Consequence emp post_alloc p_alloc_raw () () in
-
   let p_free_raw = ISL_Free #post_alloc (Var "x") in
   let p_free = ISL_Consequence post_alloc post_free p_free_raw () () in
-  
   let p_store = ISL_StoreEr #post_free (Var "x") (Const 1) in
-
   let p_seq1 = ISL_Seq p_free p_store in
   let p_seq2 = ISL_Seq p_alloc p_seq1 in
-  
   ISL_Consequence emp post_uaf_err p_seq2 () ()
+
+// Certificado: el use-after-free es alcanzable.
+// Testigo: x = Loc 1 y la celda 1 liberada.
+
+let st_uaf = on var (fun y -> if y = "x" then Loc 1 else Nat 0)
+
+let uaf_reachable () : Lemma (error_reachable (is_ok emp) prog_uaf) =
+  let hp_full = override (singleton_empty_heap 1) 1 (Full (Nat 0)) in
+  assert (points_to 1 (Nat 0) (st_uaf, hp_full, Ok));
+  certify proof_uaf (st_uaf, singleton_empty_heap 1, Er)

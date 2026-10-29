@@ -9,6 +9,7 @@ let ( ||| ) = Choice
 let enot (e : expr) : expr = Minus (Const 1) e
 
 // Programa
+
 let init_vars =
   Assign "sum" (Const 0) `Seq`
   Assign "len" (Const 0)
@@ -30,6 +31,7 @@ let prog_list_sum_len =
       (Seq (Assume (Eq (Var "ptr") (Const 0))) assert_stmt))
 
 // Listas enlazadas
+
 let rec list_seg (i j : loc) (xs : list value) : Tot cond (decreases xs) =
   match xs with
   | [] -> fun s -> emp s /\ i == j
@@ -43,6 +45,7 @@ let rec ones (n : nat) : list value =
 let heap_only (hp : heap) : state = on var (fun _ -> Nat 0), hp, Ok
 
 // Load con marco (framed_load): las tres partes, en forma generica
+
 let g_old = "list_old" // valor viejo
 let g_addr = "list_addr" // dirección leída
 let g_value = "list_value" // valor leído
@@ -76,6 +79,7 @@ let load_fresh (x : var) (e : expr) : prop =
 let load_addr (st : store) = eval_expr' st (Var g_addr)
 
 // Postcondicion que da framed_load (la forma "global" del load)
+
 let load_post (pre : cond) (x : var) (e : expr) : cond =
   fun s -> s._3 == Ok /\
     exists (x_old : value) (l : loc) (v : value).
@@ -91,6 +95,7 @@ let load_post_intro (pre : cond) (x : var) (e : expr) (s : state)
           (ensures load_post pre x e s) = ()
 
 // ---------- 1. Parte local: solo la celda leida ----------
+
 let read_cell (x : var) (e : expr) : cond =
   fun s -> s._3 == Ok /\ s._1 x == s._1 g_old /\
     eval_expr s e == load_addr s._1 /\
@@ -123,6 +128,7 @@ let lemma_read_back (x : var) (e : expr)
     read_cell x e (override s._1 x old, s._2, Ok)) (load_addr s._1)
 
 // ---------- 2. Marco: pre vale sobre el heap completo ----------
+
 let frame_load (pre : cond) (x : var) : cond =
   fun s -> s._2 (load_addr s._1) == Unknown /\
     pre (override s._1 x (s._1 g_old), override s._2 (load_addr s._1) (Full (s._1 g_value)), Ok)
@@ -141,6 +147,7 @@ let frame_load_indep (pre : cond) (x : var) (e : expr) (#fresh : squash (load_fr
     forall_intro (fun m1 -> forall_intro (move_requires (frame_load_indep_aux pre x e #() st1 st2 hp m1))))))
 
 // ---------- 3. Consequence: local ** marco <-> aserciones ----------
+
 let split_cell (hp : heap) (l : loc) (v : value)
   : Lemma (requires hp l == Full v)
           (ensures (singleton_full_heap l v) >< (heap_without hp l) /\
@@ -210,6 +217,7 @@ let split_load (pre : cond) (x : var) (e : expr)
     (override s._1 g_value w, s._2, s._3)) v
 
 // ---------- Las tres partes juntas ----------
+
 let framed_load (pre : cond) (x : var) (e : expr)
   (#fresh : squash (load_fresh x e)) (#free : squash (ghost_free pre))
   : isl_triple (is_ok pre) (Load x e) (load_post pre x e) =
@@ -224,6 +232,7 @@ let framed_load (pre : cond) (x : var) (e : expr)
     (forall_intro (move_requires (split_load pre x e #() #())))
 
 // Aserciones
+
 let rec history (start_ptr curr_ptr : loc) (n : nat) (k : nat) (hp : heap)
   : GTot prop (decreases k) =
   let s = heap_only hp in
@@ -286,6 +295,7 @@ let post_err (start_ptr : loc) (n : nat) : cond =
   fun s -> s._3 == Er /\ post_exit start_ptr n (s._1, s._2, Ok)
 
 // Lemas
+
 let ghost_free_post_assume (start_ptr : loc) (n : nat) (k : nat)
   (st : store) (hp : heap) (m : term_mode) (g : var) (v : value)
   : Lemma (requires (g == g_old \/ g == g_addr \/ g == g_value))
@@ -361,12 +371,14 @@ let lemma_load_ptr (start_ptr : loc) (n : nat) (k : nat) (s : state)
 
 // Inicializacion
 // sum := 0
+
 let step_init_sum (start_ptr : loc) (n : nat)
   : isl_triple (is_ok (pre_init start_ptr n)) (Assign "sum" (Const 0)) (post_init_sum start_ptr n) =
   ISL_Consequence (pre_init start_ptr n) (post_init_sum start_ptr n)
     (ISL_Assign #(pre_init start_ptr n) "sum" (Const 0)) () ()
 
 // len := 0
+
 let step_init_len (start_ptr : loc) (n : nat)
   : isl_triple (is_ok (post_init_sum start_ptr n)) (Assign "len" (Const 0))
       (kleene_pre (variant start_ptr n)) =
@@ -380,6 +392,7 @@ let proof_init (start_ptr : loc) (n : nat)
 
 // Cuerpo del bucle: un paso por funcion (vuelta k -> k + 1)
 // 1. assume(ptr <> 0): todavia no se llego al final de la lista.
+
 let step_assume (start_ptr : loc) (n : nat) (k : nat)
   : isl_triple (is_ok (variant start_ptr n k)) (Assume (enot (Eq (Var "ptr") (Const 0))))
       (post_assume start_ptr n k) =
@@ -387,6 +400,7 @@ let step_assume (start_ptr : loc) (n : nat) (k : nat)
     (ISL_Assume #(variant start_ptr n k) (enot (Eq (Var "ptr") (Const 0)))) () ()
 
 // 2. v := [ptr]: leer el valor del nodo actual (load con marco).
+
 let step_load_v (start_ptr : loc) (n : nat) (k : nat)
   : isl_triple (is_ok (post_assume start_ptr n k)) (Load "v" (Var "ptr"))
       (post_load_v start_ptr n k) =
@@ -396,6 +410,7 @@ let step_load_v (start_ptr : loc) (n : nat) (k : nat)
     (forall_intro (move_requires (lemma_load_v start_ptr n k)))
 
 // 3. sum := sum + v
+
 let step_sum (start_ptr : loc) (n : nat) (k : nat)
   : isl_triple (is_ok (post_load_v start_ptr n k)) (Assign "sum" (Plus (Var "sum") (Var "v")))
       (post_sum start_ptr n k) =
@@ -404,6 +419,7 @@ let step_sum (start_ptr : loc) (n : nat) (k : nat)
     (forall_intro (move_requires (lemma_sum start_ptr n k)))
 
 // 4. len := len + 1
+
 let step_len (start_ptr : loc) (n : nat) (k : nat)
   : isl_triple (is_ok (post_sum start_ptr n k)) (Assign "len" (Plus (Var "len") (Const 1)))
       (post_len start_ptr n k) =
@@ -412,6 +428,7 @@ let step_len (start_ptr : loc) (n : nat) (k : nat)
     (forall_intro (move_requires (lemma_len start_ptr n k)))
 
 // 5. ptr := [ptr + 1]: avanzar al siguiente nodo (load con marco).
+
 let step_load_ptr (start_ptr : loc) (n : nat) (k : nat)
   : isl_triple (is_ok (post_len start_ptr n k)) (Load "ptr" (Plus (Var "ptr") (Const 1)))
       (variant start_ptr n (k + 1)) =
@@ -428,6 +445,7 @@ let proof_loop_step (start_ptr : loc) (n : nat) (k : nat)
   ISL_Consequence (variant start_ptr n k) (is_ok (variant start_ptr n (k + 1))) body () ()
 
 // El bucle reúne los resultados de una cantidad finita de iteraciones.
+
 let proof_loop (start_ptr : loc) (n : nat)
   : isl_triple (kleene_pre (variant start_ptr n)) (Kleene loop_body)
       (kleene_post (variant start_ptr n)) =
@@ -435,6 +453,7 @@ let proof_loop (start_ptr : loc) (n : nat)
 
 // Salida del bucle y assert
 // assume(ptr = 0): se llego al final de la lista, despues de n vueltas.
+
 let step_exit (start_ptr : loc) (n : nat)
   : isl_triple (is_ok (post_loop start_ptr n)) (Assume (Eq (Var "ptr") (Const 0)))
       (post_exit start_ptr n) =
@@ -442,6 +461,7 @@ let step_exit (start_ptr : loc) (n : nat)
     (ISL_Assume #(post_loop start_ptr n) (Eq (Var "ptr") (Const 0))) () ()
 
 // assert: se toma la rama de error, porque sum = len.
+
 let step_assert (start_ptr : loc) (n : nat)
   : isl_triple (is_ok (post_exit start_ptr n)) assert_stmt (post_err start_ptr n) =
   let branch_err = ISL_Seq (ISL_Assume #(post_exit start_ptr n) (Eq (Var "sum") (Var "len")))
@@ -456,6 +476,7 @@ let proof_assert (start_ptr : loc) (n : nat)
     (ISL_Seq (step_exit start_ptr n) (step_assert start_ptr n)) () ()
 
 // Composicion
+
 let proof_list_sum_len (start_ptr : loc) (n : nat)
   : isl_triple (is_ok (pre_init start_ptr n)) prog_list_sum_len (post_err start_ptr n) =
   let p_assert = ISL_Consequence (kleene_post (variant start_ptr n)) (post_err start_ptr n)
@@ -464,3 +485,45 @@ let proof_list_sum_len (start_ptr : loc) (n : nat)
     (ISL_Seq (proof_loop start_ptr n) p_assert) () () in
   ISL_Consequence (pre_init start_ptr n) (post_err start_ptr n)
     (ISL_Seq (proof_init start_ptr n) p_loop) () ()
+
+// Certificado: el assert falla para una lista de 2 nodos (1 -> 3 -> null).
+// Testigo: ptr = 0, sum = len = 2, v = 1.
+
+let h_two = on loc (fun l ->
+  if l = 1 then Full (Nat 1) else if l = 2 then Full (Loc 3)
+  else if l = 3 then Full (Nat 1) else if l = 4 then Full (Loc 0) else Unknown)
+
+let h_two_tl = on loc (fun l ->
+  if l = 3 then Full (Nat 1) else if l = 4 then Full (Loc 0) else Unknown)
+
+let h_two_rest = on loc (fun l ->
+  if l = 2 then Full (Loc 3) else h_two_tl l)
+
+let st_two = on var (fun z ->
+  if z = "ptr" then Loc 0 else if z = "v" then Nat 1 else Nat 2)
+
+let two_node_list () : Lemma (history 1 0 2 2 h_two) =
+  let h = heap_only h_two in
+  let st = h._1 in
+  let h4 = singleton_full_heap 4 (Loc 0) in
+  introduce_frame (points_to 4 (Loc 0)) (list_seg 0 0 []) (st, h4, Ok) h4 empty_heap;
+  introduce_frame (points_to 3 (Nat 1)) (points_to 4 (Loc 0) ** list_seg 0 0 [])
+    (st, h_two_tl, Ok) (singleton_full_heap 3 (Nat 1)) h4;
+  introduce_frame (points_to 2 (Loc 3)) (list_seg 3 0 [Nat 1]) (st, h_two_rest, Ok)
+    (singleton_full_heap 2 (Loc 3)) h_two_tl;
+  introduce_frame (points_to 1 (Nat 1)) (points_to 2 (Loc 3) ** list_seg 3 0 [Nat 1])
+    h (singleton_full_heap 1 (Nat 1)) h_two_rest;
+  introduce_frame (points_to 1 (Nat 1)) (fun _ -> True) h
+    (singleton_full_heap 1 (Nat 1)) (heap_without h_two 1);
+  introduce_frame (points_to 2 (Loc 3)) (fun _ -> True) h
+    (singleton_full_heap 2 (Loc 3)) (heap_without h_two 2);
+  introduce_frame (points_to 3 (Nat 1)) (fun _ -> True) h
+    (singleton_full_heap 3 (Nat 1)) (heap_without h_two 3);
+  introduce_frame (points_to 4 (Loc 0)) (fun _ -> True) h
+    (singleton_full_heap 4 (Loc 0)) (heap_without h_two 4);
+  assert (history 1 3 2 1 h_two)
+
+let list_reachable ()
+  : Lemma (error_reachable (is_ok (pre_init 1 2)) prog_list_sum_len) =
+  two_node_list ();
+  certify (proof_list_sum_len 1 2) (st_two, h_two, Er)

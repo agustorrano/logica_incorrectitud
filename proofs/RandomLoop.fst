@@ -1,12 +1,12 @@
 module RandomLoop
 
 open IncSepLogic
-open FStar.Classical
+open FStar.FunctionalExtensionality
 
 // Utils
+
 let ( ||| ) = Choice
 let enot (e : expr) : expr = Minus (Const 1) e
-let ge (x y : expr) : expr = enot (Lt x y)
 
 // Def del programa a verificar
 (*
@@ -39,6 +39,7 @@ let prog_random_loop =
             (Seq (Assume (Eq (Var "i") (Var "n"))) assert_stmt)))
 
 // Estados y condiciones
+
 let pre_init : cond =
   fun _ -> true
 
@@ -58,6 +59,7 @@ let pre_assert : cond =
   fun s -> exists (k : nat). variant k s
 
 // Lemas auxiliares
+
 let lemma_assign_i (k : nat) (s : state) : Lemma 
   (requires post_inc_i k s)
   (ensures (is_ok (fun s ->
@@ -94,35 +96,26 @@ let lemma_assign_j (k:nat) (s:state) : Lemma
 
 let proof_loop_step (k : nat) : isl_triple (is_ok (variant k)) loop_body (variant (k + 1)) =
   let p_assumed = ISL_Assume #(variant k) (Lt (Var "i") (Var "n")) in
-
   let p_i_raw = ISL_Assign #(pre_assign k) "i" (Plus (Var "i") (Const 1)) in
   let pf_i = Classical.forall_intro (Classical.move_requires (lemma_assign_i k)) in
   let p_i = ISL_Consequence (pre_assign k) (post_inc_i k) p_i_raw () pf_i in
-
   let p_j_raw = ISL_Assign #(post_inc_i k) "j" (Plus (Var "j") (Const 1)) in
   let pf_j = Classical.forall_intro (Classical.move_requires (lemma_assign_j k)) in
   let p_j_branch = ISL_Consequence (post_inc_i k) (variant (k + 1)) p_j_raw () pf_j in
-  
   let p_j = ISL_ChoiceL p_j_branch in
   let p_ij = ISL_Seq p_i p_j in
-
   let mid_assumed : cond = fun s -> variant k s /\ eval_expr s (Lt (Var "i") (Var "n")) =!= 0 in
   let expected_post_ij : cond = fun s -> variant (k + 1) s \/ s._3 == Er /\ post_inc_i k s in
-
   let p_ij_adapted = 
     ISL_Consequence #(pre_assign k) (is_ok mid_assumed) expected_post_ij p_ij () () 
   in
-  
   let p_raw = ISL_Seq p_assumed p_ij_adapted in
   ISL_Consequence (variant k) (variant (k + 1)) p_raw () ()
 
 let proof_loop : isl_triple (kleene_pre variant) (Kleene loop_body) (kleene_post variant) =
   let step (n : nat) =
-    ISL_Consequence
-      (variant n)
-      (is_ok (variant (n + 1)))
-      (proof_loop_step n)
-      () ()
+    ISL_Consequence (variant n) (is_ok (variant (n + 1)))
+      (proof_loop_step n) () ()
   in 
   ISL_KleeneVariant #variant #loop_body step
 
@@ -130,13 +123,12 @@ let post_init_n (s : state) : prop =
   s._3 == Ok /\ s._1 "n" == Nat 1000000
 
 // Demostraciones formales
+
 let proof_init : isl_triple (is_ok pre_init) init_vars (kleene_pre variant) =
   let p_n_raw = ISL_Assign #pre_init "n" (Const 1000000) in
   let p_n = ISL_Consequence pre_init post_init_n p_n_raw () () in
-
   let p_i = ISL_Assign #_ "i" (Const 0) in
   let p_j = ISL_Assign #_ "j" (Const 0) in
-  
   let p_ij = ISL_Seq p_i p_j in
   let p_init = ISL_Seq p_n p_ij in
   ISL_Consequence pre_init (kleene_pre variant) p_init () ()
@@ -144,15 +136,12 @@ let proof_init : isl_triple (is_ok pre_init) init_vars (kleene_pre variant) =
 let proof_assert : isl_triple (is_ok pre_assert) (Seq (Assume (Eq (Var "i") (Var "n"))) assert_stmt) post_err =
   let p_exit_raw = ISL_Assume #pre_assert (Eq (Var "i") (Var "n")) in
   let p_exit = ISL_Consequence pre_assert (variant 1000000) p_exit_raw () () in
-  
   let p_cond_err_raw = ISL_Assume #(variant 1000000) (Eq (Var "j") (Var "n")) in
   let pre_error_state : cond = fun s -> variant 1000000 s /\ eval_expr s (Eq (Var "j") (Var "n")) =!= 0 in
   let p_cond_err = ISL_Consequence (variant 1000000) pre_error_state p_cond_err_raw () () in
   let p_err_raw = ISL_Error #pre_error_state in
-  
   let p_branch_err_raw = ISL_Seq p_cond_err p_err_raw in
   let p_branch_err = ISL_Consequence (variant 1000000) post_err p_branch_err_raw () () in
-  
   let p_assert = ISL_ChoiceL p_branch_err in
   let p_raw = ISL_Seq p_exit p_assert in
   ISL_Consequence pre_assert post_err p_raw () ()
@@ -161,6 +150,12 @@ let proof_random_loop : isl_triple (is_ok pre_init) prog_random_loop post_err =
   let adapted_assert = ISL_Consequence (kleene_post variant) post_err proof_assert () () in
   let p_kleene_assert_raw = ISL_Seq proof_loop adapted_assert in
   let p_kleene_assert = ISL_Consequence (kleene_pre variant) post_err p_kleene_assert_raw () () in
-  
   let p_raw = ISL_Seq proof_init p_kleene_assert in
   ISL_Consequence pre_init post_err p_raw () ()
+
+// Certificado: el assert falla en alguna ejecución.
+// Testigo: n = i = j = 1000000.
+
+let rl_reachable () : Lemma (error_reachable (is_ok pre_init) prog_random_loop) =
+  let st = on var (fun _ -> Nat 1000000) in
+  certify proof_random_loop (st, empty_heap, Er)

@@ -2338,6 +2338,7 @@ La relación
 $$\operatorname{foot}(C)_\varepsilon$$
 está formada por las transiciones de $[\![C]\!]_\varepsilon$ que son mínimas respecto del orden $\preceq$.
 \end{definicion}
+\guido{deberia decir ``minimal''?}
 
 Una transición es mínima cuando no puede quitarse de sus estados inicial y final un mismo fragmento de memoria no vacío
 y seguir obteniendo una transición válida de $[\![C]\!]_\varepsilon$.
@@ -4368,6 +4369,12 @@ Para aislar el fragmento local utilizado por cada comando se define el siguiente
 type footprint : stmt -> state -> state -> Type0
 \end{lstlisting}
 
+\guido{Qué pasa con el programa $C = skip + x := Load(1)$, con estado inicial $x = 0$ y heap ${1 \mapsto 0}$?
+Acá tengo que $C$ deja ese estado sin cambiar, pero si saco ${1 \mapsto 0}$ y me quedo con el heap vacío,
+\emph{también} tengo eso, porque una rama no avanza pero la otra (skip) me deja igual, así que también tengo
+esta transición con el heap vacío.
+La huella según esta relación es ese heaplet. Entonces no es minimal?}
+
 Un habitante de \lstinline|footprint p s0 s1| representa una ejecución local de \lstinline|p| desde \lstinline|s0| hasta \lstinline|s1|.
 El tipo está indexado por el comando y por sus estados inicial y final.
 La diferencia con \lstinline|runsto| es que sus constructores restringen los \emph{heaps} a los fragmentos requeridos por cada operación.
@@ -4872,6 +4879,8 @@ como exige la Definición~\ref{def:huella-minima}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \chapter{Evaluación}
+\guido{En todos los ejemplos acá abajo, está claro que la post es satisfacible?}
+
 \label{cap:evaluacion}
 \begin{quote}
 ``The purpose of computing is insight, not numbers.'' \\
@@ -4887,6 +4896,9 @@ se estudian un error de uso de memoria después de su liberación,
 un puntero colgante generado por una reasignación,
 un bucle con elecciones no deterministas y el recorrido de una lista enlazada.
 Estos casos muestran que la formalización puede expresar y verificar derivaciones no triviales.
+
+\guido{``La formalización y ejemplos se desarrollaron sobre \fstar{} version XXX
+y se encuentran en el repositorio XXX, commit XXX''}
 
 \section{Detección de errores temporales básicos (\emph{Use After Free})}
 \label{sec:uaf}
@@ -6133,6 +6145,8 @@ Cuando la cola se llena,
 \lstinline|queue_push| ejecuta \lstinline|realloc|.
 Si este último mueve el arreglo a una nueva ubicación,
 \lstinline|lowest| queda apuntando a memoria liberada y la próxima escritura en \lstinline|lowest->score| es un caso de \emph{use after free}.
+\guido{por ahí podemos poner esto en la evaluación, es un caso de uso de tu herramienta. Y acá puede quedar
+sólo la comparación con Mizzle}
 
 En segundo lugar,
 se le proporcionó a un agente basado en GPT-5.5 el repositorio que contenía la formalización desarrollada junto con sus casos de uso,

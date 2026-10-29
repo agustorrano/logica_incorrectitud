@@ -120,7 +120,7 @@ programa sin necesidad de ejecutarlo sobre entradas concretas,
 con el objetivo de encontrar posibles errores comunes.
 En general, los analizadores utilizan aproximaciones que priorizan la escalabilidad y la automatización,
 pero pueden perder precisión y dar lugar a falsos positivos.
-La necesidad de aproximar está relacionada con la indecibilidad de las propiedades semánticas no triviales de los programas,
+La necesidad de aproximar está relacionada con la indecidibilidad de las propiedades semánticas no triviales de los programas,
 establecida por el Teorema de Rice~\citep{riceteo}.
 Por lo tanto, los analizadores estáticos tienen una tensión inevitable
 entre reportar todos los posibles errores y evitar falsas advertencias.
@@ -165,7 +165,7 @@ la SL fue desarrollada como una extensión a la HL que soporta razonamiento comp
 %y sus aserciones permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
 La SL incorpora aserciones espaciales que permiten describir localmente el fragmento de memoria relevante para el comando que se analiza.
 Recientemente, \citet{isl} introdujeron la Lógica de Incorrectitud de Separación (ISL),
-cambiando el foco hacia incorrectitud pero manteniendo la modularidad brindada por la SL.
+cambiando el foco hacia la incorrectitud pero manteniendo la modularidad brindada por la SL.
 Representamos las diferencias mencionadas en la \autoref{tab:relacion-logicas}.
 \begin{table}[h]
 \centering
@@ -1786,8 +1786,8 @@ Este principio se materializa mediante la Regla del Marco (\textit{Frame Rule}),
 que permite razonar sobre la parte de la memoria que interviene en la ejecución,
 sin necesidad de describir el resto del \emph{heap}.
 
-Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando,
-definimos la Regla del Marco como:
+Sean $P$, $Q$ y $R$ aserciones espaciales y sea $C$ un comando.
+Definimos la Regla del Marco como:
 \begin{mathpar}
 \inferrule []
   {\vdash_{\mathrm{SL}} \triple{P}{C}{Q} \\ \operatorname{mod}(C) \cap \operatorname{fv}(R) = \varnothing}
@@ -6039,7 +6039,7 @@ un fin diferente al perseguido por la SL de Cminor.
 \citet{isabil} presentan IsaBIL,
 un framework desarrollado en Isabelle/HOL para verificar propiedades de programas binarios.
 La herramienta usa \emph{Binary Analysis Platform} (BAP)~\citep{bap} para traducir los binarios al lenguaje intermedio BIL
-y genera un entorno dentro de Isabelle/HOL en el que pueden construirse pruebas basadas tanto en HL como IL.
+y genera un entorno dentro de Isabelle/HOL en el que pueden construirse pruebas basadas tanto en HL como en IL.
 IsaBIL incluye una formalización de la sintaxis y la semántica operacional de BIL.
 Las lógicas de correctitud e incorrectitud se definen de forma paramétrica respecto de una relación operacional,
 lo que permite reutilizar sus reglas con diferentes modelos de estado.
@@ -6198,7 +6198,7 @@ seleccionar ramas de elección no determinista,
 descubrir caminos que llevan a errores y generar las obligaciones lógicas.
 
 En el caso espacial,
-técnicas de bi-abducción \citep{biabd} podrían usarse para inferir los recursos requeridos por una operación y los marcos que deben conservarse.
+técnicas de biabducción \citep{biabd} podrían usarse para inferir los recursos requeridos por una operación y los marcos que deben conservarse.
 Esto permitiría aproximar la formalización a una herramienta de análisis estático sin abandonar las garantías mecanizadas del núcleo lógico.
 
 \subsection*{Extensión del lenguaje y del modelo de memoria}

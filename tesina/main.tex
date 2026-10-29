@@ -6094,7 +6094,8 @@ La comparación permite mostrar una posible línea de investigación futura:
 usar las definiciones y los teoremas mecanizados como fundamento de un procedimiento que automatice la construcción de derivaciones de ISL.
 
 \subsection*{Mizzle: mecanización de una lógica de incorrectitud concurrente}
-\citet{mizzle} presentan Mizzle, una lógica de incorrectitud con separación para programas concurrentes escritos en OCaml 5.
+\citet{mizzle} presentan Mizzle, una lógica de incorrectitud con separación para un subconjunto de OCaml 5,
+modelando concurrencia bajo un modelo de consistencia secuencial.
 El desarrollo se encuentra mecanizado en Rocq,
 anteriormente denominado Coq,
 sobre el framework Iris y cuenta con demostraciones de solidez y completitud.
@@ -6118,7 +6119,7 @@ La propuesta consiste en no confiar en el razonamiento interno de un modelo de l
 para decidir si un error es real,
 sino exigir que el modelo genere una demostración que pueda ser comprobada por Rocq.
 En su evaluación,
-los autores usan Claude Sonnet 5 junto con una guía de prueba,
+los autores usan Claude Opus 5.5 junto con una guía de prueba,
 una descripción de la arquitectura del proyecto y una biblioteca de tácticas.
 
 Motivados por esta propuesta,

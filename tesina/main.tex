@@ -2091,8 +2091,8 @@ que permite cuantificar existencialmente una variable que no aparece en el coman
 La noción de derivabilidad utilizada en esta sección fue introducida en la Definición~\ref{def:derivabilidad-isl}.
 A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:reglas-isl}.
 
-\guido{Alloc2 no necesita $x \notin FV(y)$? En la formalización toma una location,
-no una expresión como acá.}
+%\guido{Alloc2 no necesita $x \notin FV(y)$? En la formalización toma una location,
+%no una expresión como acá.}
 \begin{figure}[htbp]
 \centering
 \begin{mathpar}
@@ -2105,7 +2105,7 @@ no una expresión como acá.}
   {\vdash_{\mathrm{ISL}} \itriple{x = x'}{x := \texttt{alloc()}}{ok : x \mapsto -}}
 
 \inferrule [Alloc2]
-  {}
+  {x\notin \operatorname{fv}(y)}
   {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \nmapsto}{x := \texttt{alloc()}}{ok : x = y * y \mapsto -}}
 
 \inferrule [Free]
@@ -2173,6 +2173,8 @@ mientras que $x'$ conserva el valor inicial de $x$.
 Aunque $x'$ no aparece en la postcondición de estas reglas,
 puede aparecer en las aserciones incorporadas mediante la Regla del Marco,
 permitiendo conservar información sobre ese valor inicial.
+En \textsc{Alloc2} se exige además que $x$ no aparezca libre en $y$,
+de modo que la asignación a $x$ no modifique la dirección que denota $y$.
 
 La regla \textsc{Free} representa la liberación exitosa.
 Requiere que la expresión $e$ evalúe a la dirección de una celda activa cuyo contenido está descrito por $e'$,
@@ -4898,6 +4900,8 @@ se estudian un error de uso de memoria después de su liberación,
 un puntero colgante generado por una reasignación,
 un bucle con elecciones no deterministas y el recorrido de una lista enlazada.
 Estos casos muestran que la formalización puede expresar y verificar derivaciones no triviales.
+Además,
+se presenta un experimento exploratorio en el que un agente basado en un modelo de lenguaje utiliza la formalización para construir una prueba de error.
 
 \guido{``La formalización y ejemplos se desarrollaron sobre \fstar{} version XXX
 y se encuentran en el repositorio XXX, commit XXX''}
@@ -5866,8 +5870,47 @@ las lecturas de memoria y el razonamiento paramétrico mediante la regla de vari
 La derivación muestra que el sistema puede razonar sobre una estructura enlazada de longitud paramétrica
 sin escribir manualmente una prueba distinta para cada nodo.
 
+\section{Experimento exploratorio}
+\label{sec:experimento-agente}
+Como complemento de los casos anteriores,
+se realizó un experimento exploratorio,
+motivado por Mizzle~\citep{mizzle},
+para evaluar si un modelo de lenguaje podía usar la formalización desarrollada en esta tesina para verificar la presencia de errores en los programas.
+Mizzle emplea agentes basados en modelos de lenguaje para construir demostraciones comprobables por un asistente de pruebas
+y se presenta en la \autoref{sec:relacionado}.
+
+Para ello,
+en primer lugar se usó Claude Sonnet 5 para generar un programa en C que contuviera algún error de memoria.
+En el programa creado,
+hay una función \lstinline|apply_catchup_bonus| que conserva en una variable \lstinline|lowest|
+un puntero a un elemento del arreglo dinámico \lstinline|q->items| y luego invoca \lstinline|queue_push|.
+Cuando la cola se llena,
+\lstinline|queue_push| ejecuta \lstinline|realloc|.
+Si este último mueve el arreglo a una nueva ubicación,
+\lstinline|lowest| queda apuntando a memoria liberada y la próxima escritura en \lstinline|lowest->score| es un caso de \emph{use after free}.
+%\guido{por ahí podemos poner esto en la evaluación, es un caso de uso de tu herramienta. Y acá puede quedar
+%sólo la comparación con Mizzle}
+
+En segundo lugar,
+se le proporcionó a un agente basado en GPT-5.5 el repositorio que contenía la formalización desarrollada junto con sus casos de uso,
+y se le solicitó verificar el programa generado.
+El agente identificó el camino de ejecución que conduce al error y produjo un archivo de \fstar{},
+donde abstrajo el efecto relevante de \lstinline|realloc|.
+Construyó una derivación de la ISL usando las reglas de la formalización
+y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
+La demostración generada fue aceptada por \fstar{}.
+
+Esta demostración corresponde al programa abstracto que modela la invalidación de la celda referenciada por \lstinline|lowest|
+y la escritura posterior sobre ella.
+No se mecanizó la traducción desde C ni su correspondencia completa con \lstinline|realloc|.
+
+Este experimento constituye una prueba preliminar de uso y no una evaluación sistemática de la capacidad de los LLM para construir pruebas formales.
+En este caso,
+muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático
+construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
+
 \section{Resumen de los resultados}
-Los cuatro casos muestran distintas capacidades del núcleo lógico.
+Los cinco casos muestran distintas capacidades del núcleo lógico.
 El primero valida el mecanismo básico de \emph{heaps} negativos,
 mostrando que la liberación de una celda conserva la información necesaria para justificar un acceso posterior erróneo.
 
@@ -5878,10 +5921,15 @@ El tercer caso muestra que la subaproximación permite concentrarse en una únic
 La regla de variante de Kleene permite expresar el efecto de una cantidad arbitraria de iteraciones con una familia de aserciones,
 sin materializar un árbol diferente para cada valor concreto.
 
-Finalmente,
-el recorrido de la lista enlazada combina el razonamiento paramétrico con predicados espaciales recursivos.
+El cuarto caso,
+el recorrido de la lista enlazada,
+combina el razonamiento paramétrico con predicados espaciales recursivos.
 El predicado \lstinline|history| relaciona las posiciones sucesivas del puntero,
 mientras que la Regla del Marco permite justificar las lecturas conservando la información sobre el resto de la lista.
+
+Finalmente,
+en el experimento,
+el agente utilizó la formalización para construir una prueba de error que luego fue comprobada por \fstar{}. 
 
 Esta evaluación no establece completitud respecto de todos los programas posibles,
 no mide el rendimiento de la verificación y no demuestra que las aserciones puedan sintetizarse automáticamente.
@@ -5958,7 +6006,7 @@ La implicación de izquierda a derecha establece que toda ejecución operacional
 El otro lado demuestra que toda huella extendida con un marco compatible constituye una ejecución operacional válida.
 
 Finalmente,
-la formalización fue evaluada con cuatro casos de estudio.
+la formalización fue evaluada con cinco casos de estudio.
 Se construyeron derivaciones para un error \emph{use after free},
 un puntero colgante producido por una reasignación no determinista,
 una ejecución con una gran cantidad de iteraciones y decisiones no deterministas,
@@ -6115,6 +6163,10 @@ anteriormente denominado Coq,
 sobre el framework Iris y cuenta con demostraciones de solidez y completitud.
 Mientras que la solidez garantiza que una derivación de Mizzle está respaldada por una ejecución real,
 la completitud establece que toda ejecución incorrecta considerada por el modelo puede representarse mediante una derivación de la lógica.
+Durante el desarrollo de esta tesina,
+los autores publicaron una segunda versión del artículo,
+en octubre de 2026,
+que amplía la evaluación de Mizzle.
 
 Este trabajo es el más cercano a esta tesina porque los dos mecanizan razonamiento subaproximado
 junto con herramientas de SL y relacionan las derivaciones lógicas con una semántica operacional.
@@ -6136,38 +6188,7 @@ En su evaluación,
 los autores usan Claude Opus 5.5 junto con una guía de prueba,
 una descripción de la arquitectura del proyecto y una biblioteca de tácticas.
 
-Motivados por esta propuesta,
-se realizó un experimento exploratorio para evaluar si un modelo de lenguaje podía usar la formalización desarrollada en esta tesina
-para verificar la presencia de errores en los programas.
-Para ello,
-en primer lugar se usó Claude Sonnet 5 para generar un programa en C que contuviera algún error de memoria.
-En el programa creado,
-hay una función \lstinline|apply_catchup_bonus| que conserva en una variable \lstinline|lowest|
-un puntero a un elemento del arreglo dinámico \lstinline|q->items| y luego invoca \lstinline|queue_push|.
-Cuando la cola se llena,
-\lstinline|queue_push| ejecuta \lstinline|realloc|.
-Si este último mueve el arreglo a una nueva ubicación,
-\lstinline|lowest| queda apuntando a memoria liberada y la próxima escritura en \lstinline|lowest->score| es un caso de \emph{use after free}.
-\guido{por ahí podemos poner esto en la evaluación, es un caso de uso de tu herramienta. Y acá puede quedar
-sólo la comparación con Mizzle}
-
-En segundo lugar,
-se le proporcionó a un agente basado en GPT-5.5 el repositorio que contenía la formalización desarrollada junto con sus casos de uso,
-y se le solicitó verificar el programa generado.
-El agente identificó el camino de ejecución que conduce al error y produjo un archivo de \fstar{},
-donde abstrajo el efecto relevante de \lstinline|realloc|.
-Construyó una derivación de la ISL usando las reglas de la formalización
-y obtuvo una postcondición de error que conserva el \emph{heap} negativo correspondiente a la dirección invalidada.
-La demostración generada fue aceptada por \fstar{}.
-
-Esta demostración corresponde al programa abstracto que modela la invalidación de la celda referenciada por \lstinline|lowest|
-y la escritura posterior sobre ella.
-No se mecanizó la traducción desde C ni su correspondencia completa con \lstinline|realloc|.
-
-Este experimento constituye una prueba preliminar de uso y no una evaluación sistemática de la capacidad de los LLM para construir pruebas formales.
-En este caso,
-muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático
-construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
+Esta propuesta motivó el experimento exploratorio presentado en la \autoref{sec:experimento-agente}.
 
 \subsection*{Resumen}
 Al igual que varios de los desarrollos anteriores,
@@ -6189,7 +6210,9 @@ localidad y descomposición por huellas son verificadas dentro de \fstar{}.
 Detallamos a continuación algunas líneas de investigación que permitirían extender el desarrollo realizado.
 
 \subsection*{Automatización de las derivaciones}
-Aunque el experimento motivado por Mizzle mostró que un agente puede construir una derivación,
+Aunque el experimento motivado por Mizzle,
+presentado en la \autoref{sec:experimento-agente},
+mostró que un agente puede construir una derivación,
 la formalización no incorpora un procedimiento de búsqueda:
 las reglas que se aplican,
 las aserciones intermedias y los constructores deben proporcionarse explícitamente.

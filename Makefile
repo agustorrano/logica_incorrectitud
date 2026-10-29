@@ -10,7 +10,7 @@ KRML = krml -skip-compilation -skip-makefiles $(KSIL)
 
 all: verify
 
-obj/%.fst.checked: %.fst
+obj/%.fst.checked:
 	$(call msg,"CHECK",$<)
 	$(FSTAR) -c $< -o $@
 

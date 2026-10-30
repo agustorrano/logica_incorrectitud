@@ -1675,15 +1675,36 @@ let rec run_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
 // 18. Certificado de existencia de error
 // ============================================================
 
+let no_alloc : cond =
+  fun s -> forall l. s._2 l == Empty \/ s._2 l == Unknown
+
+let rest (h : heap) : heap =
+  on loc (fun l -> if Unknown? (h l) then Empty else Unknown)
+
+let complete_split (h : heap)
+  : Lemma (h >< rest h /\ complete h == (h <+> rest h)) =
+  extensionality loc (fun _ -> cell) (complete h) (h <+> rest h)
+
+let complete_sat (pre : cond) (s : state)
+  : Lemma (requires pre s)
+          (ensures (pre ** no_alloc) (cstate s)) =
+  complete_split s._2;
+  introduce_frame pre no_alloc (cstate s) s._2 (rest s._2)
+
 let error_reachable (pre : cond) (p : stmt) : prop =
   exists (s0 s1 : state). pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
+    (pre ** no_alloc) (cstate s0) /\
     (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1)
 
-let certify (#pre #post : cond) (#p : stmt) (pf : isl_triple pre p post) (s1 : state)
+let certify (#pre #post : cond) (#p : stmt)
+  (pf : isl_triple pre p post) (s1 : state)
   : Lemma (requires post s1 /\ s1._3 == Er)
           (ensures error_reachable pre p) =
   let (| s0, r |) = soundness p pre post pf s1 in
+  complete_sat pre s0;
   exists_intro (fun (_ : runsto p s0 s1) -> True) r;
-  exists_intro (fun (_ : runsto p (cstate s0) (cstate s1)) -> True) (run_complete r);
+  exists_intro (fun (_ : runsto p (cstate s0) (cstate s1)) -> True)
+    (run_complete r);
   assert (pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
+    (pre ** no_alloc) (cstate s0) /\
     (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1))

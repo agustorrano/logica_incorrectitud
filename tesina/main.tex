@@ -1664,7 +1664,7 @@ La \autoref{tab:comparacion-sl} resume las diferencias entre las cuatro combinac
 \end{table}
 
 En la tercera fila de la \autoref{tab:comparacion-sl},
-las aserciones puede compartir celdas de distintas maneras;
+las aserciones pueden compartir celdas de distintas maneras;
 las Figuras \ref{fig:conjuncion-clasica} y \ref{fig:conjuncion-separadora} ilustran algunos casos,
 pero no todos.
 Por ejemplo,
@@ -2151,8 +2151,14 @@ $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon.$$
 
 El lema establece que,
 si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
-y el fragmento adicional $h_f$ es disjunto de ambos,
+y el fragmento adicional $h_f$ es disjunto de $h'$,
 la ejecución puede extenderse al \emph{heap} inicial $h \uplus h_f$.
+La hipótesis no exige por separado que $h_f$ sea disjunto de $h$,
+ya que por la monotonicidad del dominio,
+toda ubicación conocida en $h$ también está presente en $h'$.
+Por lo tanto,
+si $h'$ es disjunto de $h_f$,
+también lo es $h$.
 En ese caso,
 el comando transforma $h \uplus h_f$ en $h' \uplus h_f$,
 conservando el modo de terminación y dejando $h_f$ sin modificaciones.
@@ -2278,6 +2284,18 @@ La escritura reemplaza ese contenido por el resultado de evaluar $e_2$,
 sin modificar el \emph{store}.
 Las reglas \textsc{StoreEr} y \textsc{StoreNull} representan,
 respectivamente, una escritura sobre una celda liberada y una escritura mediante un puntero nulo.
+
+La igualdad $x = x'$ es una aserción pura:
+depende del \emph{store},
+pero no impone condiciones sobre el \emph{heap}.
+Por eso,
+en estas reglas,
+combinarla con una aserción espacial mediante $\land$ o mediante $*$ expresa la misma condición.
+En el segundo caso,
+la aserción pura puede satisfacerse sobre el \emph{heap} vacío y no consume recursos espaciales.
+Las Figuras \ref{fig:reglas-sl} y \ref{fig:reglas-isl} utilizan,
+respectivamente,
+ambas notaciones.
 
 \textbf{Observación.}
 A diferencia de las reglas de la SL presentadas anteriormente,
@@ -5273,13 +5291,19 @@ Para todo comando \lstinline|p| y estados \lstinline|s0| y \lstinline|s1|,
 \end{teorema}
 
 \section{Completado de \emph{heaps} y certificados de error}
-Los resultados anteriores permiten razonar sobre fragmentos que dejan algunas ubicaciones como \lstinline|Unknown|.
-Para demostrar que los errores demostrados sobre esos fragmentos también pueden ocurrir en una memoria completa descrita,
-se define una operación de completado.
-Esta reemplaza cada celda \lstinline|Unknown| por \lstinline|Empty| y conserva las celdas ya conocidas.
-Luego se demuestra que esta transformación preserva las ejecuciones y,
-en particular,
-las que terminan en error:
+Los resultados anteriores permiten razonar sobre fragmentos de memoria que dejan algunas ubicaciones como \lstinline|Unknown|.
+Este valor no tiene un equivalente en una máquina real:
+indica que el fragmento no describe esa ubicación,
+y que podría pertenecer a otro fragmento agregado mediante un marco.
+En una ejecución concreta,
+en cambio,
+cada ubicación está asignada o no lo está.
+Para relacionar las ejecuciones sobre fragmentos con ejecuciones sobre una memoria de este tipo,
+se define una operación de completado,
+que reemplaza cada celda \lstinline|Unknown| por \lstinline|Empty| y conserva las celdas conocidas.
+Un \emph{heap} completado no tiene ubicaciones desconocidas,
+sino que corresponde a una máquina cuya memoria asignada es exactamente la del fragmento,
+y en la que todas las demás ubicaciones están libres:
 
 \begin{lstlisting}
 let complete_cell (c : cell) : cell =
@@ -5295,7 +5319,31 @@ let cstate (s : state) : state =
 \end{lstlisting}
 
 El estado \lstinline|cstate| aplica el completado al \emph{heap} de un estado sin modificar su \emph{store} ni su modo de terminación.
-Para demostrar que esta transformación conserva las ejecuciones,
+Este estado puede describirse mediante la conjunción separadora.
+Sea \lstinline|no_alloc| la aserción que describe un fragmento sin celdas activas,
+en el que toda ubicación conocida está liberada:
+
+\begin{lstlisting}
+let no_alloc : cond =
+  fun s -> forall l. s._2 l == Empty \/ s._2 l == Unknown
+
+let complete_sat (pre : cond) (s : state)
+  : Lemma (requires pre s)
+          (ensures (pre ** no_alloc) (cstate s)) =
+  complete_split s._2;
+  introduce_frame pre no_alloc (cstate s) s._2 (rest s._2)
+\end{lstlisting}
+
+El lema \lstinline|complete_sat| establece que,
+si un estado satisface \lstinline|pre|,
+su completado satisface \lstinline|pre ** no_alloc|:
+el \emph{heap} completado se descompone en el fragmento original y un fragmento disjunto
+que marca como \lstinline|Empty| todas las ubicaciones que el original no conocía.
+Para demostrarlo,
+se demuestra que \lstinline|complete h| coincide con la unión disjunta de \lstinline|h| y ese fragmento,
+y se aplica \lstinline|introduce_frame|.
+
+Para demostrar que el completado conserva las ejecuciones,
 \lstinline|run_complete| demuestra,
 por inducción sobre la derivación operacional original,
 que el mismo comando puede ejecutarse entre los estados obtenidos al completar su \emph{heap}:
@@ -5325,17 +5373,17 @@ let complete_override (st : store) (h : heap) (m : term_mode)
     (st, override (complete h) l c, m)
 \end{lstlisting}
 
-Con esta transformación,
-el resultado de solidez puede combinarse con un estado final concreto para certificar la existencia de un error.
+Con estos resultados,
+la solidez puede combinarse con un estado final concreto para certificar la existencia de un error.
 La derivación lógica por sí sola no garantiza esa existencia si su postcondición es vacía.
 Por eso se proporciona además un estado que satisface la postcondición y tiene modo \lstinline|Er|.
-El predicado \lstinline|error_reachable| expresa la existencia de una ejecución errónea desde un estado que satisface la presunción
-y de su correspondiente ejecución entre estados completados.
-La función \lstinline|certify| demuestra esta propiedad a partir de la derivación y del estado final testigo:
+El predicado \lstinline|error_reachable| reúne lo que se certifica,
+y la función \lstinline|certify| lo demuestra a partir de la derivación y del estado final testigo:
 
 \begin{lstlisting}
 let error_reachable (pre : cond) (p : stmt) : prop =
   exists (s0 s1 : state). pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
+    (pre ** no_alloc) (cstate s0) /\
     (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1)
 
 let certify (#pre #post : cond) (#p : stmt)
@@ -5343,20 +5391,42 @@ let certify (#pre #post : cond) (#p : stmt)
   : Lemma (requires post s1 /\ s1._3 == Er)
           (ensures error_reachable pre p) =
   let (| s0, r |) = soundness p pre post pf s1 in
+  complete_sat pre s0;
   exists_intro (fun (_ : runsto p s0 s1) -> True) r;
   exists_intro (fun (_ : runsto p (cstate s0) (cstate s1)) -> True)
     (run_complete r);
   assert (pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
+    (pre ** no_alloc) (cstate s0) /\
     (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1))
 \end{lstlisting}
-La función \lstinline|certify| combina la solidez de la ISL con la preservación de las ejecuciones por completado.
-A partir de una derivación lógica y de un estado final que satisface la postcondición y tiene modo \lstinline|Er|,
-obtiene una ejecución errónea desde un estado que satisface la presunción.
-Luego,
-\lstinline|run_complete| permite obtener también una ejecución errónea entre estados completados.
-De este modo,
-el certificado justifica tanto la alcanzabilidad desde el fragmento descrito por la presunción
-como la existencia de una ejecución de error sobre el \emph{heap} completo.
+
+Cada parte de \lstinline|error_reachable| certifica una propiedad distinta.
+La primera,
+\lstinline|pre s0 \land s1._3 == Er \land runs p s0 s1|,
+sale del Teorema de Soundness:
+existe una ejecución errónea del programa desde un estado que satisface la presunción.
+Esta ejecución ocurre sobre el fragmento local,
+por lo que puede apoyarse en ubicaciones \lstinline|Unknown|;
+por ejemplo,
+una alocación puede elegir una ubicación sobre la que el fragmento no tenía información.
+La segunda parte proviene de \lstinline|complete_sat| y \lstinline|run_complete|,
+y certifica que el mismo programa alcanza el error en la máquina en la que toda ubicación fuera del fragmento está libre.
+El estado inicial de esta ejecución no satisface en general la presunción,
+ya que esta suele exigir que las ubicaciones fuera del fragmento sean \lstinline|Unknown|;
+lo que satisface es \lstinline|pre ** no_alloc|,
+es decir,
+la presunción junto con el resto de la memoria liberada.
+Por último,
+la condición \lstinline|(cstate s1)._3 == Er| se deduce de \lstinline|s1._3 == Er|,
+ya que el completado no modifica el modo de terminación,
+y se incluye para que el enunciado sea explícito.
+
+El certificado cubre esta completación particular,
+en la que toda la memoria fuera del fragmento está libre.
+Para extender la ejecución a un contexto de memoria arbitrario se utiliza,
+en cambio,
+\lstinline|r_frame|,
+que exige que la memoria agregada sea disjunta de los heaps inicial y final.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5937,8 +6007,12 @@ sobre los estados alcanzables del bucle,
 la igualdad equivale a la negación de su condición de continuación.
 
 La instrucción \lstinline|assert| se codifica como una elección entre el camino de error y el exitoso.
-Para expresar la condición opuesta se utiliza \lstinline|enot|,
-que representa la negación lógica de una expresión del lenguaje:
+Como la sintaxis de expresiones no incluye un constructor de negación,
+para este ejemplo se define el auxiliar \lstinline|enot| como \lstinline|Minus (Const 1) e|.
+Como aquí se aplica a expresiones booleanas que evalúan a 0 o 1,
+\lstinline|enot e| evalúa a 1 cuando \lstinline|e| evalúa a 0,
+y a 0 cuando evalúa a 1.
+De este modo se expresa la condición opuesta sin ampliar la sintaxis de \lstinline|expr|.
 
 \begin{lstlisting}
 let assert_stmt =
@@ -6287,6 +6361,15 @@ el estado satisface \lstinline|post_len|:
 pero el puntero todavía se encuentra en el nodo actual.
 La última instrucción del cuerpo lee la dirección almacenada en \lstinline|ptr + 1| y la asigna a \lstinline|ptr|.
 Este paso permite alcanzar un estado que satisface \lstinline|variant start_ptr n (k + 1)|.
+
+En esta formalización,
+si \lstinline|ptr| contiene \lstinline|Loc l|,
+la expresión \lstinline|ptr + 1| se evalúa numéricamente como $l + 1$.
+La regla \lstinline|Load| usa ese resultado como dirección del \emph{heap};
+no requiere que la expresión produzca un valor de tipo \lstinline|Loc|.
+Por eso la lectura en \lstinline|ptr + 1| queda bien definida en el modelo.
+Si ese resultado se almacenara mediante \lstinline|eval_value|,
+se representaría como \lstinline|Nat (l + 1)|.
 
 Para justificar esta lectura,
 el lema \lstinline|lemma_load_ptr| parte del estado posterior al avance.

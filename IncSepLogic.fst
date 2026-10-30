@@ -555,10 +555,9 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
         points_to l v s /\
         (exists x_old. pre (override s._1 x x_old, override s._2 l Unknown, Ok))))
 
-  | ISL_Alloc2 : #pre : cond -> x : var -> l : loc ->
-    isl_triple (is_ok (fun s -> pre s /\ points_to_empty l s))
-      (Alloc x)
-      (is_ok (fun s -> exists (v x_old : value).
+  | ISL_Alloc2 : #pre : cond -> x : var ->
+    isl_triple (is_ok pre) (Alloc x)
+      (is_ok (fun s -> exists (l : loc) (v x_old : value).
         s._1 x == Loc l /\
         l =!= 0 /\
         points_to l v s /\
@@ -893,7 +892,7 @@ let rec soundness
     state_equiv_eq (override st0 x (Loc l), override hp0 l (Full v), Ok) s1;
     (|s0, r|)
 
-  | ISL_Alloc2 #pre #x _ ->
+  | ISL_Alloc2 #pre #x ->
     let (st1, hp1, m1) = s1 in
     let unfold p_lv (l_i : loc) (v_i : value) : prop =
       st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1

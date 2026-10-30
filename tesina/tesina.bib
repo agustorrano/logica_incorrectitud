@@ -652,3 +652,43 @@
     location  = {Pasadena, CA},
     series    = {NFM'11}
 }
+
+@article{
+    steel,
+    author     = {Fromherz, Aymeric and Rastogi, Aseem and Swamy, Nikhil and Gibson, Sydney and Mart{\'i}nez, Guido and Merigoux, Denis and Ramananandro, Tahina},
+    title      = {Steel: proof-oriented programming in a dependently typed concurrent separation logic},
+    year       = {2021},
+    issue_date = {August 2021},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {5},
+    number     = {ICFP},
+    url        = {https://doi.org/10.1145/3473590},
+    doi        = {10.1145/3473590},
+    abstract   = {Steel is a language for developing and proving concurrent programs embedded in F⋆, a dependently typed programming language and proof assistant. Based on SteelCore, a concurrent separation logic (CSL) formalized in F⋆, our work focuses on exposing the proof rules of the logic in a form that enables programs and proofs to be effectively co-developed. Our main contributions include a new formulation of a Hoare logic of quintuples involving both separation logic and first-order logic, enabling efficient verification condition (VC) generation and proof discharge using a combination of tactics and SMT solving. We relate the VCs produced by our quintuple system to solving a system of associativity-commutativity (AC) unification constraints and develop tactics to (partially) solve these constraints using AC-matching modulo SMT-dischargeable equations. Our system is fully mechanized and implemented in F⋆. We evaluate it by developing several verified programs and libraries, including various sequential and concurrent linked data structures, proof libraries, and a library for 2-party session types. Our experience leads us to conclude that our system enables a mixture of automated and interactive proof, making it productive to build programs foundationally verified against a highly expressive, state-of-the-art CSL.},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = aug,
+    articleno  = {85},
+    numpages   = {30},
+    keywords   = {Concurrency, Program Proofs, Separation Logic}
+}
+
+@article{
+    pulsecore,
+    author     = {Ebner, Gabriel and Mart{\'i}nez, Guido and Rastogi, Aseem and Dardinier, Thibault and Frisella, Megan and Ramananandro, Tahina and Swamy, Nikhil},
+    title      = {PulseCore: An Impredicative Concurrent Separation Logic for Dependently Typed Programs},
+    year       = {2025},
+    issue_date = {June 2025},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {9},
+    number     = {PLDI},
+    url        = {https://doi.org/10.1145/3729311},
+    doi        = {10.1145/3729311},
+    abstract   = {PulseCore is a new program logic suitable for intrinsic proofs of higher-order, stateful, concurrent, dependently typed programs. It provides many of the features of a modern, concurrent separation logic, including dynamically allocated impredicative invariants, higher-order ghost state, step-indexing with later credits, and support for user-defined ghost state constructions. PulseCore is developed foundationally within the F⋆ programming language with fully mechanized proofs, and is applicable to F⋆ programs itself.To evaluate our work, we use Pulse, a surface language within F⋆ for PulseCore, to develop a range of program proofs. Illustrating its suitability for proving higher-order concurrent programs, we present a verified library for task pools in the style of OCaml5, together with some verified task-parallel programs. Next, we present various data structures and synchronization primitives, including a barrier that requires the use of higher-order ghost state. Finally, we present a verified implementation of the DICE Protection Environment, an industry standard secure boot protocol. Taken together, our evaluation consists of more than 31,000 lines of verified code in a range of settings, providing evidence that PulseCore is both highly expressive as well as practical for a variety of program proof applications.},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = jun,
+    articleno  = {208},
+    numpages   = {24},
+    keywords   = {dependent types, program proof, concurrency, separation logic}
+}

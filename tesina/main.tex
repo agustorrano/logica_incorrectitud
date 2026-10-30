@@ -5340,7 +5340,7 @@ su completado satisface \lstinline|pre ** no_alloc|:
 el \emph{heap} completado se descompone en el fragmento original y un fragmento disjunto
 que marca como \lstinline|Empty| todas las ubicaciones que el original no conocía.
 Para demostrarlo,
-se demuestra que \lstinline|complete h| coincide con la unión disjunta de \lstinline|h| y ese fragmento,
+se prueba que \lstinline|complete h| coincide con la unión disjunta de \lstinline|h| y ese fragmento,
 y se aplica \lstinline|introduce_frame|.
 
 Para demostrar que el completado conserva las ejecuciones,
@@ -5402,7 +5402,7 @@ let certify (#pre #post : cond) (#p : stmt)
 
 Cada parte de \lstinline|error_reachable| certifica una propiedad distinta.
 La primera,
-\lstinline|pre s0 \land s1._3 == Er \land runs p s0 s1|,
+\lstinline|pre s0 /\ s1._3 == Er /\ runs p s0 s1|,
 sale del Teorema de Soundness:
 existe una ejecución errónea del programa desde un estado que satisface la presunción.
 Esta ejecución ocurre sobre el fragmento local,
@@ -5953,11 +5953,19 @@ falla la comprobación \lstinline|assert (j != n)|.
 En la semántica formalizada,
 la llamada \lstinline|random()| se representa con un \lstinline|Choice|.
 No se modelan probabilidades,
-independencia estadística ni distribuciones.
-Si lo interpretamos bajo la visión de un programa ejecutable en la que cada decisión es independiente y equiprobable,
-la probabilidad de incrementar \lstinline|j| en el millón de iteraciones sería de $2^{-1000000}$.
-Este cálculo no interviene en la demostración mecanizada.
-La lógica solo necesita establecer que la secuencia de elecciones existe.
+independencia estadística ni distribuciones:
+la lógica solo necesita establecer que la secuencia de elecciones que produce el error existe.
+Esta diferencia es relevante al comparar con el \emph{testing}.
+Si cada decisión fuera independiente y equiprobable,
+la probabilidad de que una ejecución incremente \lstinline|j| en el millón de iteraciones sería de $2^{-1000000}$.
+En la práctica,
+ninguna cantidad razonable de ejecuciones del programa encontraría el error,
+aunque este sea alcanzable.
+La derivación,
+en cambio,
+no depende de que esa ejecución ocurra,
+sino que la construye explícitamente,
+seleccionando la rama necesaria en cada iteración.
 
 Esta elección no determinista se expresa en nuestra sintaxis mediante el operador \lstinline{|||},
 el cual abrevia \lstinline|Choice|:
@@ -5968,11 +5976,22 @@ Assign "j" (Plus (Var "j") (Const 1)) ||| Skip
 
 Para construir la ejecución que lleva al error,
 la derivación usa \lstinline|ISL_ChoiceL| y selecciona la rama de incremento en el cuerpo del bucle.
-Una exploración que mantuviera por separado cada alternativa de ejecución duplicaría el número de caminos en cada iteración.
+Aunque la cantidad de secuencias de decisiones crece exponencialmente con el número de iteraciones,
+muchas de ellas conducen al mismo estado.
+Después de \lstinline|k| iteraciones,
+el estado queda determinado por el valor de \lstinline|j|,
+que está entre \lstinline|0| y \lstinline|k|.
+Una herramienta que fusione los estados iguales solo distingue alrededor de un millón de estados posibles,
+por lo que la cantidad de caminos no es,
+por sí sola, el obstáculo principal.
 
-A pesar de poder elegir una sola rama,
-construir un millón de aplicaciones de la regla de Kleene produciría una derivación enorme.
-Para evitar ese desenrollado se usa \lstinline|ISL_KleeneVariant|.
+El costo real está en la cantidad de iteraciones.
+Incluso eligiendo una sola rama,
+justificar el error desenrollando el bucle requeriría un millón de aplicaciones de la regla de Kleene,
+una por iteración,
+y lo mismo ocurre con cualquier herramienta que recorra los estados del bucle uno por uno.
+Para evitar ese desenrollado se usa \lstinline|ISL_KleeneVariant|,
+que permite razonar sobre todas las iteraciones mediante un único paso paramétrico.
 
 La familia de aserciones se define como sigue:
 
@@ -6038,14 +6057,13 @@ let post_err : cond =
     st "j" == Nat 1000000 /\ m == Er
 \end{lstlisting}
 
-Una búsqueda exhaustiva que enumere las secuencias de decisiones tendría que considerar hasta $2^{1000000}$ combinaciones,
-lo que hace inviable explorar por completo este espacio para localizar el error.
-La derivación presentada selecciona el camino que incrementa \lstinline|j| en todas las iteraciones
-y utiliza una familia de aserciones para justificarlo paramétricamente,
-sin enumerar las demás combinaciones.
-%\guido{las dos ultimas oraciones deberian ser una sola, y creo que en este
-%parrafo queres justificar que una busqueda exhaustiva tendria dificultad
-%para encontrar este error, decilo explicitamente}
+El ejemplo muestra así dos ventajas del enfoque.
+Frente al \emph{testing},
+la derivación certifica un error cuya ejecución es tan improbable que en la práctica no se observaría ejecutando el programa.
+Frente a una exploración que recorra el bucle iteración por iteración,
+el tamaño de la derivación no depende de la cantidad de iteraciones.
+El paso de la variante se demuestra una sola vez para un \lstinline|k| arbitrario,
+y el valor un millón aparece únicamente en las obligaciones aritméticas que verifica Z3.
 
 La satisfacibilidad de la postcondición se establece con un \emph{store} que asigna \lstinline|Nat 1000000| a todas las variables,
 un \emph{heap} vacío y modo \lstinline|Er|.
@@ -6603,8 +6621,7 @@ La formalización usa solo dos axiomas,
 ambos provistos por la biblioteca estándar de \fstar{}:
 \begin{itemize}
   \item el operador de elección \lstinline|indefinite_description_ghost|,
-  que se encuentra en el módulo \lstinline|FStar.IndefiniteDescription|,
-  que permite obtener un testigo a partir de una prueba de existencia.
+  que se encuentra en el módulo \lstinline|FStar.IndefiniteDescription| y permite obtener un testigo a partir de una prueba de existencia.
   Se usa en las pruebas de solidez de la IL y de la ISL,
   en el Teorema de la Huella y en algunos casos de estudio,
   para elegir estados iniciales,
@@ -6640,11 +6657,11 @@ Cada valor es el promedio de tres ejecuciones en una computadora con procesador 
     \hline
     \lstinline|IncLogic|    & IL: lenguaje, semántica, reglas y soundness & 247 & 1,2  \\
     \hline
-    \lstinline|IncSepLogic| & Sintaxis, heaps, semántica y metateoría & 285 & \multirow{5}{*}{11,1} \\
+    \lstinline|IncSepLogic| & Sintaxis, heaps, semántica y metateoría & 285 & \multirow{5}{*}{12,2} \\
                             & Reglas de la ISL                        & 191 & \\
                             & Soundness de la ISL                     & 343 & \\
                             & Teorema de la Huella                    & 514 & \\
-                            & Heaps completos y certificados de error &  57 & \\
+                            & Heaps completos y certificados de error & 74 & \\
     \hline
     \lstinline|AllocFree| & Caso de la \autoref{sec:uaf} & 42 & 0,4 \\
     \lstinline|PushBack| & Caso de la \autoref{sec:pushback} & 263 & 3,6 \\
@@ -6652,7 +6669,7 @@ Cada valor es el promedio de tres ejecuciones en una computadora con procesador 
     \lstinline|ListSumLen| & Caso de la \autoref{sec:listas} & 413 & 16,5 \\
     \lstinline|TaskQueue| & Experimento de la \autoref{sec:experimento-agente} & 93 & 0,5 \\
     \hline
-    \multicolumn{2}{l}{Total} & 2575 & 34,3 \\
+    \multicolumn{2}{l}{Total} & 2592 & 35,4 \\
     \hline
   \end{tabular}
   \caption{Tamaño y tiempo de verificación del desarrollo.}
@@ -6661,7 +6678,7 @@ Cada valor es el promedio de tres ejecuciones en una computadora con procesador 
 
 El núcleo de la formalización,
 compuesto por \lstinline|IncLogic| e \lstinline|IncSepLogic|,
-ocupa 1637 líneas.
+ocupa 1654 líneas.
 Dentro de la ISL,
 la parte más extensa es la mecanización del Teorema de la Huella (\autoref{sec:isl-huella}),
 con 514 líneas.
@@ -6845,6 +6862,37 @@ celdas liberadas y direcciones que no pertenecen al fragmento local.
 Esta representación permite justificar accesos erróneos a memoria liberada,
 un fin diferente al perseguido por la SL de Cminor.
 
+\subsection*{Lógica de separación en F$^\star$: Steel y Pulse}
+\fstar{} ya cuenta con lógicas de separación propias.
+Steel~\citep{steel} y su sucesor Pulse permiten escribir y verificar programas imperativos y concurrentes dentro de \fstar{}.
+Pulse se apoya en PulseCore~\citep{pulsecore},
+una lógica de separación concurrente desarrollada de manera fundacional dentro de \fstar{},
+con invariantes impredicativos,
+estado fantasma de orden superior y un modelo de memoria basado en monoides conmutativos parciales.
+
+La pregunta natural es por qué en esta tesina no reutilizamos el modelo de \emph{heap} o el álgebra de separación de PulseCore.
+La razón principal es que los objetivos son distintos.
+PulseCore es una lógica de correctitud para verificar programas escritos en \fstar{}.
+La ISL,
+en cambio,
+requiere razonar sobre la existencia de ejecuciones.
+Para eso,
+el lenguaje debe representarse como un objeto,
+el tipo \lstinline|stmt|,
+con una semántica operacional explícita,
+de modo que el Teorema de Soundness pueda construir una derivación de \lstinline|runsto| que testifique la ejecución.
+Además,
+la ISL necesita los \emph{heaps} negativos,
+que distinguen una celda liberada de una ubicación sobre la que el fragmento no tiene información.
+Reutilizar PulseCore habría exigido representar esta distinción en su álgebra y reformular su resultado de adecuación en términos de alcanzabilidad,
+y habría incorporado características,
+como la concurrencia o el estado fantasma de orden superior,
+que exceden el alcance de este trabajo.
+Por eso se optó por un modelo de \emph{heap} mínimo,
+definido específicamente para la ISL.
+Estudiar si el modelo de memoria de PulseCore puede extenderse con \emph{heaps}
+negativos es una línea de trabajo futuro posible.
+
 \subsection*{IsaBIL: verificación de correctitud e incorrectitud de binarios}
 \citet{isabil} presentan IsaBIL,
 un framework desarrollado en Isabelle/HOL para verificar propiedades de programas binarios.
@@ -6938,9 +6986,14 @@ Mizzle se enfoca en un lenguaje más expresivo,
 con funciones de orden superior y concurrencia,
 mientras que en esta tesina se usa un lenguaje imperativo simplificado para estudiar la estructura metateórica de la ISL.
 Por otro lado,
-Mizzle no incorpora liberación de memoria,
-mientras que la formalización desarrollada en esta tesina modela la liberación con \emph{heaps} negativos
-y usa esta información para demostrar errores de \emph{use after free} o \emph{double free}.
+como OCaml es un lenguaje con recolección de basura,
+el lenguaje considerado por Mizzle no incluye una operación de liberación de memoria explícita,
+y por lo tanto los errores de tipo \emph{use after free} o \emph{double free} no forman parte de su modelo.
+La formalización desarrollada en esta tesina,
+en cambio,
+trabaja con un lenguaje con liberación explícita,
+que modela mediante \emph{heaps} negativos
+y usa para demostrar este tipo de errores.
 
 Un aspecto interesante de Mizzle es su utilización como lenguaje de prueba para agentes basados en modelos de lenguaje.
 La propuesta consiste en no confiar en el razonamiento interno de un modelo de lenguaje de gran tamaño (LLM, por sus siglas en inglés)
@@ -6958,9 +7011,12 @@ esta formalización se concentra en dar una representación mecanizada de la sem
 las reglas lógicas y sus propiedades.
 Al igual que VeriFast,
 incorpora aserciones espaciales y predicados sobre memoria mutable.
-Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpretación subaproximada de la IL
-junto con el razonamiento local de la SL,
-incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos.
+Existen otras mecanizaciones de razonamiento subaproximado,
+como Mizzle en Rocq,
+y otras lógicas de separación mecanizadas en \fstar{},
+como PulseCore.
+Lo que caracteriza a este trabajo es la mecanización en \fstar{} de la interpretación subaproximada de la IL junto con el razonamiento local de la SL,
+incluyendo el tratamiento de la liberación de memoria mediante \emph{heaps} negativos y el Teorema de la Huella.
 
 A diferencia de IsaBIL y VeriFast,
 el desarrollo no incorpora un procedimiento integrado de automatización de las derivaciones ni pretende analizar un lenguaje industrial.
@@ -6970,6 +7026,33 @@ se verifican sus propiedades de solidez y localidad y se mecaniza el Teorema de 
 \section{Trabajo futuro}
 \label{sec:futuro}
 Detallamos a continuación algunas líneas de investigación que permitirían extender el desarrollo realizado.
+
+\subsection*{Completitud}
+La formalización demuestra la solidez de la IL y de la ISL,
+es decir,
+que toda tripleta derivable es válida.
+La dirección contraria,
+la \emph{completitud},
+establece que toda tripleta válida es derivable,
+es decir,
+que las reglas alcanzan para justificar cualquier conjunto de estados alcanzables.
+Mizzle~\citep{mizzle} demuestra un resultado de este tipo para su lógica,
+pero esta tesina no lo aborda.
+
+El \emph{shallow embedding} de las aserciones determina cómo podría enunciarse este resultado.
+Como las aserciones son predicados arbitrarios sobre estados,
+no es posible demostrar la completitud respecto de un lenguaje de aserciones concreto,
+pero sí respecto de aserciones semánticas.
+Para toda tripleta válida $\itriple{p}{C}{\varepsilon : q}$ existiría una derivación de \lstinline|isl_triple| con esa presunción y esa postcondición.
+Una estrategia posible consiste en demostrar,
+para cada comando,
+que es derivable la tripleta cuya postcondición es exactamente la postimagen de la presunción,
+y obtener luego cualquier postcondición válida mediante \lstinline|ISL_Consequence|.
+La forma de las reglas de memoria favorece este enfoque,
+ya que su postcondición reconstruye el estado anterior y describe así la postimagen de cada operación primitiva.
+La principal dificultad estaría en la estrella de Kleene,
+donde habría que usar \lstinline|ISL_KleeneVariant| con una familia de aserciones que describa los estados alcanzables tras cada cantidad de iteraciones,
+y combinarla con \lstinline|ISL_KleeneS| para las ejecuciones que terminan en error.
 
 \subsection*{Automatización de las derivaciones}
 Aunque el experimento motivado por Mizzle,
@@ -7010,16 +7093,6 @@ La traza podría indicar las instrucciones ejecutadas, las ramas no determinista
 los valores relevantes del \emph{store} y las modificaciones realizadas sobre el \emph{heap}.
 De esta manera,
 la demostración formal podría usarse también para producir una explicación concreta del error.
-
-\subsection*{Evaluación experimental}
-La evaluación realizada en esta tesina es cualitativa y se concentra en la expresividad de la formalización.
-Una implementación con más automatización permitiría estudiar experimentalmente su comportamiento.
-
-Podrían medirse los tiempos de verificación,
-el tamaño de las condiciones generadas, el consumo de memoria,
-la participación del solucionador SMT y la variación de los valores frente a programas de distintas dimensiones.
-También sería posible comparar diferentes estrategias de exploración y estudiar hasta qué punto
-la construcción de derivaciones subaproximadas permite controlar el crecimiento producido por las elecciones no deterministas y los bucles.
 
 \subsection*{Concurrencia}
 Otra posible extensión es incorporar programas concurrentes.

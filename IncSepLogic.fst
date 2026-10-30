@@ -999,22 +999,22 @@ type footprint : stmt -> state -> state -> Type0 =
     footprint (Seq p q) (st0, h0 <+> h_q, Ok) (st1, h1 <+> h_p, m1)
   
   | F_SeqEr : p : stmt -> q : stmt -> 
-    s : state { s._3 == Ok } -> t : state { t._3 == Er } ->
+    s : ok_state -> t : er_state ->
     footprint p s t ->
     footprint (Seq p q) s t
   
-  | F_ChoiceL : p : stmt -> q : stmt -> s : state { s._3 == Ok } -> t : state ->
+  | F_ChoiceL : p : stmt -> q : stmt -> s : ok_state -> t : state ->
     footprint p s t ->
     footprint (Choice p q) s t
   
-  | F_ChoiceR : p : stmt -> q : stmt -> s : state { s._3 == Ok } -> t : state ->
+  | F_ChoiceR : p : stmt -> q : stmt -> s : ok_state -> t : state ->
     footprint q s t ->
     footprint (Choice p q) s t
   
   | F_Kleene0 : st : store -> p : stmt ->
     footprint (Kleene p) (st, empty_heap, Ok) (st, empty_heap, Ok)
   
-  | F_KleeneS : p : stmt -> s : state { s._3 == Ok } -> t : state ->
+  | F_KleeneS : p : stmt -> s : ok_state -> t : state ->
     footprint (Seq (Kleene p) p) s t ->
     footprint (Kleene p) s t
   

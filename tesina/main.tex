@@ -1663,6 +1663,14 @@ La \autoref{tab:comparacion-sl} resume las diferencias entre las cuatro combinac
   \label{tab:comparacion-sl}
 \end{table}
 
+En la tercera fila de la \autoref{tab:comparacion-sl},
+las aserciones puede compartir celdas de distintas maneras;
+las Figuras \ref{fig:conjuncion-clasica} y \ref{fig:conjuncion-separadora} ilustran algunos casos,
+pero no todos.
+Por ejemplo,
+con $x = 2$, $y = 3$ y $h = \{2 \mapsto 3, 3 \mapsto 3, 4 \mapsto 2\}$,
+ambas aserciones se satisfacen y comparten solo la celda en la posición 3.
+
 La separación de los fragmentos del \emph{heap} impuesta por la conjunción separadora
 permite razonar sobre las modificaciones de uno de ellos
 y conservar la información sobre los demás.
@@ -2425,7 +2433,7 @@ una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una cel
 pero no necesita describir las demás celdas del \emph{heap}.
 El resto de la memoria puede incorporarse con un marco.
 
-Por lo tanto,
+Además,
 no necesariamente existe una única huella minimal para cada comando.
 Un comando con distintas ramas puede tener varias ejecuciones minimales con requerimientos de memoria distintos,
 y ninguna de ellas es menor que la otra.
@@ -2972,6 +2980,11 @@ las aserciones se representan en \fstar{} como:
 \begin{lstlisting}
 type cond = state -> prop
 \end{lstlisting}
+
+Esta representación corresponde a un \emph{shallow embedding} de las aserciones:
+en lugar de definir una sintaxis para el lenguaje de aserciones y su interpretación,
+cada aserción es directamente un predicado de \fstar{} sobre estados.
+Las consecuencias de esta decisión se discuten en la \autoref{sec:isl-tipoind}.
 
 A partir de esta definición, la derivabilidad de una tripleta se representa mediante:
 
@@ -4142,7 +4155,20 @@ let rec modifies (p : stmt) (x : var) : prop =
   | _ -> False
 \end{lstlisting}
 
-Luego, definimos cuándo una aserción es semánticamente inmune a la modificación de ciertas variables.
+A diferencia de lo que ocurre con \lstinline|ISL_Exists|,
+cuya condición lateral se refiere solo al comando y puede expresarse sintácticamente mediante \lstinline|fv_stmt|,
+la condición de la Regla del Marco~\ref{eq:frame-isl} involucra también las variables libres del marco.
+Como las aserciones se representan mediante un \emph{shallow embedding},
+es decir,
+como funciones arbitrarias del tipo \lstinline|state -> prop|,
+no existe una sintaxis sobre la cual calcular esas variables.
+Por eso,
+la condición $\mathrm{mod}(C) \cap \mathrm{fv}(r) = \emptyset$ se reemplaza por su contraparte semántica.
+En lugar de exigir que el marco no mencione las variables modificadas,
+se exige que su verdad no dependa de ellas.
+Para expresarlo,
+definimos cuándo una aserción es semánticamente inmune a la modificación de ciertas variables.
+
 Dos \emph{stores} coinciden fuera de un conjunto de variables cuando asignan los mismos valores a todas las variables no incluidas en dicho conjunto.
 Basándonos en esto,
 una aserción es independiente de un conjunto de variables si su evaluación lógica devuelve el mismo resultado
@@ -4161,7 +4187,15 @@ La definición exige que la verdad de \lstinline|c| no cambie cuando se modifica
 Además,
 exige que la aserción del marco no dependa del modo de terminación,
 ya que compara su validez para modos arbitrarios \lstinline|m1| y \lstinline|m2|.
-Esta condición permite preservar el marco incluso cuando una ejecución pasa del modo \lstinline|Ok| al modo \lstinline|Er|.
+Esta restricción es necesaria porque la Regla del Marco también se aplica a tripletas de error:
+el marco se cumple en la presunción,
+cuyo modo es \lstinline|Ok|,
+y debe seguir cumpliéndose en una postcondición cuyo modo puede ser \lstinline|Er|.
+No supone una pérdida respecto de la presentación de \citet{isl},
+donde el modo de terminación forma parte de la tripleta y no de las aserciones.
+Por otro lado,
+la condición semántica es más general que la sintáctica,
+ya que admite marcos que mencionan una variable modificada sin depender realmente de su valor.
 
 Con esto, la Regla del Marco se codifica como el siguiente constructor:
 
@@ -4178,6 +4212,17 @@ permite incorporar la aserción \lstinline|fr| a ambas mediante la conjunción s
 que exige que los respectivos fragmentos del \emph{heap} sean disjuntos.
 La condición \lstinline|independent_on_vars (modifies p) fr| garantiza que
 los cambios en las variables modificables por \lstinline|p| y en el modo de terminación no alteren la verdad de \lstinline|fr|.
+
+El \emph{shallow embedding} tiene ventajas y desventajas.
+Las implicaciones entre aserciones,
+como las que exige \lstinline|ISL_Consequence|,
+son proposiciones de \fstar{} que Z3 descarga automáticamente en la mayoría de los casos,
+y las aserciones pueden usar toda la expresividad de la lógica de \fstar{}.
+Como desventaja,
+el lenguaje de aserciones no existe como objeto dentro del desarrollo,
+por lo que no es posible razonar sobre él.
+Por ejemplo,
+no puede demostrarse la completitud de la lógica respecto de un lenguaje de aserciones concreto.
 
 \section{El Teorema de Soundness}
 \label{sec:isl-soundness}
@@ -6496,7 +6541,7 @@ y el solucionador Z3 (versión 4.13.3),
 que descarga dichas obligaciones.
 
 \subsection*{Tamaño y tiempo de verificación}
-La Tabla~\ref{tab:desarrollo} muestra la cantidad de líneas de cada parte del desarrollo,
+La \autoref{tab:desarrollo} muestra la cantidad de líneas de cada parte del desarrollo,
 sin contar líneas en blanco ni comentarios,
 y el tiempo de verificación de cada módulo.
 Los tiempos se midieron verificando cada módulo desde cero,

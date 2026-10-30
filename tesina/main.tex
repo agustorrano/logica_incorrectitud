@@ -6462,10 +6462,10 @@ construya certificados de incorrectitud que luego puedan ser comprobados por \fs
 
 \section{Tamaño del desarrollo y base de confianza}
 Las garantías que ofrece una formalización dependen de qué componentes deben aceptarse sin demostración.
-En esta sección se detallan esos componentes y se resume el trabajo del desarrollo y el costo de su verificación.
+En esta sección se detallan esos componentes y se resume el tamaño del desarrollo y el costo de su verificación.
 
 \subsection*{Base de confianza}
-El desarrollo no contiene usos de \lstinline|admit| no de \lstinline|assume|:
+El desarrollo no contiene usos de \lstinline|admit| ni de \lstinline|assume|:
 todas las definiciones y lemas,
 incluidos los de los casos de estudio,
 son verificados completamente por \fstar{}.
@@ -6474,9 +6474,8 @@ Las apariciones de \lstinline|assume| en el código corresponden al comando \lst
 La formalización usa solo dos axiomas,
 ambos provistos por la biblioteca estándar de \fstar{}:
 \begin{itemize}
-  \item el operador de elección clásica que se utilizó,
-  \lstinline|idefinite_description_ghost|,
-  del módulo \lstinline|FStar.IndefiniteDescription|,
+  \item el operador de elección \lstinline|indefinite_description_ghost|,
+  que se encuentra en el módulo \lstinline|FStar.IndefiniteDescription|,
   que permite obtener un testigo a partir de una prueba de existencia.
   Se usa en las pruebas de solidez de la IL y de la ISL,
   en el Teorema de la Huella y en algunos casos de estudio,
@@ -6490,10 +6489,10 @@ Ambos son axiomas estándar y su uso queda restringido al nivel fantasma,
 por lo que no afectan al contenido computacional del desarrollo.
 
 En consecuencia,
-la base de confianza está formada por el verificador de tipos de \fstar{} (version \emph{nightly} del 11 de octubre de 2026),
-incluida su codificación de las obligaciones de prueba a SMT,
-los dos axiomas mencionados,
-y el solucionador Z3 (version 4.13.3),
+la base de confianza está formada por el verificador de tipos de \fstar{} (versión \emph{nightly} del 11 de octubre de 2026),
+incluida su codificación de las obligaciones de prueba a SMT;
+los dos axiomas mencionados;
+y el solucionador Z3 (versión 4.13.3),
 que descarga dichas obligaciones.
 
 \subsection*{Tamaño y tiempo de verificación}
@@ -6503,7 +6502,7 @@ y el tiempo de verificación de cada módulo.
 Los tiempos se midieron verificando cada módulo desde cero,
 en orden de dependencias,
 de modo que el tiempo de un caso de estudio no incluye la verificación de \lstinline|IncSepLogic|.
-Cada valor es el promedio de xx ejecuciones en una computadora con procesador Intel Core i5-1135G7 (2,40 GHz) y 16 GB de memoria.
+Cada valor es el promedio de tres ejecuciones en una computadora con procesador Intel Core i5-1135G7 (2,40 GHz) y 16 GB de memoria.
 
 \begin{table}[ht]
   \centering
@@ -6522,7 +6521,7 @@ Cada valor es el promedio de xx ejecuciones en una computadora con procesador In
     \lstinline|AllocFree| & Caso de la \autoref{sec:uaf} & 42 & 0,4 \\
     \lstinline|PushBack| & Caso de la \autoref{sec:pushback} & 263 & 3,6 \\
     \lstinline|RandomLoop| & Caso de la \autoref{sec:bucle} & 127 & 1,0 \\
-    \lstinline|ListSumLen| & Caso de la \autoref{sec:estructura} & 413 & 16,5 \\
+    \lstinline|ListSumLen| & Caso de la \autoref{sec:listas} & 413 & 16,5 \\
     \lstinline|TaskQueue| & Experimento de la \autoref{sec:experimento-agente} & 93 & 0,5 \\
     \hline
     \multicolumn{2}{l}{Total} & 2575 & 34,3 \\
@@ -6532,17 +6531,17 @@ Cada valor es el promedio de xx ejecuciones en una computadora con procesador In
   \label{tab:desarrollo}
 \end{table}
 
-El núćleo de la formalización,
+El núcleo de la formalización,
 compuesto por \lstinline|IncLogic| e \lstinline|IncSepLogic|,
 ocupa 1637 líneas.
 Dentro de la ISL,
-la parte mas extensa es la mecanización del Teorema de la Huella~\ref{sec:isl-huella},
+la parte más extensa es la mecanización del Teorema de la Huella (\autoref{sec:isl-huella}),
 con 514 líneas.
 Los casos de estudio suman 938 líneas.
 El más extenso es el recorrido de la lista enlazada,
 ya que requiere definir el predicado espacial recursivo y los lemas que relacionan las aserciones de la variante con las lecturas de cada iteración.
 Este es también el único módulo que modifica los parámetros por defecto del verificador:
-en una de sus pruebas se auementa el \emph{fuel} y el límite de recursos de Z3 (\lstinline|"--fuel 3 --ifuel 1 --z3rlimit 100"|).
+en una de sus pruebas se aumentan el \emph{fuel} y el límite de recursos de Z3 (\lstinline|--fuel 3 --ifuel 1 --z3rlimit 100|).
 
 \section{Resumen de los resultados}
 Los cinco casos muestran distintas capacidades del núcleo lógico.
@@ -6568,8 +6567,8 @@ donde el agente utilizó la formalización para construir una prueba de error qu
 
 En los cinco casos se obtiene además un certificado de existencia de error.
 
-Esta evaluación no establece completitud respecto de todos los programas posibles,
-no mide el rendimiento de la verificación y no demuestra que las aserciones puedan sintetizarse automáticamente.
+Esta evaluación reporta tiempos de verificación de cada módulo,
+pero no establece completitud respecto de todos los programas posibles y no demuestra que las aserciones puedan sintetizarse automáticamente.
 Su alcance consiste en validar que las construcciones desarrolladas en el \autoref{cap:formalizacion-isl}
 puedan usarse para demostrar la alcanzabilidad de errores no triviales.
 

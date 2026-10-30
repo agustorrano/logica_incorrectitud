@@ -3981,7 +3981,7 @@ satisfaga esa presunción.
 Esto explica su diferencia de forma respecto de las reglas de la \autoref{fig:reglas-isl}.
 
 Comenzamos por la alocación,
-cuyas dos reglas distinguen la infromación disponible sobre la ubicación reservada.
+cuyas dos reglas distinguen la información disponible sobre la ubicación reservada.
 En \lstinline|ISL_Alloc1|,
 la ubicación estaba marcada como \lstinline|Unknown|.
 En este caso,
@@ -4006,7 +4006,7 @@ De este modo,
 describe la alocación sobre una ubicación previamente conocida como no asignada.
 Al igual que en \lstinline|ISL_Alloc1|,
 la dirección,
-el contenido de la nueva celda y el valor anterior de la variable destino se cuantifican existencialmente en la postondición:
+el contenido de la nueva celda y el valor anterior de la variable destino se cuantifican existencialmente en la postcondición:
 
 \begin{lstlisting}
 | ISL_Alloc2 : #pre : cond -> x : var ->
@@ -4055,7 +4055,7 @@ y exigir que el estado resultante satisfaga \lstinline|pre|:
 
 La lectura también falla cuando la expresión \lstinline|e| evalúa a la dirección nula.
 En este caso,
-la regla \lstinline|ISL_LoadNull| conserva el mismo esquema de reconstrucción del esatdo inicial,
+la regla \lstinline|ISL_LoadNull| conserva el mismo esquema de reconstrucción del estado inicial,
 pero sustituye la condición sobre la celda negativa por la condición de nulidad:
 
 \begin{lstlisting}
@@ -4088,7 +4088,7 @@ La postcondición de \lstinline|ISL_Free| exige que la ubicación liberada esté
 y que exista un valor \lstinline|v| tal que,
 al restaurar la celda como \lstinline|Full v|,
 se obtenga un estado que satisface \lstinline|pre|.
-El cuantificador existencial permite que contenido anterior sea distinto para cada estado final:
+El cuantificador existencial permite que el contenido anterior sea distinto para cada estado final:
 
 \begin{lstlisting}
 | ISL_Free : #pre : cond -> e : expr ->
@@ -4223,7 +4223,7 @@ a la cuantificación existencial y a la Regla del Marco.
 Se presentan los casos de memoria en el mismo orden que sus reglas deductivas.
 En los casos de éxito
 la prueba utiliza los testigos existenciales de la postcondición para reconstruir un estado inicial.
-Estos testigos se obtienen mediante \lstinline|indefinite_descritpion_ghost|.
+Estos testigos se obtienen mediante \lstinline|indefinite_description_ghost|.
 Por su parte,
 \lstinline|exists_intro| permite justificar una propiedad existencial proporcionando un testigo.
 Luego se aplica la regla operacional correspondiente y,
@@ -4234,9 +4234,9 @@ En \lstinline|ISL_Alloc1|,
 se obtiene la dirección reservada \lstinline|l|,
 su contenido \lstinline|v| y el valor anterior \lstinline|x_old| de la variable destino.
 Con ellos se reconstruye \lstinline|s0|,
-restaurando \lstinline|x_old| en el \emph{store} y \lstinline|Unknow| en la ubicación reservada.
+restaurando \lstinline|x_old| en el \emph{store} y \lstinline|Unknown| en la ubicación reservada.
 Desde ese estado,
-\lstinline|R_Alloc| permite reservar la misma dirección con el contenido obervado en \lstinline|s1|:
+\lstinline|R_Alloc| permite reservar la misma dirección con el contenido observado en \lstinline|s1|:
 
 \begin{lstlisting}
 | ISL_Alloc1 #pre #x -> 
@@ -4292,7 +4292,7 @@ Para la lectura,
 primero se obtiene \lstinline|x_old| junto con la garantía de que existen una dirección y un contenido compatibles con ese valor anterior.
 Luego se eligen \lstinline|l| y \lstinline|v| y se reconstruye el \emph{store} inicial,
 conservando el \emph{heap}.
-La postcondición garantiza que la evluación de \lstinline|e| en ese estado conduce a la celda que contiene \lstinline|v|.
+La postcondición garantiza que la evaluación de \lstinline|e| en ese estado conduce a la celda que contiene \lstinline|v|.
 Así se aplica \lstinline|R_Load| y se identifica el estado resultante con \lstinline|s1|:
 
 \begin{lstlisting}
@@ -4352,7 +4352,7 @@ la prueba aprovecha la condición de que \lstinline|e| evalúa a cero para const
 \end{lstlisting}
 
 Para demostrar el caso \lstinline|ISL_Store|,
-se identifica la dirección escita y se obtiene un contenido anterior \lstinline|v_old| que permita satisfacer \lstinline|pre|.
+se identifica la dirección escrita y se obtiene un contenido anterior \lstinline|v_old| que permita satisfacer \lstinline|pre|.
 El estado inicial se reconstruye colocando \lstinline|Full v_old| en esa dirección,
 sin modificar el \emph{store}.
 A continuación,
@@ -5183,7 +5183,7 @@ y \lstinline|compose_frames| combina los marcos para reconstruir la transición 
 
 \subsection*{Resultado de minimalidad}
 La descomposición anterior permite aplicar \lstinline|minimize| al fragmento local acotado y extender el resultado a una ejecución cualquiera.
-El lema \lstinline|footprint_theorem_minimal| estabece que toda ejecución admite una transición minimal del comando que,
+El lema \lstinline|footprint_theorem_minimal| establece que toda ejecución admite una transición minimal del comando que,
 al extenderse con un marco disjunto de sus \emph{heaps} inicial y final,
 reconstruye los estados originales:
 
@@ -5251,7 +5251,7 @@ let cstate (s : state) : state =
 
 El estado \lstinline|cstate| aplica el completado al \emph{heap} de un estado sin modificar su \emph{store} ni su modo de terminación.
 Para demostrar que esta transformación conserva las ejecuciones,
-\lstinline|run_complete| demustra,
+\lstinline|run_complete| demuestra,
 por inducción sobre la derivación operacional original,
 que el mismo comando puede ejecutarse entre los estados obtenidos al completar su \emph{heap}:
 
@@ -5269,7 +5269,7 @@ la misma ubicación sigue disponible para la alocación.
 Para los casos que modifican el \emph{heap},
 se utiliza el lema \lstinline|complete_override|.
 Este establece que actualizar una celda con un valor distinto de \lstinline|Unknown|
-y luego copletar el \emph{heap} produce el mismo resultado que completar primero el \emph{heap} y realizar despué esa actualización:
+y luego completar el \emph{heap} produce el mismo resultado que completar primero el \emph{heap} y realizar después esa actualización:
 
 \begin{lstlisting}
 let complete_override (st : store) (h : heap) (m : term_mode)
@@ -5306,7 +5306,7 @@ let certify (#pre #post : cond) (#p : stmt)
 \end{lstlisting}
 La función \lstinline|certify| combina la solidez de la ISL con la preservación de las ejecuciones por completado.
 A partir de una derivación lógica y de un estado final que satisface la postcondición y tiene modo \lstinline|Er|,
-obtiene una ejecución errónea desde un estado que satisfaace la presunción.
+obtiene una ejecución errónea desde un estado que satisface la presunción.
 Luego,
 \lstinline|run_complete| permite obtener también una ejecución errónea entre estados completados.
 De este modo,
@@ -5495,7 +5495,7 @@ Esta reasignación implica reservar un nuevo bloque y liberar la memoria origina
 El problema surge si un cliente del código conserva un puntero hacia un elemento de la estructura original y luego invoca la función de agregado,
 ya que corre el riesgo de que la memoria sea reasignada.
 En ese escenario, su puntero local se convierte en un puntero colgante.
-Este fue un caso de estudio motivacional para el diseño de la ISL original.
+Este fue un caso de estudio motivacional para el diseño de la ISL original~\citep{isl}.
 
 El siguiente fragmento,
 escrito en un lenguaje similar a C,
@@ -6445,7 +6445,7 @@ utilizado para seleccionar el camino en el que la cola estaba llena.
 El valor de \lstinline|"avg"| se abstrae mediante \lstinline|Nat 16|:
 no se representa el cálculo en punto flotante,
 cuyo resultado en el programa C es $16,25$,
-ya que el error depede de la dirección de escritura.
+ya que el error depende de la dirección de escritura.
 La variable \lstinline|"lowest"| contiene \lstinline|Loc 1|.
 La ubicación \lstinline|1| aparece como \lstinline|Empty| y el modo es \lstinline|Er|.
 El lema \lstinline|tq_reachable| aplica \lstinline|certify| a la derivación y a este estado,
@@ -6553,7 +6553,7 @@ Además,
 se demostró que las ejecuciones se preservan al completar los \emph{heaps} y se incorporaron certificados de existencia de errores.
 
 Finalmente,
-la formalización fue evaluada con cuatro casos de estudio y un experimento expliratorio.
+la formalización fue evaluada con cuatro casos de estudio y un experimento exploratorio.
 Se construyeron derivaciones para un error \emph{use after free},
 un puntero colgante producido por una reasignación no determinista,
 una ejecución con una gran cantidad de iteraciones y decisiones no deterministas,
@@ -6583,7 +6583,7 @@ El desarrollo fue mecanizado en HOL4~\citep{hol4}.
 El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales
 y de uso de recursos directamente sobre programas de bajo nivel.
 Aunque el modelo conserva detalles de la máquina,
-las especificaciones se expresan mediante un representación flexible del estado inspirada en el razonamiento local de la SL.
+las especificaciones se expresan mediante una representación flexible del estado inspirada en el razonamiento local de la SL.
 
 El uso de una semántica operacional explícita y de un asistente de pruebas para justificar las reglas de razonamiento
 es un enfoque que comparte ese trabajo con la tesina actual.

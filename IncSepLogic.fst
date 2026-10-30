@@ -707,19 +707,18 @@ let rec soundness
     (|s0, pf0|)
 
   | ISL_Frame #p_pre #p_cmd #p_post fr pf_p _ ->
-    let (st1, hp1, m) = s1 in
     let unfold p_two (h_local h_fr : heap) : prop = 
       h_local >< h_fr /\ 
-      hp1 == (h_local <+> h_fr) /\ 
-      p_post (st1, h_local, m) /\ 
-      fr (st1, h_fr, m)
+      s1._2 == (h_local <+> h_fr) /\ 
+      p_post (s1._1, h_local, s1._3) /\ 
+      fr (s1._1, h_fr, s1._3)
     in
     let h_local = indefinite_description_ghost heap (fun h_local ->
       exists h_fr. p_two h_local h_fr) in
     let h_fr = indefinite_description_ghost heap (fun h_fr ->
       p_two h_local h_fr) in
     let (|s0_local, r_local|) = 
-      soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
+      soundness p_cmd (is_ok p_pre) p_post pf_p (s1._1, h_local, s1._3) in
     let (st0, hp0, m0) = s0_local in
     lemma_runsto_disjoint h_fr r_local;
     let s0 : state = (st0, hp0 <+> h_fr, m0) in

@@ -42,7 +42,7 @@ Aunque estas técnicas pueden estar respaldadas por fundamentos formales, suelen
 Esto reduce la confianza y productividad de los desarrolladores, quienes deben invertir tiempo en descartar manualmente errores mal advertidos.
 
 La Lógica de Incorrectitud surge como propuesta para invertir el paradigma tradicional al centrarse en la demostración de errores alcanzables,
-garantizando la ausencia de falsos positivos en los errores reportados respecto de las condiciones iniciales consideradas.
+garantizando la ausencia de falsos positivos en los errores reportados.
 Recientemente, esta teoría se combinó con el razonamiento local sobre la memoria de la Lógica de Separación, introduciendo la Lógica de Incorrectitud de Separación.
 La mecanización de esta lógica constituye todavía un área de desarrollo reciente.
 
@@ -228,17 +228,17 @@ que representa la memoria dinámica,
 manteniendo la distinción entre terminaciones normales y con error.
 Además, se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.
 Sobre esta extensión se formaliza la ISL,
-se demuestra su solidez y se mecaniza el Teorema de la Huella.
-Este último permite descomponer cada ejecución en una transición sobre un fragmento minimal de memoria y un marco que permanece sin modificaciones.
+se demuestra su solidez y se mecaniza el Teorema de la Huella,
+que permite identificar qué parte de la memoria es necesaria para justificar una ejecución.
 
 A partir de las formalizaciones desarrolladas en estas dos etapas,
 se verifican programas ilustrativos que incluyen errores de memoria,
 elecciones no deterministas, bucles y estructuras enlazadas.
-Para estos programas se construyen derivaciones comprobadas por \fstar{} que actúan como certificados formales de error.
-Los teoremas de solidez garantizan que cada estado descrito por sus postcondiciones está respaldado
-por una ejecución del programa desde algún estado que satisface la aserción inicial.
-Además,
-se certifica la existencia de errores mediante estados finales concretos que satisfacen las postcondiciones.
+Para estos programas se construyen derivaciones comprobadas por \fstar{}.
+Los teoremas de solidez garantizan que los resultados descritos por estas derivaciones pueden alcanzarse
+mediante ejecuciones del programa.
+Al proporcionar además estados de error concretos,
+se certifica la existencia de ejecuciones que los alcanzan.
 
 \section{Estructura de la tesina}
 \label{sec:estructura}
@@ -1443,8 +1443,9 @@ utilizamos la abreviatura
 $$x \mapsto [e_1, e_2] \equiv (x \mapsto e_1) * (x + 1 \mapsto e_2),$$
 que describe dos celdas consecutivas cuyos contenidos son los valores de las expresiones $e_1$ y $e_2$,
 respectivamente.
+
 En los ejemplos siguientes,
-consideramos las aserciones $x \mapsto [3, y]$ y $y \mapsto [3, x]$.
+consideramos las aserciones $x \mapsto [3, y]$ e $y \mapsto [3, x]$.
 Ambas aserciones se representan individualmente en la \autoref{fig:aserciones}.
 
 \begin{figure}[h]
@@ -1709,7 +1710,7 @@ Las reglas correspondientes a comandos como \texttt{skip}, asignación y composi
 La extensión propia de la SL está dada por las reglas asociadas a las operaciones de alocación,
 lectura, escritura y liberación de memoria en la \autoref{fig:reglas-sl}.
 En estas reglas se utiliza la abreviatura $e \mapsto -$,
-equivalente a $\exists v. e \mapsto v$,
+equivalente a $\exists v. \ e \mapsto v$,
 que representa una celda ubicada en la dirección obtenida al evaluar $e$,
 cuyo contenido no es relevante para el razonamiento.
 
@@ -1726,14 +1727,14 @@ cuyo contenido no es relevante para el razonamiento.
 
 \inferrule [Load]
   {}
-  {\vdash_{\mathrm{SL}} \triple{x = x' \land e \mapsto v}{x := [e]}{x = v \land e[x'/x] \mapsto v}}
+  {\vdash_{\mathrm{SL}} \triple{x = x' \land e \mapsto v}{x := [e]}{x = v[x'/x] \land e[x'/x] \mapsto v[x'/x]}}
 
 \inferrule [Store]
   {}
   {\vdash_{\mathrm{SL}} \triple{e_1 \mapsto -}{[e_1] := e_2}{e_1 \mapsto e_2}}
 
 \end{mathpar}
-\caption{Reglas de inferencia de la SL.}
+\caption{Reglas de inferencia de la SL. Adaptadas de~\citep{sl}.}
 \label{fig:reglas-sl}
 \end{figure}
 
@@ -1751,6 +1752,9 @@ conserva el valor inicial de $x$,
 mientras que $v$ representa el contenido leído.
 Como la asignación puede cambiar el valor de la expresión $e$ si esta contiene a $x$,
 la postcondición utiliza $e[x'/x]$ para seguir describiendo la dirección original.
+Por el mismo motivo el contenido leído se describe mediante $v[x'/x]$:
+si $v$ contiene a $x$,
+su valor debe evaluarse con el valor de $x$ previo a la lectura.
 
 La regla \textsc{Store} modifica el contenido de la celda
 indicada por $e_1$ con el resultado de evaluar $e_2$.
@@ -2063,7 +2067,7 @@ $s$ y $s'$ los \emph{stores} inicial y final,
 $h, h', h_f \in \mathsf{HeapExt}$ los \emph{heaps} inicial, final y adicional,
 respectivamente.
 Si
-$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h \perp h_f \land h' \perp h_f,$$
+$$((s, h), (s', h')) \in [\![C]\!]_\varepsilon \land h' \perp h_f,$$
 entonces
 $$((s, h \uplus h_f), (s', h' \uplus h_f)) \in [\![C]\!]_\varepsilon.$$
 \end{lema}
@@ -2109,8 +2113,8 @@ A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:regl
   {\vdash_{\mathrm{ISL}} \itriple{x = x'}{x := \texttt{alloc()}}{ok : x \mapsto -}}
 
 \inferrule [Alloc2]
-  {x\notin \operatorname{fv}(y)}
-  {\vdash_{\mathrm{ISL}} \itriple{x = x' * y \nmapsto}{x := \texttt{alloc()}}{ok : x = y * y \mapsto -}}
+  {}
+  {\vdash_{\mathrm{ISL}} \itriple{x = x' * e \nmapsto}{x := \texttt{alloc()}}{ok : x = e[x'/x] * e \mapsto -}}
 
 \inferrule [Free]
   {}
@@ -2126,7 +2130,7 @@ A continuación se presentan las nuevas reglas de la ISL en la \autoref{fig:regl
 
 \inferrule [Load]
   {}
-  {\vdash_{\mathrm{ISL}} \itriple{x = x' * e \mapsto v}{x := [e]}{ok : x = v * e[x' / x] \mapsto v}}
+  {\vdash_{\mathrm{ISL}} \itriple{x = x' * e \mapsto v}{x := [e]}{ok : x = v[x'/x] * e[x' / x] \mapsto v[x'/x]}}
 
 \inferrule [LoadEr]
   {}
@@ -2177,8 +2181,8 @@ mientras que $x'$ conserva el valor inicial de $x$.
 Aunque $x'$ no aparece en la postcondición de estas reglas,
 puede aparecer en las aserciones incorporadas mediante la Regla del Marco,
 permitiendo conservar información sobre ese valor inicial.
-En \textsc{Alloc2} se exige además que $x$ no aparezca libre en $y$,
-de modo que la asignación a $x$ no modifique la dirección que denota $y$.
+En \textsc{Alloc2} se exige además que $x$ no aparezca libre en $e$,
+de modo que la asignación a $x$ no modifique la dirección que denota $e$.
 
 La regla \textsc{Free} representa la liberación exitosa.
 Requiere que la expresión $e$ evalúe a la dirección de una celda activa cuyo contenido está descrito por $e'$,
@@ -2524,10 +2528,9 @@ let rec same_length_sound
   (#xs : list int) (#ys : list int)
   (pf : same_length xs ys) :
   Lemma
-    (ensures
-      (FStar.List.Tot.length xs == FStar.List.Tot.length ys))
-    (decreases pf)
-= match pf with
+    (ensures length xs == length ys)
+    (decreases pf) =
+  match pf with
   | SLNil -> ()
   | SLCons _ _ _ _ tl ->
     same_length_sound tl
@@ -2655,11 +2658,9 @@ Esta distinción mecaniza los dos modos de terminación \emph{ok} y \emph{er}.
 En la presentación abstracta del \autoref{cap:conceptos-previos},
 el modo de terminación $\varepsilon \in \{ok, er\}$ aparece como un índice de la tripleta.
 En esta formalización se incorpora directamente en el estado.
-%\guido{y la semántica no permite que un estado de error avance en su ejecucion?}.
-Las reglas operacionales exigen que el estado inicial tenga modo \lstinline|Ok|,
-por lo que no permiten iniciar otra ejecución desde un estado con modo \lstinline|Er|.
 De esta manera,
 una aserción puede distinguir los estados normales de los erróneos inspeccionando su segundo componente.
+%\guido{y la semántica no permite que un estado de error avance en su ejecucion?}.
 
 Las expresiones del lenguaje se definen mediante un tipo inductivo:
 
@@ -2784,6 +2785,8 @@ sin necesidad de agregar una regla a la semántica operacional.
 
 A continuación,
 se presentan los constructores de \lstinline|runsto| que describen la ejecución de los comandos.
+Las reglas de \lstinline|runsto| exigen que el estado inicial tenga modo \lstinline|Ok|,
+por lo que no permiten ejecutar un comando desde un estado con modo \lstinline|Er|.
 Para simplificar sus signaturas,
 se definen dos abreviaturas para los estados según su modo de terminación:
 
@@ -2791,6 +2794,7 @@ se definen dos abreviaturas para los estados según su modo de terminación:
 type ok_state = s : state { s._2 == Ok }
 type er_state = s : state { s._2 == Er }  
 \end{lstlisting}
+
 En el caso de la asignación,
 se evalúa la expresión en el estado inicial y se actualiza el valor de la variable indicada:
 
@@ -2812,7 +2816,6 @@ La asignación no determinista se representa mediante:
 | R_Nondet : s : ok_state -> #x : var -> v : value ->
   runsto (Nondet x) s (override s._1 x v, Ok)
 \end{lstlisting}
-
 El valor \lstinline|v| es un parámetro del constructor.
 Para cada valor posible,
 \lstinline|R_Nondet| permite construir una derivación que actualiza \lstinline|x| con ese valor.
@@ -2946,7 +2949,7 @@ En primer lugar, observamos las instrucciones más simples de nuestro lenguaje:
 
 | I_Error : pre : cond ->
   il_triple (is_ok pre) Error
-    (fun s -> let (st, m) = s in m == Er /\ pre (st, Ok))
+    (fun s -> s._2 == Er /\ pre (s._1, Ok))
 
 | I_Assume : pre : cond -> #e : expr ->
   il_triple (is_ok pre) (Assume e)
@@ -3523,10 +3526,10 @@ type state = store & heap & term_mode
 type cond = state -> prop
 \end{lstlisting}
 
-La formalización no impone un único \emph{heap} inicial:
-el fragmento de memoria considerado depende de la presunción de cada tripleta.
-Un \emph{heap} que asigna \lstinline|Unknown| a todas las ubicaciones representa un fragmento vacío,
-mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.
+%La formalización no impone un único \emph{heap} inicial:
+%el fragmento de memoria considerado depende de la presunción de cada tripleta.
+%Un \emph{heap} que asigna \lstinline|Unknown| a todas las ubicaciones representa un fragmento vacío,
+%mientras que \lstinline|Empty| expresa información conocida sobre una ubicación no asignada.
 %\guido{el heap inicial está en Empty o en Unknown?}
 %\guido{entiendo.. pero en general hay un estado inicial cuando
 %uno define una semántica operacional. supongo que es todo empty,
@@ -3552,7 +3555,7 @@ type stmt =
 Esta extensión también requiere adaptar la evaluación de expresiones a los nuevos valores.
 La función \lstinline|eval_expr| sigue devolviendo un natural:
 para una variable,
-utiliza el número contenido en \lstinline|Nat n| o en \lstinline|Loc l|.
+devuelve \lstinline|n| si contiene \lstinline|Nat n| y \lstinline|l| si contiene \lstinline|Loc l|.
 Para conservar el valor de una variable al copiarlo mediante una asignación o una escritura en memoria,
 se incorpora \lstinline|eval_value|:
 
@@ -3661,7 +3664,7 @@ let points_to_empty (l : loc) : cond =
 El predicado \lstinline|points_to l v| describe un \emph{heaplet} formado exclusivamente por una celda activa en la ubicación no nula \lstinline|l|,
 con contenido \lstinline|v|.
 La condición sobre las demás ubicaciones exige que todas sean \lstinline|Unknown|,
-lo que corresponde a la interpretación exacta del points-to de la Definición~\ref{def:points_to}.
+lo que corresponde a la interpretación exacta del \emph{points-to} de la Definición~\ref{def:points_to}.
 Por su parte,
 \lstinline|points_to_empty l| describe un \emph{heaplet} cuya única ubicación conocida es \lstinline|l|,
 también no nula,
@@ -3729,9 +3732,9 @@ El lema \lstinline|state_equiv_eq| aplica este principio tanto al \emph{store} c
 En este capítulo se utiliza una versión generalizada de \lstinline|override| que permite actualizar tanto el \emph{store} como el \emph{heap},
 ya que ambos se representan mediante funciones.
 
-Con respecto al \autoref{cap:formalizacion-il},
+A diferencia de lo visto en la \autoref{sec:il-sintaxis},
 \lstinline|R_Assign| utiliza ahora \lstinline|eval_value| para actualizar la variable destino.
-A continuación,
+Además de este cambio,
 presentamos los constructores operacionales de las nuevas operaciones de memoria.
 
 Al igual que antes,
@@ -3744,7 +3747,6 @@ la regla operacional de reserva es:
   #(squash (s._2 l == Unknown \/ s._2 l == Empty)) ->
   runsto (Alloc x) s (override s._1 x (Loc l), override s._2 l (Full v), s._3)
 \end{lstlisting}
-
 La ubicación seleccionada debe ser no nula.
 Además,
 debe ser una dirección sobre la cual el \emph{heap} no poseía información o una dirección conocida que no estaba asignada.
@@ -3759,7 +3761,6 @@ La liberación exitosa se formaliza mediante:
   #(squash (s._2 l == Full v)) ->
   runsto (Free e) s (s._1, override s._2 l Empty, s._3)
 \end{lstlisting}
-
 La expresión debe evaluarse a una dirección no nula que contenga una celda activa.
 La ejecución no elimina la ubicación del \emph{heap},
 sino que transforma \lstinline|Full v| en \lstinline|Empty|.
@@ -3834,8 +3835,8 @@ En la formalización se mecaniza con la función \lstinline|r_frame|:
 \begin{lstlisting}
 let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
   (r : runsto p s0 s1) (h_fr : heap)
-  (#_ : squash (s0._2 >< h_fr)) (#_ : squash (s1._2 >< h_fr)) :
-  GTot (runsto p 
+  (#_ : squash (s0._2 >< h_fr)) (#_ : squash (s1._2 >< h_fr))
+  : GTot (runsto p 
     (s0._1, s0._2 <+> h_fr, s0._3) (s1._1, s1._2 <+> h_fr, s1._3))
   (decreases r)
 \end{lstlisting}
@@ -3897,7 +3898,7 @@ será reutilizada tanto en la prueba de solidez de la Regla del Marco como en la
 \section{La ISL como tipo inductivo}
 \label{sec:isl-tipoind}
 Estamos en condiciones de mecanizar el sistema deductivo de la ISL.
-Al igual que en el \autoref{cap:formalizacion-il},
+Al igual que en la \autoref{sec:il-tipoind},
 representamos la relación de derivabilidad mediante un tipo inductivo en \fstar{},
 al que denominaremos \lstinline|isl_triple|.
 Su signatura mantiene la estructura presentada para la IL,
@@ -3972,7 +3973,7 @@ mientras que las reglas de error conservan la celda negativa o la condición de 
 
 Por su parte,
 la alocación se representa mediante los constructores \lstinline|ISL_Alloc1| e \lstinline|ISL_Alloc2|,
-correspondientes a las dos reglas presentadas en la \autoref{sec:logincsep}.
+correspondientes a las dos reglas presentadas en la \autoref{fig:reglas-isl}.
 El primero contempla la reserva de una ubicación marcada como \lstinline|Unknown|,
 mientras que el segundo contempla una ubicación marcada como \lstinline|Empty|.
 En ambos casos,
@@ -4060,7 +4061,7 @@ los cambios en las variables modificables por \lstinline|p| y en el modo de term
 \section{El Teorema de Soundness}
 \label{sec:isl-soundness}
 El Teorema de Soundness~\ref{teo:sound-isl} establece que toda tripleta derivable de la ISL es semánticamente válida.
-Su mecanización conserva la misma forma general que la función \lstinline|soundness| desarrollada para IL en el \autoref{cap:formalizacion-il}.
+Su mecanización conserva la misma forma general que la función \lstinline|soundness| desarrollada para IL en la \autoref{sec:il-soundness}.
 
 \begin{teorema}[Soundness de la ISL formalizada]
 \label{teo:soundness-isl}
@@ -4190,14 +4191,13 @@ En este caso,
 \lstinline|p_pre| y \lstinline|p_post| son sus aserciones,
 y \lstinline|pf_p| es la derivación a la que se aplica la hipótesis inductiva.
 La aserción del marco se denota por \lstinline|fr|.
-Escribimos el estado final \lstinline|s1| como \lstinline|(st1, hp1, m)|.
 
 Cuando la prueba fue construida mediante el marco,
 sabemos lógicamente que el estado final \lstinline|s1| satisface la conjunción separadora \lstinline|p_post ** fr|.
 Por la Definición~\ref{def:sep-conj} de la conjunción separadora,
 el \emph{heap} final puede dividirse en dos fragmentos disjuntos:
 \begin{center}
-\lstinline|hp1 = h_local <+> h_fr|,
+\lstinline|s1._2 = h_local <+> h_fr|,
 \end{center}
 donde \lstinline|p_post| se satisface sobre \lstinline|h_local| y \lstinline|fr| sobre \lstinline|h_fr|.
 
@@ -4206,8 +4206,8 @@ En la prueba se define esta información mediante un predicado auxiliar:
 \begin{lstlisting}
 let p_two (h_local : heap) (h_fr : heap) : prop =
   h_local >< h_fr /\
-  hp1 == (h_local <+> h_fr) /\
-  p_post (st1, h_local, m) /\ fr (st1, h_fr, m)
+  s1._2 == (h_local <+> h_fr) /\
+  p_post (s1._1, h_local, m) /\ fr (s1._1, h_fr, s1._3)
 in
 \end{lstlisting}
 La definición de \lstinline|sep_conj| garantiza la existencia de dos \emph{heaps} que satisfacen \lstinline|p_two|.
@@ -4222,7 +4222,7 @@ aplicamos la hipótesis inductiva de nuestro teorema:
   let (|s0_local, r_local|) =
     soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
 \end{lstlisting}
-Esta llamada devuelve el estado inicial local \lstinline|s0_local| y una derivación \lstinline|r_local| de la ejecución hasta el estado \lstinline|(st1, h_local, m)|.
+Esta llamada devuelve el estado inicial local \lstinline|s0_local| y una derivación \lstinline|r_local| de la ejecución hasta el estado \lstinline|(s1._1, h_local, s1._3)|.
 El \emph{heap} \lstinline|h_local| es el fragmento que satisface la postcondición local proporcionada por la conjunción separadora.
 En esta parte de la prueba no se afirma todavía que dicho fragmento sea una huella minimal en el sentido de la Definición~\ref{def:huella-minima}.
 
@@ -4249,7 +4249,29 @@ y el lema que caracteriza las variables modificadas por \lstinline|runsto|
 permiten demostrar que la aserción del marco también se satisfacía sobre el \emph{store} inicial reconstruido.
 Como los \emph{heaps} iniciales son disjuntos,
 el estado inicial global satisface \lstinline|is_ok (p_pre ** fr)|,
-completando el caso.
+completando el caso:
+
+\begin{lstlisting}
+| ISL_Frame #p_pre #p_cmd #p_post fr pf_p _ ->
+  let unfold p_two (h_local h_fr : heap) : prop = 
+    h_local >< h_fr /\ 
+    s1._2 == (h_local <+> h_fr) /\ 
+    p_post (s1._1, h_local, s1._3) /\ 
+    fr (s1._1, h_fr, s1._3)
+  in
+  let h_local = indefinite_description_ghost heap (fun h_local ->
+    exists h_fr. p_two h_local h_fr) in
+  let h_fr = indefinite_description_ghost heap (fun h_fr ->
+    p_two h_local h_fr) in
+  let (|s0_local, r_local|) = 
+    soundness p_cmd (is_ok p_pre) p_post pf_p (s1._1, h_local, s1._3) in
+  let (st0, hp0, m0) = s0_local in
+  lemma_runsto_disjoint h_fr r_local;
+  let s0 : state = (st0, hp0 <+> h_fr, m0) in
+  let r_global = r_frame r_local h_fr #() #() in
+  lemma_runsto_modifies r_local;
+  (|s0, r_global|)
+\end{lstlisting}
 
 En conclusión,
 la verificación de la función \lstinline|soundness| por parte de \fstar{} mecaniza el Teorema~\ref{teo:sound-isl}.
@@ -4306,6 +4328,7 @@ Llamamos \emph{huella local} a un habitante de \lstinline|footprint p s0 s1|,
 que representa una ejecución local de \lstinline|p| desde \lstinline|s0| hasta \lstinline|s1|.
 A diferencia de las huellas minimales de la Definición~\ref{def:huella-minima},
 una huella local no es necesariamente minimal.
+
 El tipo está indexado por el comando y por sus estados inicial y final.
 La diferencia con \lstinline|runsto| es que sus constructores restringen los \emph{heaps} a los fragmentos requeridos por cada operación.
 
@@ -4315,7 +4338,6 @@ Para representar los comandos que no acceden a memoria dinámica se define el \e
 let empty_heap : heap =
   on loc (fun _ -> Unknown)
 \end{lstlisting}
-
 Todas sus ubicaciones son \lstinline|Unknown|,
 por lo que el fragmento no contiene ninguna celda activa ni negativa.
 Este \emph{heap} se utiliza en las huellas locales de instrucciones como \lstinline|Skip|,

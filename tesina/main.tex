@@ -6460,6 +6460,90 @@ En este caso,
 muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático
 construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
 
+\section{Tamaño del desarrollo y base de confianza}
+Las garantías que ofrece una formalización dependen de qué componentes deben aceptarse sin demostración.
+En esta sección se detallan esos componentes y se resume el trabajo del desarrollo y el costo de su verificación.
+
+\subsection*{Base de confianza}
+El desarrollo no contiene usos de \lstinline|admit| no de \lstinline|assume|:
+todas las definiciones y lemas,
+incluidos los de los casos de estudio,
+son verificados completamente por \fstar{}.
+Las apariciones de \lstinline|assume| en el código corresponden al comando \lstinline|Assume| del lenguaje formalizado y no al mecanismo de \fstar{}.
+
+La formalización usa solo dos axiomas,
+ambos provistos por la biblioteca estándar de \fstar{}:
+\begin{itemize}
+  \item el operador de elección clásica que se utilizó,
+  \lstinline|idefinite_description_ghost|,
+  del módulo \lstinline|FStar.IndefiniteDescription|,
+  que permite obtener un testigo a partir de una prueba de existencia.
+  Se usa en las pruebas de solidez de la IL y de la ISL,
+  en el Teorema de la Huella y en algunos casos de estudio,
+  para elegir estados iniciales,
+  valores anteriores de variables, ubicaciones y particiones del \emph{heap};
+  \item la extensionalidad funcional,
+  del módulo \lstinline|FStar.FunctionalExtensionality|,
+  que se usa para concluir la igualdad de dos \emph{stores} o dos \emph{heaps} a partir de su igualdad punto a punto.
+\end{itemize}
+Ambos son axiomas estándar y su uso queda restringido al nivel fantasma,
+por lo que no afectan al contenido computacional del desarrollo.
+
+En consecuencia,
+la base de confianza está formada por el verificador de tipos de \fstar{} (version \emph{nightly} del 11 de octubre de 2026),
+incluida su codificación de las obligaciones de prueba a SMT,
+los dos axiomas mencionados,
+y el solucionador Z3 (version 4.13.3),
+que descarga dichas obligaciones.
+
+\subsection*{Tamaño y tiempo de verificación}
+La Tabla~\ref{tab:desarrollo} muestra la cantidad de líneas de cada parte del desarrollo,
+sin contar líneas en blanco ni comentarios,
+y el tiempo de verificación de cada módulo.
+Los tiempos se midieron verificando cada módulo desde cero,
+en orden de dependencias,
+de modo que el tiempo de un caso de estudio no incluye la verificación de \lstinline|IncSepLogic|.
+Cada valor es el promedio de xx ejecuciones en una computadora con procesador Intel Core i5-1135G7 (2,40 GHz) y 16 GB de memoria.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{llcc}
+    \hline
+    Módulo & Contenido & Líneas & Tiempo (s) \\
+    \hline
+    \lstinline|IncLogic|    & IL: lenguaje, semántica, reglas y soundness & 247 & 1,2  \\
+    \hline
+    \lstinline|IncSepLogic| & Sintaxis, heaps, semántica y metateoría & 285 & \multirow{5}{*}{11,1} \\
+                            & Reglas de la ISL                        & 191 & \\
+                            & Soundness de la ISL                     & 343 & \\
+                            & Teorema de la Huella                    & 514 & \\
+                            & Heaps completos y certificados de error &  57 & \\
+    \hline
+    \lstinline|AllocFree| & Caso de la \autoref{sec:uaf} & 42 & 0,4 \\
+    \lstinline|PushBack| & Caso de la \autoref{sec:pushback} & 263 & 3,6 \\
+    \lstinline|RandomLoop| & Caso de la \autoref{sec:bucle} & 127 & 1,0 \\
+    \lstinline|ListSumLen| & Caso de la \autoref{sec:estructura} & 413 & 16,5 \\
+    \lstinline|TaskQueue| & Experimento de la \autoref{sec:experimento-agente} & 93 & 0,5 \\
+    \hline
+    \multicolumn{2}{l}{Total} & 2575 & 34,3 \\
+    \hline
+  \end{tabular}
+  \caption{Tamaño y tiempo de verificación del desarrollo.}
+  \label{tab:desarrollo}
+\end{table}
+
+El núćleo de la formalización,
+compuesto por \lstinline|IncLogic| e \lstinline|IncSepLogic|,
+ocupa 1637 líneas.
+Dentro de la ISL,
+la parte mas extensa es la mecanización del Teorema de la Huella~\ref{sec:isl-huella},
+con 514 líneas.
+Los casos de estudio suman 938 líneas.
+El más extenso es el recorrido de la lista enlazada,
+ya que requiere definir el predicado espacial recursivo y los lemas que relacionan las aserciones de la variante con las lecturas de cada iteración.
+Este es también el único módulo que modifica los parámetros por defecto del verificador:
+en una de sus pruebas se auementa el \emph{fuel} y el límite de recursos de Z3 (\lstinline|"--fuel 3 --ifuel 1 --z3rlimit 100"|).
+
 \section{Resumen de los resultados}
 Los cinco casos muestran distintas capacidades del núcleo lógico.
 El primero valida el mecanismo básico de \emph{heaps} negativos,

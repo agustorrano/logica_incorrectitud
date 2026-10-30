@@ -5,6 +5,7 @@ open FStar.Classical
 open FStar.FunctionalExtensionality
 
 // Programa y precondicion
+
 let push_back (ptr : var) : stmt =
   Choice
     ((Load "y" (Var ptr)) `Seq`
@@ -23,6 +24,7 @@ let pre_client (ptr : var) (s : state) : prop =
     (points_to l_v (Loc l_a) ** points_to l_a val_a) s
 
 // Parametros logicos de la prueba
+
 noeq type ctx = {
   ptr   : p : var { p <> "x" /\ p <> "y" };
   l_v   : l : loc { l <> 0 }; // estructura
@@ -39,6 +41,7 @@ let post_err (ptr : var) (l_v l_a l_b : loc) (val_b : value) : cond =
       (points_to l_v (Loc l_b) ** points_to l_b val_b)) s
 
 // Descripcion concreta del heap: solo l_v, l_a, l_b pueden ser conocidas
+
 let heap3 (c : ctx) (c1 c2 c3 : cell) : heap =
   on loc (fun l ->
     if l = c.l_v then c1 else if l = c.l_a then c2
@@ -47,7 +50,8 @@ let heap3 (c : ctx) (c1 c2 c3 : cell) : heap =
 let cells (c : ctx) (c1 c2 c3 : cell) : cond =
   fun s -> forall l. s._2 l == heap3 c c1 c2 c3 l
 
-// Aserciones intermedias (heap completo)
+// Aserciones intermedias (sobre el heap del ejemplo)
+
 let pre_fixed (c : ctx) : cond = fun s ->
   s._1 c.ptr == Loc c.l_v /\
   cells c (Full (Loc c.l_a)) (Full c.val_a) Unknown s
@@ -78,6 +82,7 @@ let error_fixed (c : ctx) : cond =
   fun s -> s._3 == Er /\ final_resources c s
 
 // Aserciones locales (solo la celda que toca cada comando)
+
 let read_cell (c : ctx) (target : var) : cond = fun s ->
   s._3 == Ok /\ s._1 c.ptr == Loc c.l_v /\ s._1 target == Loc c.l_a /\
   points_to c.l_v (Loc c.l_a) s
@@ -108,6 +113,7 @@ let err_pre (c : ctx) : cond = fun s ->
 let err_post (c : ctx) : cond = fun s -> s._3 == Er /\ err_pre c s
 
 // Marcos: no dependen del modo ni de las variables que modifica el paso
+
 let frame_load_x (c : ctx) : cond = cells c Unknown (Full c.val_a) Unknown
 
 let frame_load_y (c : ctx) : cond = fun s ->
@@ -129,6 +135,7 @@ let frame_error (c : ctx) : cond = fun s ->
   cells c (Full (Loc c.l_b)) Unknown (Full c.val_b) s
 
 // Lemas "hacia atras": las posts locales implican las de los axiomas
+
 let lemma_read_back (c : ctx) (target : var { target <> c.ptr }) (s : state)
   : Lemma (requires is_ok (read_cell c target) s)
           (ensures is_ok (fun t -> exists l w old.
@@ -172,7 +179,7 @@ let lemma_alloc_back (c : ctx) (s : state)
 let lemma_store_back (c : ctx) (s : state)
   : Lemma (requires is_ok (store_post c) s)
           (ensures is_ok (fun t ->
-            points_to (eval_expr t (Var c.ptr)) (eval_value t (Var "y")) t /\
+            points_to (eval_expr t (Var c.ptr)) (eval_value t._1 (Var "y")) t /\
             (exists old. store_pre c (t._1, override t._2 (eval_expr t (Var c.ptr)) (Full old), Ok))) s) =
   exists_intro (fun old -> store_pre c
     (s._1, override s._2 (eval_expr s (Var c.ptr)) (Full old), Ok)) (Loc c.l_a)
@@ -188,7 +195,8 @@ let initial_implies (c : ctx) (s : state)
   exists_intro (fun a -> exists b v. s._1 c.ptr == Loc a /\
     (points_to a (Loc b) ** points_to b v) s) c.l_v
 
-// Separaciones del heap completo en footprint ** marco
+// Separaciones del heap del ejemplo en celda local y marco
+
 let split_load_x (c : ctx) (s : state)
   : Lemma (requires post_load_x c s)
           (ensures (is_ok (read_cell c "x") ** frame_load_x c) s) =
@@ -232,6 +240,7 @@ let split_error (c : ctx) (s : state)
     (heap3 c (Full (Loc c.l_b)) Unknown (Full c.val_b))
 
 // Un paso por funcion
+
 let step_load_x (c : ctx)
   : isl_triple (is_ok (pre_fixed c)) (Load "x" (Var c.ptr)) (post_load_x c) =
   let local = ISL_Consequence (read_cell c "x") (is_ok (read_cell c "x"))
@@ -286,6 +295,7 @@ let step_error (c : ctx)
     (forall_intro (move_requires (split_error c)))
 
 // Composicion
+
 let proof_push_back (c : ctx)
   : isl_triple (is_ok (post_load_x c)) (push_back c.ptr) (post_store_v c) =
   let branch = ISL_Seq (step_load_y c) (ISL_Seq (step_free c)
@@ -309,3 +319,23 @@ let proof_client
   : isl_triple (is_ok (pre_client ptr)) (client ptr)
     (post_err ptr l_v l_a l_b val_b) =
   proof_client_ctx { ptr; l_v; l_a; l_b; val_a; val_b }
+
+// Certificado: la escritura por el puntero colgante es alcanzable.
+// Testigo: v = Loc 1 (estructura), celda vieja 2 liberada, celda nueva 3.
+
+let st_pb = on var (fun z ->
+  if z = "v" then Loc 1 else if z = "x" then Loc 2 else if z = "y" then Loc 3 else Nat 0)
+
+let h_new = on loc (fun l ->
+  if l = 1 then Full (Loc 3) else if l = 3 then Full (Nat 0) else Unknown)
+
+let h_err = on loc (fun l ->
+  if l = 2 then Empty else h_new l)
+
+let pb_reachable () : Lemma (error_reachable (is_ok (pre_client "v")) (client "v")) =
+  let s1 = (st_pb, h_err, Er) in
+  introduce_frame (points_to 1 (Loc 3)) (points_to 3 (Nat 0)) (st_pb, h_new, Er)
+    (singleton_full_heap 1 (Loc 3)) (singleton_full_heap 3 (Nat 0));
+  introduce_frame (points_to_empty 2) (points_to 1 (Loc 3) ** points_to 3 (Nat 0)) s1
+    (singleton_empty_heap 2) h_new;
+  certify (proof_client "v" 1 2 3 (Nat 0) (Nat 0)) s1

@@ -1,6 +1,6 @@
 # Codigo de la tesina
 
-Este repositorio contiene la formalización en F* desarrollada para la tesina. El objetivo del código es modelar un lenguaje imperativo pequeño, definir una lógica de incorrectitud para razonar sobre ejecuciones que llegan a estados de error, extenderla con ideas de lógica de separación para programas con heap, y demostrar propiedades de corrección metateorica y ejemplos de uso.
+Este repositorio contiene la formalización en F* desarrollada para la tesina. El objetivo del código es modelar un lenguaje imperativo pequeño, definir una lógica de incorrectitud para razonar sobre ejecuciones que llegan a estados de error, extenderla con ideas de lógica de separación para programas con heap, y demostrar propiedades de corrección metateórica y ejemplos de uso.
 
 ## Idea general
 
@@ -10,7 +10,8 @@ El proyecto trabaja con programas representados como datos en F*. Sobre esos pro
 2. Una semántica operacional, expresada como una relación `runsto p s0 s1`.
 3. Una lógica de incorrectitud, expresada como tripletas que describen estados alcanzables.
 4. Una demostración de solidez: si se prueba una tripleta y el estado final satisface la postcondición, entonces existe una ejecución del programa en la semántica formalizada desde algún estado inicial que satisface la precondición.
-5. En la versión con heap, predicados de separación, regla de marco, huellas (`footprint`) y una descomposición de ejecuciones en huellas enmarcadas.
+5. En la versión con heap, predicados de separación, la Regla del Marco y el Teorema de la Huella, que caracteriza las ejecuciones como extensiones de transiciones minimales.
+6. Certificados de existencia de error mediante estados finales concretos, junto con la preservación de las ejecuciones al completar los heaps.
 
 En terminos prácticos: los archivos principales definen el lenguaje y la lógica; los archivos dentro de `proofs/` muestran programas concretos y sus pruebas.
 
@@ -61,9 +62,11 @@ Extiende la versión base con:
 - Predicados de separacion: `emp`, `points_to`, `points_to_empty` y el operador `(**)`.
 - Regla de marco `ISL_Frame`.
 - Reglas de error para accesos inválidos: free/load/store sobre una ubicación marcada como `Empty` o la dirección nula.
-- `soundness`, que conecta los triples `isl_triple` con la semántica `runsto`.
+- `soundness`, que conecta las tripletas `isl_triple` con la semántica `runsto`.
 - `footprint`, `framed_footprint` y pruebas que relacionan huellas locales con ejecuciones globales.
-- `runsto_decompose`, que descompone una ejecución operacional en una huella enmarcada.
+- `runsto_decompose`, que descompone una ejecución operacional en una derivación locla de `footprint` y un marco disjunto.
+- `footprint_theorem_minimal` y `minimal_framed_runs`, que establecen el Teorema de la Huella mediante transiciones minimales.
+- `run_complete` y `certify`, que preservan las ejecuciones al completar los heaps y permiten demostrar la existencia de errores.
 
 Si el objetivo es leer el aporte principal de la tesina, este es el archivo central.
 
@@ -71,7 +74,7 @@ Si el objetivo es leer el aporte principal de la tesina, este es el archivo cent
 
 ### `proofs/AllocFree.fst`
 
-Prueba un caso clasico de use-after-free:
+Prueba un caso clásico de use-after-free:
 
 ```c
 x = alloc();
@@ -95,7 +98,7 @@ while (i < n) {
 assert(j != n);
 ```
 
-La lógica de incorrectitud permite demostrar que existe una ejecución que llega al error del `assert`, concretamente la ejecución donde `j` se incrementa en todas las iteraciones. La prueba principal es `proof_prog1`.
+La lógica de incorrectitud permite demostrar que existe una ejecución que llega al error del `assert`, concretamente la ejecución donde `j` se incrementa en todas las iteraciones. La prueba principal es `proof_random_loop`.
 
 ### `proofs/ListSumLen.fst`
 
@@ -105,7 +108,7 @@ Elementos importantes:
 
 - `list_seg`: predicado inductivo para segmentos de lista.
 - `history`: describe la lista inicial y registra los avances del puntero durante el recorrido.
-- `variant`: familia de aserciones parametrizado por la cantidad de iteraciones.
+- `variant`: familia de aserciones parametrizada por la cantidad de iteraciones.
 - `proof_list_sum_len`: prueba completa del programa.
 
 ### `proofs/PushBack.fst`
@@ -114,18 +117,18 @@ Define un cliente que lee punteros, ejecuta una operación `push_back` simplific
 
 ### `proofs/TaskQueue.fst`
 
-Modela el camino de `taskqueue.c` en el que `realloc` mueve el arreglo y una escritura posterior utliza un puntero al bloque liberado. La prueba principal es `proof_apply_catchup_bonus_realloc_bug`. Se verifica una abstracción de ese camino, no una traducción mecanizada del programa C.
+Modela el camino de `taskqueue.c` en el que `realloc` mueve el arreglo y una escritura posterior utiliza un puntero al bloque liberado. La prueba principal es `proof_apply_catchup_bonus_realloc_bug`. Se verifica una abstracción de ese camino, no una traducción mecanizada del programa C.
 
 ## Orden recomendado de lectura
 
 1. Leer `IncLogic.fst` hasta la definición de `soundness` para entender el lenguaje, la semántica y la forma de las tripletas.
 2. Leer en `IncSepLogic.fst` las secciones de sintaxis, heap y semántica operacional.
-3. Leer en `IncSepLogic.fst` la sección `Incorrectness Separation Logic`, donde aparecen `emp`, `points_to`, `(**)` e `isl_triple`.
-4. Leer la prueba `soundness` de `IncSepLogic.fst` para ver como cada regla lógica se justifica operacionalmente.
+3. Leer en `IncSepLogic.fst` la sección `Lógica de Incorrectitud de Separación`, donde aparecen `emp`, `points_to`, `(**)` e `isl_triple`.
+4. Leer la prueba `soundness` de `IncSepLogic.fst` para ver cómo cada regla lógica se justifica operacionalmente.
 5. Leer `proofs/AllocFree.fst` como primer ejemplo concreto.
 6. Leer `proofs/RandomLoop.fst` para ver el uso de la regla de variante con `Kleene`.
-7. Leer `proofs/ListSumLen.fst` y `proofs/PushBack.fst` como ejemplos mas ricos con heap.
-8. Volver a las secciones de `footprint` y `runsto_decompose` de `IncSepLogic.fst` para entender la parte metateorica de huellas.
+7. Leer `proofs/ListSumLen.fst` y `proofs/PushBack.fst` como ejemplos más ricos con heap.
+8. Volver a las secciones de `footprint` y `runsto_decompose` de `IncSepLogic.fst` para entender la parte metateórica de huellas.
 
 ## Como verificar
 
@@ -164,9 +167,9 @@ El archivo `fstar.sh` sirve como wrapper para herramientas de editor: llama a `m
 ## Convenciones del código
 
 - Las condiciones (`cond`) son predicados sobre estados.
-- Las tripletas de incorrectitud describen estados finales alcanzables, y la solidez reconstruye algun estado inicial y una ejecución que llega a ese estado final.
+- Las tripletas de incorrectitud describen estados finales alcanzables, y la solidez reconstruye algún estado inicial y una ejecución que llega a ese estado final.
 - `Assume e` continua solo cuando la condición codificada por `e` es verdadera, las comparaciones devuelven `1` cuando se consideran satisfechas.
-- `Unknown` representa heap no poseido por la condición local; esto permite expresar separación y enmarcar heap ajeno.
+- `Unknown` representa heap no poseído por la condición local; esto permite expresar separación y enmarcar heap ajeno.
 - `points_to l v` describe una porción singleton del heap donde `l` contiene `v`.
 - `emp` describe ausencia de heap propio.
 
@@ -174,7 +177,7 @@ El archivo `fstar.sh` sirve como wrapper para herramientas de editor: llama a `m
 
 - `runsto p s0 s1`: el programa `p` puede ejecutar desde `s0` hasta `s1`.
 - `Ok`: ejecución normal.
-- `Er`: ejecución que alcanzo un error.
+- `Er`: ejecución que alcanzó un error.
 - `isl_triple pre p post`: tripleta de lógica de incorrectitud con separación.
 - `soundness`: teorema que prueba que una tripleta lógica describe ejecuciones reales de la semántica.
 - `footprint`: huella local de una ejecución, definida mediante reglas inductivas.

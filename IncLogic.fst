@@ -144,7 +144,7 @@ type il_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
 
   | I_Error : pre : cond -> 
     il_triple (is_ok pre) Error 
-      (fun s -> let (st, m) = s in m == Er /\ pre (st, Ok))
+      (fun s -> s._2 == Er /\ pre (s._1, Ok))
 
   | I_Assume : pre : cond -> #e : expr ->
     il_triple (is_ok pre) (Assume e)

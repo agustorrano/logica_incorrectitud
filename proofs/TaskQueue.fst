@@ -1,6 +1,7 @@
 module TaskQueue
 
 open IncSepLogic
+open FStar.FunctionalExtensionality
 
 let ( ||| ) = Choice
 
@@ -102,3 +103,18 @@ let proof_apply_catchup_bonus_realloc_bug (l_low : loc)
     p_raw
     ()
     ()
+
+// Certificado: la escritura por puntero colgante es alcanzable.
+// Testigo: cola llena (4/4), avg = 16, lowest = Loc 1 con la celda 1 liberada.
+
+let st_tq = on var (fun y ->
+  if y = "q_size" || y = "q_capacity" then Nat 4
+  else if y = "avg" then Nat 16
+  else if y = "lowest" then Loc 1
+  else Nat 0)
+
+let tq_reachable ()
+  : Lemma (error_reachable (is_ok (pre_lowest_in_full_queue 1)) apply_catchup_bonus_realloc_path) =
+  let hp_full = override (singleton_empty_heap 1) 1 (Full (Nat 5)) in
+  assert (points_to 1 (Nat 5) (st_tq, hp_full, Ok));
+  certify (proof_apply_catchup_bonus_realloc_bug 1) (st_tq, singleton_empty_heap 1, Er)

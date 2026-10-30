@@ -3980,20 +3980,115 @@ reconstruido a partir del estado final,
 satisfaga esa presunción.
 Esto explica su diferencia de forma respecto de las reglas de la \autoref{fig:reglas-isl}.
 
-El poder de los \emph{heaps} negativos se ilustra al analizar la instrucción de liberación de memoria correspondiente a \lstinline|Free|.
-En nuestra formalización,
-el comportamiento de esta instrucción se divide en constructores independientes según su modo de terminación.
+Comenzamos por la alocación,
+cuyas dos reglas distinguen la infromación disponible sobre la ubicación reservada.
+En \lstinline|ISL_Alloc1|,
+la ubicación estaba marcada como \lstinline|Unknown|.
+En este caso,
+la postcondición describe una celda activa en una dirección no nula \lstinline|l|
+y exige que la variable destino \lstinline|x| contenga \lstinline|Loc l|.
+Para relacionar este resultado con la presunción \lstinline|pre|,
+se recupera existencialmente el valor anterior de \lstinline|x| y se reconstruye el \emph{heap} inicial colocando \lstinline|Unknown| en \lstinline|l|:
 
-La regla para la liberación exitosa describe el paso de una celda activa a una celda negativa.
-Tras la ejecución de \lstinline|Free e|,
-la postcondición exige que la ubicación liberada esté marcada como \lstinline|Empty|
+\begin{lstlisting}
+| ISL_Alloc1 : #pre : cond -> x : var ->
+  isl_triple (is_ok pre) (Alloc x)
+    (is_ok (fun s -> exists l v.
+      s._1 x == Loc l /\
+      l =!= 0 /\
+      points_to l v s /\
+      (exists x_old. pre (override s._1 x x_old, override s._2 l Unknown, Ok))))
+\end{lstlisting}
+
+La regla \lstinline|ISL_Alloc2| sigue el mismo esquema,
+pero reconstruye el \emph{heap} inicial colocando \lstinline|Empty| en la dirección reservada.
+De este modo,
+describe la alocación sobre una ubicación previamente conocida como no asignada.
+Al igual que en \lstinline|ISL_Alloc1|,
+la dirección,
+el contenido de la nueva celda y el valor anterior de la variable destino se cuantifican existencialmente en la postondición:
+
+\begin{lstlisting}
+| ISL_Alloc2 : #pre : cond -> x : var ->
+  isl_triple (is_ok pre) (Alloc x)
+    (is_ok (fun s -> exists (l : loc) (v x_old : value).
+      s._1 x == Loc l /\
+      l =!= 0 /\
+      points_to l v s /\
+      pre (override s._1 x x_old, override s._2 l Empty, Ok)))
+\end{lstlisting}
+
+Para leer el contenido de una celda activa,
+la regla \lstinline|ISL_Load| conserva el \emph{heap} y actualiza la variable destino \lstinline|x| con el contenido leído.
+Su postcondición cuantifica la dirección \lstinline|l|,
+el contenido \lstinline|v| y el valor anterior \lstinline|x_old|.
+Este último permite reconstruir el \emph{store} inicial,
+sobre el que se exige \lstinline|pre| y se evalúa la expresión \lstinline|e|.
+Evaluar la dirección en ese \emph{store} es necesario porque \lstinline|e| puede depender de la propia variable \lstinline|x|:
+
+\begin{lstlisting}
+| ISL_Load : #pre : cond -> x : var -> e : expr ->
+  isl_triple (is_ok pre) (Load x e)
+    (is_ok (fun s -> exists l v x_old.
+      eval_expr (override s._1 x x_old, s._2, Ok) e == l /\
+      points_to l v s /\
+      s._1 x == v /\
+      pre (override s._1 x x_old, s._2, Ok)))
+\end{lstlisting}
+
+Si la dirección consultada corresponde a una celda negativa,
+la lectura termina en error.
+La regla \lstinline|ISL_LoadEr| expresa este caso mediante \lstinline|points_to_empty|
+y conserva tanto el \emph{store} como el \emph{heap}.
+Por ello,
+para recuperar el estado inicial basta con sustituir el modo \lstinline|Er| por \lstinline|Ok|
+y exigir que el estado resultante satisfaga \lstinline|pre|:
+
+\begin{lstlisting}
+| ISL_LoadEr : #pre : cond -> x : var -> e : expr ->
+  isl_triple (is_ok pre) (Load x e)
+    (fun s ->
+      s._3 == Er /\
+      points_to_empty (eval_expr s e) s /\
+      pre (s._1, s._2, Ok))
+\end{lstlisting}
+
+La lectura también falla cuando la expresión \lstinline|e| evalúa a la dirección nula.
+En este caso,
+la regla \lstinline|ISL_LoadNull| conserva el mismo esquema de reconstrucción del esatdo inicial,
+pero sustituye la condición sobre la celda negativa por la condición de nulidad:
+
+\begin{lstlisting}
+| ISL_LoadNull : #pre : cond -> x : var -> e : expr ->
+  isl_triple (is_ok pre) (Load x e)
+    (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ 
+      pre (s._1, s._2, Ok))
+\end{lstlisting}
+
+A diferencia de la lectura,
+la escritura modifica el \emph{heap} y conserva el \emph{store}.
+La postcondición de \lstinline|ISL_Store| exige que la celda indicada por \lstinline|e1|
+contenga el valor obtenido al evaluar \lstinline|e2| mediante \lstinline|eval_value|.
+Además,
+cuantifica el contenido anterior \lstinline|v_old|,
+de modo que al restaurarlo se obtenga un estado que satisface \lstinline|pre|:
+
+\begin{lstlisting}
+| ISL_Store : #pre : cond -> e1 : expr -> e2 : expr ->
+  isl_triple (is_ok pre) (Store e1 e2)
+    (is_ok (fun s ->
+      points_to (eval_expr s e1) (eval_value s._1 e2) s /\
+      (exists v_old. 
+        pre (s._1, override s._2 (eval_expr s e1) (Full v_old), Ok))))
+\end{lstlisting}
+
+La liberación también modifica el \emph{heap},
+pero transforma una celda activa en una celda negativa.
+La postcondición de \lstinline|ISL_Free| exige que la ubicación liberada esté marcada como \lstinline|Empty|
 y que exista un valor \lstinline|v| tal que,
 al restaurar la celda como \lstinline|Full v|,
 se obtenga un estado que satisface \lstinline|pre|.
-Así se justifica que cada estado final descrito proviene de un estado inicial en el que la celda estaba asignada,
-sin exigir una forma particular para \lstinline|pre|.
-El cuantificador existencial permite que el valor anterior de la celda sea distinto para cada estado final.
-La regla se representa mediante:
+El cuantificador existencial permite que contenido anterior sea distinto para cada estado final:
 
 \begin{lstlisting}
 | ISL_Free : #pre : cond -> e : expr ->
@@ -4003,45 +4098,12 @@ La regla se representa mediante:
         pre (s._1, override s._2 (eval_expr s e) (Full v), Ok)))
 \end{lstlisting}
 
-La regla \lstinline|ISL_FreeEr| permite justificar un resultado de error al intentar liberar una ubicación marcada como \lstinline|Empty|.
-En particular,
-permite representar errores temporales como el \emph{double free},
-cuando esa marca proviene de una liberación anterior.
-Este caso se representa mediante:
+Las reglas de error de la escritura y liberación siguen el esquema presentado para la lectura:
+conservan el \emph{store} y el \emph{heap},
+y distinguen entre el acceso a una celda negativa y el acceso a la dirección nula.
 
-\begin{lstlisting}
-| ISL_FreeEr : #pre : cond -> e : expr ->
-    isl_triple (is_ok pre) (Free e)
-      (fun s -> s._3 == Er /\
-        points_to_empty (eval_expr s e) s /\
-        pre (s._1, s._2, Ok))
-\end{lstlisting}
-
-Finalmente, 
-\lstinline|ISL_FreeNull| describe el error producido al intentar liberar un puntero nulo:
-
-\begin{lstlisting}
-| ISL_FreeNull : #pre : cond -> e : expr ->
-    isl_triple (is_ok pre) (Free e)
-      (fun s -> s._3 == Er /\ eval_expr s e == 0 /\ pre (s._1, s._2, Ok))
-\end{lstlisting}
-
-Las familias de \lstinline|Load| y \lstinline|Store| siguen la misma estructura.
-Las reglas exitosas reconstruyen el \emph{store} o el \emph{heap} anterior mediante valores existenciales,
-mientras que las reglas de error conservan la celda negativa o la condición de nulidad que explica la transición a \lstinline|Er|.
-
-Por su parte,
-la alocación se representa mediante los constructores \lstinline|ISL_Alloc1| e \lstinline|ISL_Alloc2|,
-correspondientes a las dos reglas presentadas en la \autoref{fig:reglas-isl}.
-El primero contempla la reserva de una ubicación marcada como \lstinline|Unknown|,
-mientras que el segundo contempla una ubicación marcada como \lstinline|Empty|.
-En ambos casos,
-la reconstrucción del estado inicial debe recuperar tanto el valor anterior de la variable destino
-como el estado previo de la celda reservada.
-Omitimos el código de estos constructores,
-ya que siguen el mismo esquema de reconstrucción del estado inicial ilustrado en \lstinline|ISL_Free|.
-
-La regla \textsc{Exist} de la \autoref{fig:reglas-isl} se representa mediante \lstinline|ISL_Exists|.
+Además de las reglas de memoria,
+la regla \textsc{Exist} de la \autoref{fig:reglas-isl} se representa mediante \lstinline|ISL_Exists|.
 Esta permite cuantificar existencialmente una variable del \emph{store} en la presunción y postcondición,
 siempre que dicha variable no aparezca en el comando.
 El predicado \lstinline|fv_stmt p x| indica que \lstinline|x| aparece libre en \lstinline|p|.
@@ -4158,29 +4220,174 @@ Los constructores heredados de la IL siguen el argumento desarrollado en la \aut
 Los nuevos casos corresponden a las operaciones de memoria,
 a la cuantificación existencial y a la Regla del Marco.
 
-En las reglas exitosas de memoria,
-las postcondiciones contienen valores existenciales que permiten reconstruir el estado previo.
-Por ejemplo,
-en \lstinline|ISL_Free|,
-el estado final contiene una celda \lstinline|Empty| y la postcondición garantiza
-la existencia de un valor \lstinline|v| con el que se puede reconstruir un estado inicial que satisface la presunción.
-La prueba extrae ese valor mediante una operación fantasma de elección clásica
-y reconstruye el \emph{heap} inicial reemplazando \lstinline|Empty| por \lstinline|Full v|.
-Luego,
-usa \lstinline|R_Free| para construir la ejecución operacional.
-La equivalencia entre el estado final obtenido y el estado final recibido se convierte en igualdad mediante \lstinline|state_equiv_eq|,
-lo que permite reutilizar esa derivación.
+Se presentan los casos de memoria en el mismo orden que sus reglas deductivas.
+En los casos de éxito
+la prueba utiliza los testigos existenciales de la postcondición para reconstruir un estado inicial.
+Estos testigos se obtienen mediante \lstinline|indefinite_descritpion_ghost|.
+Por su parte,
+\lstinline|exists_intro| permite justificar una propiedad existencial proporcionando un testigo.
+Luego se aplica la regla operacional correspondiente y,
+cuando es necesario,
+se utiliza \lstinline|state_equiv_eq| para identificar el estado final construido con el estado \lstinline|s1| recibido.
 
-Los casos \lstinline|ISL_FreeEr|,
-\lstinline|ISL_LoadEr| e \lstinline|ISL_StoreEr| son más directos.
-La postcondición ya contiene el recurso \lstinline|points_to_empty| necesario para construir la regla operacional de error correspondiente.
-Por otro lado,
-los casos de acceso a la dirección nula utilizan la prueba de que la expresión evaluada es igual a 0 y construyen directamente \lstinline|R_FreeNull|,
-\lstinline|R_LoadNull| o \lstinline|R_StoreNull|.
+En \lstinline|ISL_Alloc1|,
+se obtiene la dirección reservada \lstinline|l|,
+su contenido \lstinline|v| y el valor anterior \lstinline|x_old| de la variable destino.
+Con ellos se reconstruye \lstinline|s0|,
+restaurando \lstinline|x_old| en el \emph{store} y \lstinline|Unknow| en la ubicación reservada.
+Desde ese estado,
+\lstinline|R_Alloc| permite reservar la misma dirección con el contenido obervado en \lstinline|s1|:
 
-Como ejemplo,
-mostramos las ramas de la demostración correspondientes a la liberación de memoria,
-cuyas reglas deductivas se presentaron en la \autoref{sec:isl-tipoind}:
+\begin{lstlisting}
+| ISL_Alloc1 #pre #x -> 
+  let (st1, hp1, m1) = s1 in
+  let unfold p_lv (l_i : loc) (v_i : value) : prop =
+    st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
+  in
+  let l = indefinite_description_ghost loc (fun l ->
+    exists v. p_lv l v) in
+  let v = indefinite_description_ghost value (fun v ->
+    p_lv l v) in
+  let p_xold (x_o : value) : prop =
+    pre (override st1 x x_o, override hp1 l Unknown, Ok)
+  in
+  let x_old = indefinite_description_ghost value p_xold in
+  let st0 = override st1 x x_old in
+  let hp0 = override hp1 l Unknown in
+  let s0 : state = (st0, hp0, Ok) in
+  let r = R_Alloc s0 #x l v #() in
+  state_equiv_eq (override st0 x (Loc l), override hp0 l (Full v), Ok) s1;
+  (|s0, r|)
+\end{lstlisting}
+
+El caso \lstinline|ISL_Alloc2| sigue la misma construcción,
+pero restaura \lstinline|Empty| en la dirección reservada.
+La postcondición garantiza que el estado inicial así reconstruido satisface \lstinline|pre|.
+Como la ubicación está marcada como no asignada,
+se puede aplicar nuevamente \lstinline|R_Alloc|:
+
+\begin{lstlisting}
+| ISL_Alloc2 #pre #x ->
+  let (st1, hp1, m1) = s1 in
+  let unfold p_lv (l_i : loc) (v_i : value) : prop =
+    st1 x == Loc l_i /\ l_i =!= 0 /\ points_to l_i v_i s1
+  in
+  let l = indefinite_description_ghost loc (fun l ->
+    exists v. p_lv l v) in
+  let v = indefinite_description_ghost value (fun v ->
+    p_lv l v) in
+  let p_xold (x_o : value) : prop =
+    pre (override st1 x x_o, override hp1 l Empty, Ok)
+  in
+  let x_old = indefinite_description_ghost value p_xold in
+  let st0 = override st1 x x_old in
+  let hp0 = override hp1 l Empty in
+  let s0 : state = (st0, hp0, Ok) in
+  let r = R_Alloc s0 #x l v in
+  state_equiv_eq (override st0 x (Loc l), override hp0 l (Full v), Ok) s1;
+  (|s0, r|)
+\end{lstlisting}
+
+Para la lectura,
+primero se obtiene \lstinline|x_old| junto con la garantía de que existen una dirección y un contenido compatibles con ese valor anterior.
+Luego se eligen \lstinline|l| y \lstinline|v| y se reconstruye el \emph{store} inicial,
+conservando el \emph{heap}.
+La postcondición garantiza que la evluación de \lstinline|e| en ese estado conduce a la celda que contiene \lstinline|v|.
+Así se aplica \lstinline|R_Load| y se identifica el estado resultante con \lstinline|s1|:
+
+\begin{lstlisting}
+| ISL_Load #pre #x #e ->
+  let (st1, hp1, m1) = s1 in
+  let p_xold (x_o : value) : prop =
+    exists (l_i : loc) (v_i : value).
+      eval_expr (override st1 x x_o, hp1, Ok) e == l_i /\
+      points_to l_i v_i s1 /\ st1 x = v_i /\
+      pre (override st1 x x_o, hp1, Ok)
+  in
+  let x_old = indefinite_description_ghost value p_xold in
+  let unfold p_lv (l_i : loc) (v_i : value) : prop =
+    eval_expr (override st1 x x_old, hp1, Ok) e == l_i /\ 
+    points_to l_i v_i s1 /\ st1 x == v_i /\
+    pre (override st1 x x_old, hp1, Ok)
+  in
+  let l = indefinite_description_ghost loc (fun l ->
+    exists v. p_lv l v) in
+  let v = indefinite_description_ghost value (fun v ->
+    p_lv l v) in
+  let st0 = override st1 x x_old in
+  let hp0 = hp1 in
+  let s0 : state = (st0, hp0, Ok) in
+  exists_intro (fun v_i -> points_to l v_i s0) v;
+  let r = R_Load s0 x e v in
+  let st1' = override st0 x v in
+  state_equiv_eq (st1', hp0, Ok) s1;
+  (|s0, r|)
+\end{lstlisting}
+
+En el caso \lstinline|ISL_LoadEr| no es necesario recuperar valores anteriores,
+ya que la lectura fallida conserva el \emph{store} y el \emph{heap}.
+Se construye \lstinline|s0| con esos mismos componentes y modo \lstinline|Ok|.
+La condición \lstinline|points_to_empty| de la postcondición permite aplicar \lstinline|R_LoadEr|
+y obtener el estado final con modo \lstinline|Er|:
+
+\begin{lstlisting}
+| ISL_LoadEr #pre #x #e ->
+  let (st, hp, m1) = s1 in
+  let s0 = (st, hp, Ok) in
+  let l = eval_expr s0 e in
+  let r = R_LoadEr s0 x e in
+  (|s0, r|)
+\end{lstlisting}
+
+El caso \lstinline|ISL_LoadNull| reconstruye el estado inicial de la misma manera.
+En lugar de utilizar una celda negativa,
+la prueba aprovecha la condición de que \lstinline|e| evalúa a cero para construir la ejecución mediante \lstinline|R_LoadNull|:
+
+\begin{lstlisting}
+| ISL_LoadNull #pre #x #e ->
+  let (st, hp, m1) = s1 in
+  let s0 = (st, hp, Ok) in
+  let r = R_LoadNull s0 x e in
+  (|s0, r|)
+\end{lstlisting}
+
+Para demostrar el caso \lstinline|ISL_Store|,
+se identifica la dirección escita y se obtiene un contenido anterior \lstinline|v_old| que permita satisfacer \lstinline|pre|.
+El estado inicial se reconstruye colocando \lstinline|Full v_old| en esa dirección,
+sin modificar el \emph{store}.
+A continuación,
+\lstinline|R_Store| escribe el valor de \lstinline|e2| y \lstinline|state_equiv_eq| permite identificar el estado resultante con \lstinline|s1|:
+
+\begin{lstlisting}
+| ISL_Store #pre #e1 #e2 -> 
+  let (st1, hp1, m1) = s1 in
+  let p_l (l_i : loc) : prop =
+    eval_expr s1 e1 == l_i /\ points_to l_i (eval_value s1._1 e2) s1
+  in
+  let l = indefinite_description_ghost loc p_l in
+  let p_vold (v_o : value) : prop =
+    pre (st1, override hp1 l (Full v_o), Ok)
+  in
+  let v_old = indefinite_description_ghost value p_vold in
+  let st0 = st1 in
+  let hp0 = override hp1 l (Full v_old) in
+  let s0 = (st0, hp0, Ok) in
+  exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
+  exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
+  let r = R_Store s0 e1 e2 l v_old in
+  let hp1' = override hp0 l (Full (eval_value s0._1 e2)) in
+  state_equiv_eq (st0, hp1', Ok) s1;
+  (|s0, r|)
+\end{lstlisting}
+
+La liberación utiliza una reconstrucción similar a la escritura:
+se obtiene el contenido anterior \lstinline|v| y se restaura la celda activa \lstinline|Full v| en el \emph{heap} inicial.
+Al aplicar \lstinline|R_Free|,
+esa celda pasa a estar marcada como \lstinline|Empty|,
+tal como exige la postcondición.
+Finalmente,
+\lstinline|state_equiv_eq| identifica el estado obtenido con \lstinline|s1|:
+
 
 \begin{lstlisting}
 | ISL_Free #pre e -> 
@@ -4196,19 +4403,11 @@ cuyas reglas deductivas se presentaron en la \autoref{sec:isl-tipoind}:
   let r = R_Free s0 e l v in
   state_equiv_eq (st0, override hp0 l Empty, Ok) s1;
   (|s0, r|)
-
-| ISL_FreeEr #pre e ->
-  let (st, hp, _) = s1 in
-  let s0 = (st, hp, Ok) in
-  let r = R_FreeEr s0 e in
-  (|s0, r|)
-
-| ISL_FreeNull #pre e ->
-  let (st, hp, _) = s1 in
-  let s0 = (st, hp, Ok) in
-  let r = R_FreeNull s0 e in
-  (|s0, r|)
 \end{lstlisting}
+
+Los casos de error de la escritura y liberación se resuelven como los de lectura:
+se conserva el \emph{store} y el \emph{heap} del estado final,
+se restablece el modo inicial \lstinline|Ok| y se aplica la regla operacional de error correspondiente.
 
 En el caso \lstinline|ISL_Exists|,
 se elige un valor testigo de la cuantificación existencial en la postcondición
@@ -4222,8 +4421,6 @@ Para esta construcción,
 Por otro lado,
 el lema \lstinline|r_fresh| permite reemplazar por un mismo valor esa variable en ambos extremos de una ejecución,
 siempre que no aparezca en el comando.
-Por último,
-\lstinline|exists_intro| permite justificar un existencial proporcionando un testigo.
 El caso se demuestra de la siguiente manera:
 
 \begin{lstlisting}
@@ -4266,7 +4463,7 @@ En la prueba se define esta información mediante un predicado auxiliar:
 let p_two (h_local : heap) (h_fr : heap) : prop =
   h_local >< h_fr /\
   s1._2 == (h_local <+> h_fr) /\
-  p_post (s1._1, h_local, m) /\ fr (s1._1, h_fr, s1._3)
+  p_post (s1._1, h_local, s1._3) /\ fr (s1._1, h_fr, s1._3)
 in
 \end{lstlisting}
 La definición de \lstinline|sep_conj| garantiza la existencia de dos \emph{heaps} que satisfacen \lstinline|p_two|.
@@ -4279,7 +4476,7 @@ aplicamos la hipótesis inductiva de nuestro teorema:
 
 \begin{lstlisting}
   let (|s0_local, r_local|) =
-    soundness p_cmd (is_ok p_pre) p_post pf_p (st1, h_local, m) in
+    soundness p_cmd (is_ok p_pre) p_post pf_p (s1._1, h_local, s1._3) in
 \end{lstlisting}
 Esta llamada devuelve el estado inicial local \lstinline|s0_local| y una derivación \lstinline|r_local| de la ejecución hasta el estado \lstinline|(s1._1, h_local, s1._3)|.
 El \emph{heap} \lstinline|h_local| es el fragmento que satisface la postcondición local proporcionada por la conjunción separadora.
@@ -6380,8 +6577,8 @@ como la memoria finita,
 la coexistencia de código y datos en un mismo espacio de direcciones,
 los registros de estado y el riesgo de modificar registros como el contador de programa,
 el puntero de pila y el registro de retorno.
-El desarrollo fue formalizado en lógica de orden superior y mecanizado en HOL4~\citep{hol4}.
-\guido{yo diria solamente formalizado o mecanizado en HOL4}
+El desarrollo fue mecanizado en HOL4~\citep{hol4}.
+%\guido{yo diria solamente formalizado o mecanizado en HOL4}
 
 El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales
 y de uso de recursos directamente sobre programas de bajo nivel.

@@ -2155,7 +2155,7 @@ si una ejecución transforma el \emph{heap} $h$ en el \emph{heap} $h'$
 y el fragmento adicional $h_f$ es disjunto de $h'$,
 la ejecución puede extenderse al \emph{heap} inicial $h \uplus h_f$.
 La hipótesis no exige por separado que $h_f$ sea disjunto de $h$,
-ya que por la monotonicidad del dominio,
+ya que por la monotonía del \emph{heap},
 toda ubicación conocida en $h$ también está presente en $h'$.
 Por lo tanto,
 si $h'$ es disjunto de $h_f$,
@@ -5422,8 +5422,8 @@ la condición \lstinline|(cstate s1)._3 == Er| se deduce de \lstinline|s1._3 == 
 ya que el completado no modifica el modo de terminación,
 y se incluye para que el enunciado sea explícito.
 
-El certificado cubre esta completación particular,
-en la que toda la memoria fuera del fragmento está libre.
+El certificado cubre este completado particular,
+en el que toda la memoria fuera del fragmento está libre.
 Para extender la ejecución a un contexto de memoria arbitrario se utiliza,
 en cambio,
 \lstinline|r_frame|,
@@ -5611,7 +5611,7 @@ Esta reasignación implica reservar un nuevo bloque y liberar la memoria origina
 El problema surge si un cliente del código conserva un puntero hacia un elemento de la estructura original y luego invoca la función de agregado,
 ya que corre el riesgo de que la memoria sea reasignada.
 En ese escenario, su puntero local se convierte en un puntero colgante.
-Este fue un caso de estudio motivacional para el diseño de la ISL original~\citep{isl}.
+Este fue uno de los casos de estudio que motivaron el diseño de la ISL original~\citep{isl}.
 
 El siguiente fragmento,
 escrito en un lenguaje similar a C,

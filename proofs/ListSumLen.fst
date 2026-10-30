@@ -127,7 +127,7 @@ let lemma_read_back (x : var) (e : expr)
     points_to l v s /\ s._1 x == v /\
     read_cell x e (override s._1 x old, s._2, Ok)) (load_addr s._1)
 
-// ---------- 2. Marco: pre vale sobre el heap completo ----------
+// ---------- 2. Marco: pre se evalúa sobre el heap reconstruido ----------
 
 let frame_load (pre : cond) (x : var) : cond =
   fun s -> s._2 (load_addr s._1) == Unknown /\
@@ -323,24 +323,24 @@ let lemma_sum (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "sum" == eval_value (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v")) /\
+            s0._1 "sum" == eval_value st_init (Plus (Var "sum") (Var "v")) /\
             (forall (y : var). y <> "sum" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "sum" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_load_v start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "sum" == eval_value (st_init, s._2, s._3) (Plus (Var "sum") (Var "v")) /\
+    s._1 "sum" == eval_value st_init (Plus (Var "sum") (Var "v")) /\
     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
 
 let lemma_len (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_len start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_sum start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "len" == eval_value (st_init, s0._2, s0._3) (Plus (Var "len") (Const 1)) /\
+            s0._1 "len" == eval_value st_init (Plus (Var "len") (Const 1)) /\
             (forall (y : var). y <> "len" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "len" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_sum start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "len" == eval_value (st_init, s._2, s._3) (Plus (Var "len") (Const 1)) /\
+    s._1 "len" == eval_value st_init (Plus (Var "len") (Const 1)) /\
     (forall (y : var). y <> "len" ==> s._1 y == st_init y)) st_init
 
 let eval_pointer (st : store) (hp : heap) (p : loc)

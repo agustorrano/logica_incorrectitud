@@ -76,10 +76,10 @@ let rec eval_expr' (s : store) (e : expr) : GTot nat =
 let eval_expr (s : state) (e : expr) 
   : GTot nat = eval_expr' s._1 e
 
-let eval_value (s : state) (e : expr) : GTot value =
+let eval_value (st : store) (e : expr) : GTot value =
   match e with
-  | Var x -> s._1 x
-  | _ -> Nat (eval_expr s e)
+  | Var x -> st x
+  | _ -> Nat (eval_expr' st e)
 
 let override (#a : eqtype) (#b : Type) (f : a -> b) (x : a) (y : b) : (a ^-> b) =
   on a (fun z -> if z = x then y else f z)
@@ -149,7 +149,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
   | R_Error : s : ok_state -> runsto Error s (s._1, s._2, Er)
   
   | R_Assign : x : var -> e : expr -> s : ok_state -> 
-    runsto (Assign x e) s (override s._1 x (eval_value s e), s._2, Ok)
+    runsto (Assign x e) s (override s._1 x (eval_value s._1 e), s._2, Ok)
   
   | R_Nondet : s : ok_state -> #x : var -> v : value ->
     runsto (Nondet x) s (override s._1 x v, s._2, Ok)
@@ -214,7 +214,7 @@ type runsto : (p : stmt) -> (s0 : state) -> (s1 : state) -> Type0 =
   | R_Store : s : ok_state -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (s._2 l == Full v)) ->
     #(squash (eval_expr s e1 == l)) ->
-    runsto (Store e1 e2) s (s._1, override s._2 l (Full (eval_value s e2)), Ok)
+    runsto (Store e1 e2) s (s._1, override s._2 l (Full (eval_value s._1 e2)), Ok)
 
   | R_StoreEr : s : ok_state -> e1 : expr -> e2 : expr ->
     #(squash (eval_expr s e1 =!= 0)) ->
@@ -344,7 +344,7 @@ let rec r_frame (#p : stmt) (#s0 : state) (#s1 : state)
     R_LoadNull s0_fr x e
   | R_Store s e1 e2 l v ->
     state_equiv_eq
-      (s0_fr._1, override s0_fr._2 l (Full (eval_value s0_fr e2)), s0_fr._3)
+      (s0_fr._1, override s0_fr._2 l (Full (eval_value s0_fr._1 e2)), s0_fr._3)
       s1_fr;
     R_Store s0_fr e1 e2 l v
   | R_StoreEr s e1 e2 ->
@@ -441,7 +441,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | ISL_Assign : #pre : cond -> x : var -> e : expr ->
     isl_triple (is_ok pre) (Assign x e) 
       (is_ok (fun s -> exists (st_init : store). 
-        pre (st_init, s._2, s._3) /\ (s._1 x == eval_value (st_init, s._2, s._3) e /\
+        pre (st_init, s._2, s._3) /\ (s._1 x == eval_value st_init e /\
         (forall y. (y <> x) ==> s._1 y == st_init y))))
   
   | ISL_Nondet : #pre : cond -> x : var -> 
@@ -570,7 +570,7 @@ type isl_triple : (pre : cond) -> (p : stmt) -> (post : cond) -> Type =
   | ISL_Store : #pre : cond -> e1 : expr -> e2 : expr ->
     isl_triple (is_ok pre) (Store e1 e2)
       (is_ok (fun s ->
-        points_to (eval_expr s e1) (eval_value s e2) s /\
+        points_to (eval_expr s e1) (eval_value s._1 e2) s /\
         (exists v_old. pre (s._1, override s._2 (eval_expr s e1) (Full v_old), Ok))))
 
   | ISL_StoreEr : #pre : cond -> e1 : expr -> e2 : expr ->
@@ -606,7 +606,7 @@ let rec eval_expr_fresh (s : state) (e : expr) (x : var) (v : value)
 
 let eval_value_fresh (s : state) (e : expr) (x : var) (v : value)
   : Lemma (requires ~(fv_expr e x))
-          (ensures eval_value (set_var s x v) e == eval_value s e) =
+          (ensures eval_value (set_var s x v)._1 e == eval_value s._1 e) =
   match e with
   | Var _ -> ()
   | _ -> eval_expr_fresh s e x v
@@ -623,7 +623,7 @@ let rec r_fresh (#p : stmt) (#s0 #s1 : state)
   | R_Error _ -> R_Error s0_f
   | R_Assign y e s ->
     eval_value_fresh s e x v;
-    state_equiv_eq (override s0_f._1 y (eval_value s0_f e), s0_f._2, s0_f._3) s1_f;
+    state_equiv_eq (override s0_f._1 y (eval_value s0_f._1 e), s0_f._2, s0_f._3) s1_f;
     R_Assign y e s0_f
   | R_Nondet _ #y w ->
     state_equiv_eq (override s0_f._1 y w, s0_f._2, s0_f._3) s1_f;
@@ -690,12 +690,12 @@ let rec soundness
   | ISL_Assign #pre #x #e ->
     let (st1, hp1, m) = s1 in
     let st_init = indefinite_description_ghost store (fun st_i -> pre (st_i, hp1, m) 
-      /\ st1 x == eval_value (st_i, hp1, m) e
+      /\ st1 x == eval_value st_i e
       /\ (forall y. y <> x ==> st1 y == st_i y))
     in
     let s0 = (st_init, hp1, Ok) in
     let pf0 = R_Assign x e s0 in
-    state_equiv_eq (override st_init x (eval_value s0 e), hp1, Ok) s1;
+    state_equiv_eq (override st_init x (eval_value s0._1 e), hp1, Ok) s1;
     (|s0, pf0|)
   
   | ISL_Nondet #pre #x -> 
@@ -935,7 +935,7 @@ let rec soundness
   | ISL_Store #pre #e1 #e2 -> 
     let (st1, hp1, m1) = s1 in
     let p_l (l_i : loc) : prop =
-      eval_expr s1 e1 == l_i /\ points_to l_i (eval_value s1 e2) s1
+      eval_expr s1 e1 == l_i /\ points_to l_i (eval_value s1._1 e2) s1
     in
     let l = indefinite_description_ghost loc p_l in
     let p_vold (v_o : value) : prop =
@@ -948,7 +948,7 @@ let rec soundness
     exists_intro (fun v_i -> eval_expr s0 e1 == l /\ points_to l v_i s0) v_old;
     exists_intro (fun l_i -> exists v_i. eval_expr s0 e1 == l_i /\ points_to l_i v_i s0) l;
     let r = R_Store s0 e1 e2 l v_old in
-    let hp1' = override hp0 l (Full (eval_value s0 e2)) in
+    let hp1' = override hp0 l (Full (eval_value s0._1 e2)) in
     state_equiv_eq (st0, hp1', Ok) s1;
     (|s0, r|)
 
@@ -976,7 +976,7 @@ type footprint : stmt -> state -> state -> Type0 =
   
   | F_Assign : st : store -> x : var -> e : expr ->
     footprint (Assign x e) (st, empty_heap, Ok) 
-    (override st x (eval_value (st, empty_heap, Ok) e), empty_heap, Ok)
+    (override st x (eval_value st e), empty_heap, Ok)
   
   | F_Nondet : st : store -> x : var -> v : value ->
     footprint (Nondet x) (st, empty_heap, Ok)
@@ -1058,7 +1058,7 @@ type footprint : stmt -> state -> state -> Type0 =
   | F_Store : st : store -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } -> v : value ->
     #(squash (eval_expr' st e1 == l)) ->
     footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
-    (st, singleton_full_heap l (eval_value (st, empty_heap, Ok) e2), Ok)
+    (st, singleton_full_heap l (eval_value st e2), Ok)
   
   | F_StoreEr : st : store -> e1 : expr -> e2 : expr -> l : loc { l =!= 0 } ->
     #(squash (eval_expr' st e1 == l)) ->
@@ -1163,9 +1163,9 @@ let rec footprint_sound (p : stmt) (s0 : state) (s1 : state) (f : footprint p s0
 
   | F_Store st e1 e2 l v ->
     let s0 = (st, singleton_full_heap l v, Ok) in
-    let s1 = (st, override (singleton_full_heap l v) l (Full (eval_value (st, empty_heap, Ok) e2)), Ok) in
+    let s1 = (st, override (singleton_full_heap l v) l (Full (eval_value st e2)), Ok) in
     let r = R_Store s0 e1 e2 l v in
-    state_equiv_eq s1 (st, singleton_full_heap l (eval_value (st, empty_heap, Ok) e2), Ok);
+    state_equiv_eq s1 (st, singleton_full_heap l (eval_value st e2), Ok);
     r
 
   | F_StoreEr st e1 e2 l ->
@@ -1553,7 +1553,7 @@ let empty_frame (s0 s1 : state)
   state_equiv_eq (s1._1, s1._2 <+> empty_heap, s1._3) s1
 
 // ============================================================
-// 15. Existe transición mínima
+// 15. Existe una transición minimal
 // ============================================================
 
 let rec minimize (p : stmt) (s0 s1 : state) (n : nat)
@@ -1621,9 +1621,6 @@ let minimal_framed_runs (p : stmt) (r0 r1 : state) (hf : heap)
 // 17. Adecuación a heaps completos
 // ============================================================
 
-let heap_is_complete (h : heap) : prop =
-  forall l. known (h l)
-
 let complete_cell (c : cell) : cell =
   match c with
   | Unknown -> Empty
@@ -1670,7 +1667,7 @@ let rec run_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   | R_LoadEr _ x e -> R_LoadEr c0 x e
   | R_LoadNull _ x e -> R_LoadNull c0 x e
   | R_Store _ e1 e2 l v ->
-    complete_override s1._1 s0._2 s1._3 l (Full (eval_value s0 e2));
+    complete_override s1._1 s0._2 s1._3 l (Full (eval_value s0._1 e2));
     R_Store c0 e1 e2 l v
   | R_StoreEr _ e1 e2 -> R_StoreEr c0 e1 e2
   | R_StoreNull _ e1 e2 -> R_StoreNull c0 e1 e2
@@ -1681,7 +1678,7 @@ let rec run_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
 
 let error_reachable (pre : cond) (p : stmt) : prop =
   exists (s0 s1 : state). pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
-    heap_is_complete (cstate s0)._2 /\ runs p (cstate s0) (cstate s1)
+    (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1)
 
 let certify (#pre #post : cond) (#p : stmt) (pf : isl_triple pre p post) (s1 : state)
   : Lemma (requires post s1 /\ s1._3 == Er)
@@ -1690,4 +1687,4 @@ let certify (#pre #post : cond) (#p : stmt) (pf : isl_triple pre p post) (s1 : s
   exists_intro (fun (_ : runsto p s0 s1) -> True) r;
   exists_intro (fun (_ : runsto p (cstate s0) (cstate s1)) -> True) (run_complete r);
   assert (pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
-    heap_is_complete (cstate s0)._2 /\ runs p (cstate s0) (cstate s1))
+    (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1))

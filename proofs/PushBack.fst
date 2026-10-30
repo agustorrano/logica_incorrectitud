@@ -50,7 +50,7 @@ let heap3 (c : ctx) (c1 c2 c3 : cell) : heap =
 let cells (c : ctx) (c1 c2 c3 : cell) : cond =
   fun s -> forall l. s._2 l == heap3 c c1 c2 c3 l
 
-// Aserciones intermedias (heap completo)
+// Aserciones intermedias (sobre el heap del ejemplo)
 
 let pre_fixed (c : ctx) : cond = fun s ->
   s._1 c.ptr == Loc c.l_v /\
@@ -179,7 +179,7 @@ let lemma_alloc_back (c : ctx) (s : state)
 let lemma_store_back (c : ctx) (s : state)
   : Lemma (requires is_ok (store_post c) s)
           (ensures is_ok (fun t ->
-            points_to (eval_expr t (Var c.ptr)) (eval_value t (Var "y")) t /\
+            points_to (eval_expr t (Var c.ptr)) (eval_value t._1 (Var "y")) t /\
             (exists old. store_pre c (t._1, override t._2 (eval_expr t (Var c.ptr)) (Full old), Ok))) s) =
   exists_intro (fun old -> store_pre c
     (s._1, override s._2 (eval_expr s (Var c.ptr)) (Full old), Ok)) (Loc c.l_a)
@@ -195,7 +195,7 @@ let initial_implies (c : ctx) (s : state)
   exists_intro (fun a -> exists b v. s._1 c.ptr == Loc a /\
     (points_to a (Loc b) ** points_to b v) s) c.l_v
 
-// Separaciones del heap completo en footprint ** marco
+// Separaciones del heap del ejemplo en celda local y marco
 
 let split_load_x (c : ctx) (s : state)
   : Lemma (requires post_load_x c s)

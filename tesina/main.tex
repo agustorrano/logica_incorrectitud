@@ -41,7 +41,8 @@ A diferencia de los demostradores de correctitud, estos analizadores suelen empl
 Aunque estas técnicas pueden estar respaldadas por fundamentos formales, suelen reportar muchos falsos positivos, es decir, advertencias sobre errores que en realidad no son alcanzables en ninguna ejecución real del programa.
 Esto reduce la confianza y productividad de los desarrolladores, quienes deben invertir tiempo en descartar manualmente errores mal advertidos.
 
-La Lógica de Incorrectitud surge como propuesta para invertir el paradigma tradicional al centrarse en la demostración de errores alcanzables, garantizando la ausencia de falsos positivos en los errores reportados.
+La Lógica de Incorrectitud surge como propuesta para invertir el paradigma tradicional al centrarse en la demostración de errores alcanzables,
+garantizando la ausencia de falsos positivos en los errores reportados respecto de las condiciones iniciales consideradas.
 Recientemente, esta teoría se combinó con el razonamiento local sobre la memoria de la Lógica de Separación, introduciendo la Lógica de Incorrectitud de Separación.
 La mecanización de esta lógica constituye todavía un área de desarrollo reciente.
 
@@ -228,7 +229,7 @@ manteniendo la distinción entre terminaciones normales y con error.
 Además, se incorporan operaciones de lectura, escritura, liberación y reserva de memoria.
 Sobre esta extensión se formaliza la ISL,
 se demuestra su solidez y se mecaniza el Teorema de la Huella.
-Este último permite descomponer cada ejecución en una transición sobre un fragmento mínimo de memoria y un marco que permanece sin modificaciones.
+Este último permite descomponer cada ejecución en una transición sobre un fragmento minimal de memoria y un marco que permanece sin modificaciones.
 
 A partir de las formalizaciones desarrolladas en estas dos etapas,
 se verifican programas ilustrativos que incluyen errores de memoria,
@@ -263,6 +264,12 @@ incluyendo casos relacionados con errores de memoria, no determinismo, bucles y 
 
 Finalmente, el \autoref{cap:conclusiones} resume los resultados obtenidos, los trabajos relacionados,
 las limitaciones de la propuesta y posibles líneas de trabajo futuro.
+
+%La formalización y ejemplos se desarrollaron sobre \fstar{} version XXX
+%y se encuentran en el repositorio XXX, commit XXX
+El código de la formalización y de los ejemplos se desarrolló sobre \fstar{} versión xxx.
+Está disponible en el repositorio público
+\url{https://github.com/agustorrano/isl-fstar} y el commit xxx corresponde a la versión utilizada en esta tesina.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CAPÍTULO 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -965,7 +972,7 @@ Por eso, la postcondición es $p \land B$.
 En la regla de \textsc{Assign},
 $x'$ es una variable auxiliar que representa el valor que tenía $x$ antes de ejecutar el comando.
 De este modo, la postcondición puede relacionar el valor final de $x$ con su valor inicial,
-evitando perder información al sobreescribir la variable.
+evitando perder información al sobrescribir la variable.
 La variable auxiliar $x'$ se elige fresca,
 de modo que no aparezca en la aserción $p$ ni en la expresión $e$;
 las sustituciones se realizan evitando la captura de variables.
@@ -1190,6 +1197,10 @@ todo estado descrito por la postcondición de una tripleta de error derivable
 está respaldado por una ejecución real.
 Además, si $q \neq \varnothing$,
 existe al menos una ejecución que comienza en un estado que satisface $p$ y termina con el modo $er$.
+
+Esta garantía es relativa a la presunción $p$.
+Si el comando analizado forma parte de un programa mayor,
+el corolario no establece por sí solo que ese programa alcance alguno de los estados iniciales desde los cuales se produce el error.
 
 \subsection*{Relevancia práctica}
 Una aplicación del razonamiento sobre incorrectitud es Pulse-X~\citep{bugs},
@@ -1734,7 +1745,9 @@ y produce la aserción $\mathsf{emp}$.
 La regla \textsc{Load}
 lee el contenido de la celda indicada por $e$ y lo asigna a $x$,
 sin modificar el \emph{heap}.
-La variable auxiliar $x'$ conserva el valor inicial de $x$,
+La variable auxiliar $x'$,
+elegida distinta de $x$,
+conserva el valor inicial de $x$,
 mientras que $v$ representa el contenido leído.
 Como la asignación puede cambiar el valor de la expresión $e$ si esta contiene a $x$,
 la postcondición utiliza $e[x'/x]$ para seguir describiendo la dirección original.
@@ -1953,7 +1966,7 @@ Las operaciones de lectura, escritura y liberación sobre el puntero nulo \textt
 $$
 \begin{aligned}
 \relax[\![x := \texttt{alloc()}]\!]_{ok} &= \{((s, h), (s[x \mapsto \ell], h[\ell \mapsto v]))
-  \mid v \in \mathsf{Val} \land (\ell \notin \operatorname{dom}(h) \lor h(\ell) = \bot)\}, \\[4pt]
+  \mid v \in \mathsf{Val} \land \ell \in \mathsf{Loc} \land (\ell \notin \operatorname{dom}(h) \lor h(\ell) = \bot)\}, \\[4pt]
 [\![\texttt{free(}e\texttt{)}]\!]_{ok} &= \{((s,h), (s, h[\ell \mapsto \bot]))
   \mid \ell = [\![e]\!]_s \land h(\ell) \in \mathsf{Val}\}, \\[4pt]
 [\![\texttt{free(}e\texttt{)}]\!]_{er} &= \{(\sigma, \sigma)
@@ -2273,10 +2286,9 @@ $$(\sigma_p, \sigma_q) \in [\![C]\!]_{er}.$$
 utilizando el Teorema de Soundness de la ISL~\ref{teo:sound-isl} y su definición de validez semántica.
 $\ensuremath{\blacksquare}$
 
-El Teorema de Soundness garantiza que los estados descritos por una tripleta derivable están respaldados por ejecuciones reales.
-Para entender por qué este respaldo se conserva al aplicar la Regla del Marco,
-es necesario caracterizar cómo se relacionan las ejecuciones locales con las ejecuciones que incluyen memoria adicional.
-Esta caracterización se presenta en el Teorema de la Huella.
+Además de la solidez del sistema deductivo,
+interesa caracterizar qué fragmento de memoria basta para justificar una ejecución.
+Esto se presenta en el Teorema de la Huella.
 
 \subsection*{El Teorema de la Huella (\textit{Footprint Theorem})}
 El Lema~\ref{lem:localidad} de localidad semántica establece que una ejecución sobre un \emph{heap} extendido
@@ -2285,7 +2297,7 @@ sin modificar dicho marco ni el modo de terminación.
 
 El Teorema de la Huella completa esta propiedad en la dirección opuesta.
 Mientras que la localidad permite extender una ejecución local con memoria adicional,
-el teorema muestra que toda ejecución global puede descomponerse en una ejecución mínima y un marco adicional.
+el teorema muestra que toda ejecución global puede descomponerse en una transición minimal y un marco adicional.
 
 Para formalizar esta descomposición,
 primero debemos definir cómo se incorpora un fragmento adicional de memoria a un estado.
@@ -2325,18 +2337,23 @@ $$\sigma_p' = \sigma_p \bullet h_f \land \sigma_q' = \sigma_q \bullet h_f.$$
 Este orden no compara comandos ni modos de terminación,
 sino la cantidad de memoria adicional que contienen dos transiciones.
 
-Con esto podemos definir la huella de un comando o \emph{footprint}.
+Con esto podemos definir las huellas minimales de un comando.
 
-\begin{definicion}[Huellas]
+\begin{definicion}[Huellas minimales]
 \label{def:huella-minima}
 La relación
 $$\operatorname{foot}(C)_\varepsilon$$
-está formada por las transiciones de $[\![C]\!]_\varepsilon$ que son mínimas respecto del orden $\preceq$.
+está formada por las transiciones de $[\![C]\!]_\varepsilon$ que son minimales respecto del orden $\preceq$;
+las llamamos huellas minimales.
 \end{definicion}
-\guido{deberia decir ``minimal''?}
+%\guido{deberia decir ``minimal''?}
 
-Una transición es mínima cuando no puede quitarse de sus estados inicial y final un mismo fragmento de memoria no vacío
+Una transición es minimal cuando no puede quitarse de sus estados inicial y final un mismo fragmento de memoria no vacío
 y seguir obteniendo una transición válida de $[\![C]\!]_\varepsilon$.
+Es decir,
+no existe otra transición de $[\![C]\!]_\varepsilon$ estrictamente menor que ella respecto de $\preceq$.
+Se puede observar que no se exige que la transición sea menor o igual que todas las demás transiciones del comando,
+sino que ninguna otra se encuentre estrictamente por debajo de ella.
 
 Una transición perteneciente a $\operatorname{foot}(C)_\varepsilon$
 describe los recursos de memoria necesarios para una ejecución particular del comando.
@@ -2345,8 +2362,10 @@ una ejecución exitosa de la instrucción $[x] := y$ requiere localmente una cel
 pero no necesita describir las demás celdas del \emph{heap}.
 El resto de la memoria puede incorporarse con un marco.
 
-No necesariamente existe una única huella para cada comando.
-Un comando con distintas ramas puede tener varias ejecuciones mínimas con requerimientos de memoria distintos.
+Por lo tanto,
+no necesariamente existe una única huella minimal para cada comando.
+Un comando con distintas ramas puede tener varias ejecuciones minimales con requerimientos de memoria distintos,
+y ninguna de ellas es menor que la otra.
 
 \begin{teorema}[Teorema de la Huella]
 \label{teo:huella}
@@ -2358,13 +2377,13 @@ La igualdad del Teorema~\ref{teo:huella} expresa dos direcciones complementarias
 La primera inclusión,
 $\operatorname{frame}(\operatorname{foot}(C)_\varepsilon) \subseteq [\![C]\!]_\varepsilon$,
 expresa la dirección local a global.
-Toda transición mínima sigue siendo una ejecución válida cuando se le agrega un marco compatible.
+Toda transición minimal sigue siendo una ejecución válida cuando se le agrega un marco compatible.
 Esta dirección se obtiene a partir de la propiedad de localidad presentada en el Lema~\ref{lem:localidad}.
 
 La segunda inclusión,
 $[\![C]\!]_\varepsilon \subseteq \operatorname{frame}(\operatorname{foot}(C)_\varepsilon)$,
 expresa la dirección global a local.
-Establece que toda ejecución global puede descomponerse en una transición mínima y un marco agregado a sus estados inicial y final.
+Establece que toda ejecución global puede descomponerse en una transición minimal y un marco agregado a sus estados inicial y final.
 
 \section{El lenguaje \fstar{}}
 \label{sec:fstar}
@@ -3099,7 +3118,6 @@ sin necesidad de inspeccionar la estructura computacional de sus demostraciones.
 \fstar{} transforma estas condiciones en obligaciones de verificación que,
 en muchos casos,
 pueden ser resueltas automáticamente por Z3.
-%\guido{bien}
 
 \section{El Teorema de Soundness}
 \label{sec:il-soundness}
@@ -3122,9 +3140,6 @@ $$\forall \text{\lstinline|s1|}. \ \text{\lstinline|post s1|} \implies \exists \
 En este enunciado,
 el modo de terminación está incluido en los estados y puede restringirse mediante las aserciones,
 en lugar de aparecer como un índice separado de la tripleta.
-%\guido{ya explicaste que \lstinline`x:s & t` es un par dependiendente / tipo sigma?}
-%\guido{me parece que habria que recordar que el modo
-%de terminación se modela distinto}
 
 En \fstar{} codificamos este teorema mediante una función fantasma con tipos dependientes
 que proporciona un estado inicial y una derivación operacional:
@@ -3155,10 +3170,6 @@ que certifica la existencia de una ejecución.
 La demostración se realiza por inducción estructural sobre \lstinline|pf|.
 A partir del estado final \lstinline|s1| que satisface \lstinline|post| y de la derivación recibida,
 cada caso obtiene un estado inicial que satisface \lstinline|pre| y una ejecución que conecta ambos estados.
-%\guido{``A continuación, detallamos algunos casos de la prueba.
-%A grandes rasgos, la prueba consiste en usar $s_1$, que cumple $post$
-%la derivación de $\itriple{pre}{s}{post}$ para
-%encontrar un $s_0$ que cumpla $pre$.''}
 La cláusula \lstinline|decreases pf| indica que cada llamada recursiva se realiza sobre una subderivación menor.
 A continuación,
 detallamos algunos casos de la prueba.
@@ -3214,20 +3225,9 @@ permite obtener un testigo a partir de la existencia lógica de un valor.
 Como la prueba tiene efecto \lstinline|GTot|,
 el testigo puede utilizarse dentro de la demostración fantasma,
 sin formar parte de un programa extraído ejecutable.
-%\guido{Está bien. Aunque cambiaria
-%``solo se usa durante la demostración''
-%por
-%``esto es válido debido a que nuestra está en GTot, un efecto fantasma
-%que permite ejecutar estas operaciones no-constructivas''.
-%Por cierto si esto fuera en Coq no habría
-%nada raro: un existencial es una par de testigo + prueba, y mientras
-%te quedes en Prop podés eliminar a gusto. \fstar{} lo hace distinto
-%con Tot/GTot}
 
 Con el valor elegido se reconstruye el \emph{store} inicial
 mediante \lstinline|override st1 x x_init| y se define \lstinline|s0 = (st0, Ok)|:
-%\guido{Dado esto, construimos $s_1 = s_0 [ x \leftarrow xinit ] $,
-%o algo asi}
 
 \begin{lstlisting}
 | I_Assign #pre #x #e ->
@@ -3288,8 +3288,6 @@ La función \lstinline|soundness| distingue estas posibilidades para reconstruir
 La comprobación mediante \lstinline|t2b| se realiza en el contexto fantasma de la prueba.
 Si \lstinline|s1| satisface \lstinline|post|,
 se reconstruye una ejecución de ambos comandos.
-%\guido{bien, acá parecía decir que el programa \textbf{tuvo} que haber venido de ese
-%caso, pero no es necesariamente asi, pueden solaparse ambas ramas}
 Primero se aplica la hipótesis inductiva a \lstinline|q|,
 obteniendo el estado intermedio \lstinline|s_mid|,
 y luego a \lstinline|p|,
@@ -3384,15 +3382,12 @@ El estado inicial obtenido satisface la presunción de esa derivación y,
 por lo tanto,
 también la disyunción de las presunciones,
 por lo que puede devolverse con la misma derivación operacional.
-%\guido{acá de vuelta se pueden solapar, por ahí merece un mínimo comentario}
 
 La función \lstinline|soundness| instancia el Teorema~\ref{teo:sound-il} para el lenguaje concreto de este capítulo.
 En particular,
 demuestra,
 en el contexto fantasma,
 la existencia del estado inicial y de la derivación operacional
-%\guido{mas o menos, en ghost, así que realmente solo
-%demuestra la existencia}
 exigidos por la caracterización del Lema~\ref{lem:caracterizacion}:
 
 $$\text{\lstinline|il_triple pre p post|} \implies \forall \text{\lstinline|s1|} \in \text{\lstinline|post|}. \
@@ -3429,7 +3424,7 @@ los cuales se mantienen idénticos a los del capítulo anterior,
 sino que detallaremos cómo la arquitectura de nuestra formalización en \fstar{} debió
 evolucionar para incorporar el razonamiento local sobre porciones disjuntas de memoria,
 la conjunción separadora y la detección de \emph{bugs} de memoria
-como el \emph{Use After Free}.
+como el \emph{use after free}.
 
 \section{Extensión del lenguaje y del modelo de estado}
 \label{sec:isl-estado}
@@ -3562,17 +3557,17 @@ Para conservar el valor de una variable al copiarlo mediante una asignación o u
 se incorpora \lstinline|eval_value|:
 
 \begin{lstlisting}
-let eval_value (s : state) (e : expr) : GTot value =
+let eval_value (st : store) (e : expr) : GTot value =
   match e with
-  | Var x -> s._1 x
-  | _ -> Nat (eval_expr s e)
+  | Var x -> st x
+  | _ -> Nat (eval_expr' st e)
 \end{lstlisting}
 Cuando la expresión es una variable,
 esta función conserva su constructor.
 Para las demás expresiones devuelve el resultado numérico mediante \lstinline|Nat|.
 Luego,
 copiar una variable que contiene \lstinline|Loc l| conserva ese valor.
-La evaluación de las direcciones de acceso y de las comparaciones sigue utilizando \lstinline|eval_expr|,
+La evaluación de las direcciones de acceso y de las comparaciones sigue utilizando \lstinline|eval_expr'|,
 por lo que esta adaptación no impone una separación de tipos entre números y punteros.
 
 \section{Álgebra de \emph{heaps} y aserciones espaciales}
@@ -3672,13 +3667,10 @@ Por su parte,
 también no nula,
 marcada como \lstinline|Empty|.
 Este predicado representa la aserción de \emph{heap} negativo de la Definición~\ref{def:heap_negativo}.
-%\guido{si vas a usar cursiva para ``heap'' también hace falta en heaplet,
-%podemos anotarlo y hacer una pasada al final}
 
 A partir del álgebra anterior,
 la conjunción separadora se representa mediante:
 
-%\guido{borremos todos los unfold? no importan para esta presentacion}
 \begin{lstlisting}
 let sep_conj (p q : cond) : cond =
   fun (st, hp, m) -> exists h1 h2.
@@ -3804,7 +3796,6 @@ Una lectura exitosa requiere una celda activa y actualiza el \emph{store} con su
   #(squash (s._2 (eval_expr s e) == Full v)) ->
   runsto (Load x e) s (override s._1 x v, s._2, s._3)
 \end{lstlisting}
-%\guido{para que se toma l si es igual a evalexpr ...?}
 
 Los casos de error se representan mediante \lstinline|R_LoadEr|,
 cuando la dirección no nula está marcada como \lstinline|Empty|,
@@ -3814,8 +3805,6 @@ En ambos casos se conservan el \emph{store} y el \emph{heap},
 y el modo de terminación cambia a \lstinline|Er|.
 Se omiten sus definiciones por ser análogas a \lstinline|R_FreeEr| y \lstinline|R_FreeNull|,
 respectivamente.
-%\guido{si es la única regla de Load que omitimos por ahí la aregaría...
-%abajo en Store me parece bien como está}
 
 La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza su contenido:
 
@@ -3824,7 +3813,7 @@ La escritura exitosa requiere que la ubicación se encuentre activa y reemplaza 
   l : loc { l =!= 0 } -> v : value ->
   #(squash (s._2 l == Full v)) ->
   #(squash (eval_expr s e1 == l)) ->
-  runsto (Store e1 e2) s (s._1, override s._2 l (Full (eval_value s e2)), Ok)
+  runsto (Store e1 e2) s (s._1, override s._2 l (Full (eval_value s._1 e2)), Ok)
 \end{lstlisting}
 
 Los constructores \lstinline|R_StoreEr| y \lstinline|R_StoreNull| representan,
@@ -3861,7 +3850,6 @@ donde $\bullet$ denota la extensión de un estado por un marco,
 presentada en la Definición~\ref{def:state-ext}:
 se conserva el \emph{store} y el modo de terminación,
 y se agrega el marco al \emph{heap} mediante la unión disjunta $\uplus$.
-%\guido{$\bullet$ no era $\uplus$ antes?}
 
 La condición de que el marco sea disjunto del \emph{heap} final es especialmente relevante para la alocación.
 Aunque una ubicación sea \lstinline|Unknown| en el \emph{heap} inicial,
@@ -3872,11 +3860,9 @@ Si posteriormente se libera,
 queda marcada como \lstinline|Empty| y continúa siendo conocida.
 Por ello,
 la condición del \emph{heap} final también impide que el marco contenga una ubicación reservada y luego liberada durante la ejecución.
-%\guido{ok bien!!!}
 
 La demostración se hace por inducción estructural sobre \lstinline|r|,
 reconstruyendo en cada caso una derivación sobre los \emph{heaps} extendidos.
-%\guido{``La mayoría se los casos son triviales.''?}
 La mayoría de los casos se resuelven de manera directa.
 El caso secuencial requiere,
 además,
@@ -3889,8 +3875,6 @@ let rec lemma_runsto_disjoint (#p : stmt) (#s0 : state) (#s1 : state)
   Lemma (requires (s1._2 >< h_fr))
         (ensures (s0._2 >< h_fr)) (decreases r)
 \end{lstlisting}
-%\guido{podemos usar \lstinline`x._2` en vez de tener el let acá? o
-%definir una funcion heapof o algo asi?}
 
 Este lema permite demostrar que el marco es disjunto del \emph{heap} inicial a partir de que lo es del final.
 En el caso secuencial de \lstinline|r_frame|,
@@ -3908,7 +3892,7 @@ aunque se mantiene explícita en la signatura de \lstinline|r_frame|.
 
 La función \lstinline|r_frame| demuestra la dirección local a global de la propiedad de localidad.
 Luego,
-será reutilizada tanto en la prueba de solidez de la Regla del Marco como en la descomposición mediante huellas inductivas de la \autoref{sec:isl-huella}.
+será reutilizada tanto en la prueba de solidez de la Regla del Marco como en la descomposición mediante huellas locales de la \autoref{sec:isl-huella}.
 
 \section{La ISL como tipo inductivo}
 \label{sec:isl-tipoind}
@@ -3929,6 +3913,12 @@ En particular,
 la asignación adapta el valor de la variable destino mediante \lstinline|eval_value|,
 de acuerdo con la semántica operacional.
 Omitimos aquí los constructores compartidos con la IL y nos concentramos en las reglas de memoria dinámica y en la Regla del Marco.
+
+Las reglas de memoria se presentan aquí con una presunción parametrizada \lstinline|pre|:
+la postcondición exige que el estado anterior,
+reconstruido a partir del estado final,
+satisfaga esa presunción.
+Esto explica su diferencia de forma respecto de las reglas de la \autoref{fig:reglas-isl}.
 
 El poder de los \emph{heaps} negativos se ilustra al analizar la instrucción de liberación de memoria correspondiente a \lstinline|Free|.
 En nuestra formalización,
@@ -3952,28 +3942,12 @@ La regla se representa mediante:
         points_to_empty (eval_expr s e) s /\
         pre (s._1, override s._2 (eval_expr s e) (Full v), Ok)))
 \end{lstlisting}
-%\guido{posta es $s_3$ al final o es siempre $Ok$?}
-%\guido{no tiene que tener un points-to valido en la pre???}
-%\guido{ah, no, por el pre en la posta con el override. No es medio
-%raro esto? intuitivamente yo levantaria $v$ como
-%otro argumento de la regla, pero tal vez hace falta
-%que esté así para poder llevar los existenciales
-%dentro de la logica. Es lo que hablamos la otra vez?}
-%\guido{en todo caso merece un poco de explicacion, creo}
-%\guido{tal vez se pueda evitar diseñar todas
-%las reglas así si agregamos una primitiva
-%``push'' que meta existenciales hacia adentro
-%en una tripleta, algo tipo
-%\lstinline`(exists v. isl_triple (pre v) c post)
-%==> isl_triple (exists v. pre v) c post`... creo}
 
 La regla \lstinline|ISL_FreeEr| permite justificar un resultado de error al intentar liberar una ubicación marcada como \lstinline|Empty|.
 En particular,
 permite representar errores temporales como el \emph{double free},
 cuando esa marca proviene de una liberación anterior.
 Este caso se representa mediante:
-%\guido{la semantica capta el error, ok, pero estamos
-%hablando de la regla de la logica?}
 
 \begin{lstlisting}
 | ISL_FreeEr : #pre : cond -> e : expr ->
@@ -4031,8 +4005,6 @@ Por otro lado, la Regla del Marco debe preservar no solo el \emph{heap} adiciona
 sino también la validez de la aserción enmarcada respecto del \emph{store}.
 Aunque ese \emph{heap} no cambie,
 la aserción podría dejar de cumplirse si el comando modifica una variable de la que depende.
-%\guido{explicalo un poco más, creo que más que la validez del frame
-%es el \emph{significado} del frame como proposición, que depende del store}
 Para expresar esta condición se calcula el conjunto de variables que un comando puede modificar:
 
 \begin{lstlisting}
@@ -4068,7 +4040,6 @@ Además,
 exige que la aserción del marco no dependa del modo de terminación,
 ya que compara su validez para modos arbitrarios \lstinline|m1| y \lstinline|m2|.
 Esta condición permite preservar el marco incluso cuando una ejecución pasa del modo \lstinline|Ok| al modo \lstinline|Er|.
-%\guido{ok genial, está eso que mencionaba arriba}
 
 Con esto, la Regla del Marco se codifica como el siguiente constructor:
 
@@ -4102,15 +4073,11 @@ existe un estado inicial \lstinline|s0| que satisface \lstinline|pre| y una ejec
 $$\forall \text{\lstinline|s1|}. \ \text{\lstinline|post s1|} \implies
 \exists \text{\lstinline|s0|}. \ \text{\lstinline|pre s0|} \land \text{\lstinline|runsto p s0 s1|}.$$
 \end{teorema}
-%\guido{me olvidé del término ``presunción'', al final hagamos una
-%pasada para usarlo consistentemente en vez de precondicion}
 
 De manera análoga a la IL,
 el teorema se codifica en \fstar{} mediante una función con tipos dependientes.
 La signatura mantiene la misma forma,
 reemplazando \lstinline|il_triple| por \lstinline|isl_triple| y utilizando los estados y la semántica operacional de la ISL:
-%En \fstar{}, el teorema se codifica mediante la siguiente función con tipos dependientes:
-%\guido{similarmente a IL? o igual en realidad}
 
 \begin{lstlisting}
 let rec soundness
@@ -4150,7 +4117,6 @@ La postcondición ya contiene el recurso \lstinline|points_to_empty| necesario p
 Por otro lado,
 los casos de acceso a la dirección nula utilizan la prueba de que la expresión evaluada es igual a 0 y construyen directamente \lstinline|R_FreeNull|,
 \lstinline|R_LoadNull| o \lstinline|R_StoreNull|.
-%\guido{demos un ejemplo de alguno?}
 
 Como ejemplo,
 mostramos las ramas de la demostración correspondientes a la liberación de memoria,
@@ -4234,7 +4200,6 @@ el \emph{heap} final puede dividirse en dos fragmentos disjuntos:
 \lstinline|hp1 = h_local <+> h_fr|,
 \end{center}
 donde \lstinline|p_post| se satisface sobre \lstinline|h_local| y \lstinline|fr| sobre \lstinline|h_fr|.
-%\guido{por que no usar nombres consistentes?}
 
 En la prueba se define esta información mediante un predicado auxiliar:
 
@@ -4246,7 +4211,6 @@ let p_two (h_local : heap) (h_fr : heap) : prop =
 in
 \end{lstlisting}
 La definición de \lstinline|sep_conj| garantiza la existencia de dos \emph{heaps} que satisfacen \lstinline|p_two|.
-%\guido{instanciar qué? no tenemos una prueba de que \emph{existen}?}
 Primero se elige \lstinline|h_local| junto con la garantía de que existe un marco compatible;
 luego se elige \lstinline|h_fr| para ese fragmento.
 Ambas elecciones se realizan en el contexto fantasma de la prueba.
@@ -4260,7 +4224,7 @@ aplicamos la hipótesis inductiva de nuestro teorema:
 \end{lstlisting}
 Esta llamada devuelve el estado inicial local \lstinline|s0_local| y una derivación \lstinline|r_local| de la ejecución hasta el estado \lstinline|(st1, h_local, m)|.
 El \emph{heap} \lstinline|h_local| es el fragmento que satisface la postcondición local proporcionada por la conjunción separadora.
-En esta parte de la prueba no se afirma todavía que dicho fragmento sea una huella mínima en el sentido de la Definición~\ref{def:huella-minima}.
+En esta parte de la prueba no se afirma todavía que dicho fragmento sea una huella minimal en el sentido de la Definición~\ref{def:huella-minima}.
 
 El último paso es elevar esa certeza local al contexto global,
 es decir,
@@ -4299,14 +4263,12 @@ existe una ejecución concreta del modelo formalizado que alcanza uno de esos es
 \section{El Teorema de la Huella}
 \label{sec:isl-huella}
 En la \autoref{sec:logincsep} se presentó el Teorema de la Huella~\ref{teo:huella},
-que caracteriza la semántica operacional de un comando a partir de sus transiciones mínimas y de la extensión de estas con marcos disjuntos.
+que caracteriza la semántica operacional de un comando a partir de sus transiciones minimales y de la extensión de estas con marcos disjuntos.
 El resultado dice:
-$$[\![C]\!]_\varepsilon = \operatorname{frame}(\operatorname{foot}(C)_\varepsilon)$$
-Esta igualdad reúne dos direcciones.
-La dirección local a global establece que una ejecución local sigue siendo válida al agregarle un marco disjunto de sus \emph{heaps} inicial y final.
-La dirección global a local establece que toda ejecución operacional puede descomponerse en una transición mínima y un marco disjunto.
+$$[\![C]\!]_\varepsilon = \operatorname{frame}(\operatorname{foot}(C)_\varepsilon).$$
 
-La función \lstinline|r_frame| ya mecaniza la primera parte para una ejecución cualquiera.
+La dirección local a global se obtiene mediante \lstinline|r_frame|,
+presentada anteriormente.
 Si \lstinline|runsto p s0 s1| y un \emph{heap} es disjunto de los \emph{heaps} de \lstinline|s0| y \lstinline|s1|,
 entonces ese \emph{heap} puede agregarse a ambos estados y se obtiene una nueva derivación de \lstinline|runsto|.
 Sin embargo,
@@ -4321,10 +4283,10 @@ La segunda,
 representa su clausura por marcos disjuntos.
 Primero se demuestra que esta clausura coincide con \lstinline|runsto|.
 A partir de la descomposición obtenida,
-se establece después la existencia de una transición mínima respecto de la extensión por marcos,
+se establece después la existencia de una transición minimal respecto de la extensión por marcos,
 completando la caracterización del Teorema de la Huella~\ref{teo:huella}.
 
-\subsection*{La relación de huellas}
+\subsection*{La relación de huellas locales}
 La relación \lstinline|runsto| permite que los estados inicial y final tengan memoria adicional que no participa de la ejecución.
 Por ejemplo,
 una ejecución de \lstinline|Load x e| puede ocurrir en un \emph{heap} con varias celdas,
@@ -4334,14 +4296,16 @@ Para aislar el fragmento local utilizado por cada comando se define el siguiente
 \begin{lstlisting}
 type footprint : stmt -> state -> state -> Type0
 \end{lstlisting}
+%\guido{Qué pasa con el programa $C = skip + x := Load(1)$, con estado inicial $x = 0$ y heap ${1 \mapsto 0}$?
+%Acá tengo que $C$ deja ese estado sin cambiar, pero si saco ${1 \mapsto 0}$ y me quedo con el heap vacío,
+%\emph{también} tengo eso, porque una rama no avanza pero la otra (skip) me deja igual, así que también tengo
+%esta transición con el heap vacío.
+%La huella según esta relación es ese heaplet. Entonces no es minimal?}
 
-\guido{Qué pasa con el programa $C = skip + x := Load(1)$, con estado inicial $x = 0$ y heap ${1 \mapsto 0}$?
-Acá tengo que $C$ deja ese estado sin cambiar, pero si saco ${1 \mapsto 0}$ y me quedo con el heap vacío,
-\emph{también} tengo eso, porque una rama no avanza pero la otra (skip) me deja igual, así que también tengo
-esta transición con el heap vacío.
-La huella según esta relación es ese heaplet. Entonces no es minimal?}
-
-Un habitante de \lstinline|footprint p s0 s1| representa una ejecución local de \lstinline|p| desde \lstinline|s0| hasta \lstinline|s1|.
+Llamamos \emph{huella local} a un habitante de \lstinline|footprint p s0 s1|,
+que representa una ejecución local de \lstinline|p| desde \lstinline|s0| hasta \lstinline|s1|.
+A diferencia de las huellas minimales de la Definición~\ref{def:huella-minima},
+una huella local no es necesariamente minimal.
 El tipo está indexado por el comando y por sus estados inicial y final.
 La diferencia con \lstinline|runsto| es que sus constructores restringen los \emph{heaps} a los fragmentos requeridos por cada operación.
 
@@ -4354,7 +4318,7 @@ let empty_heap : heap =
 
 Todas sus ubicaciones son \lstinline|Unknown|,
 por lo que el fragmento no contiene ninguna celda activa ni negativa.
-Este \emph{heap} se utiliza en las huellas de instrucciones como \lstinline|Skip|,
+Este \emph{heap} se utiliza en las huellas locales de instrucciones como \lstinline|Skip|,
 \lstinline|Error|, \lstinline|Assign|,
 \lstinline|Nondet| y \lstinline|Assume|,
 cuyos efectos solo involucran el \emph{store} o el modo de terminación.
@@ -4440,20 +4404,16 @@ pero reemplaza su contenido:
   l : loc { l =!= 0 } -> v : value ->
   #(squash (eval_expr' st e1 == l)) ->
   footprint (Store e1 e2) (st, singleton_full_heap l v, Ok)
-    (st, singleton_full_heap l (eval_value (st, empty_heap, Ok) e2), Ok)
+    (st, singleton_full_heap l (eval_value st e2), Ok)
 \end{lstlisting}
-El estado auxiliar \lstinline|(st, empty_heap, Ok)| solo aporta el \emph{store} a \lstinline|eval_value|,
-cuya evaluación no depende del \emph{heap} ni del modo de terminación.
-Los accesos a la dirección nula utilizan \lstinline|empty_heap|,
-dado que el error se produce por el valor evaluado por la expresión y no requiere tener ninguna celda del \emph{heap}.
 
 El caso más complejo de la definición es la composición secuencial.
-Las huellas de dos comandos consecutivos no tienen por qué usar los mismos recursos en el estado intermedio.
+Las huellas locales de dos comandos consecutivos no tienen por qué usar los mismos recursos en el estado intermedio.
 El primer comando puede usar celdas que el segundo no necesita.
 Análogamente,
 el segundo puede requerir celdas que el primero no utilizó.
 Por lo tanto,
-no sería suficiente exigir que el \emph{heap} final de la huella del primer comando coincida con el \emph{heap} inicial de la huella del segundo.
+no sería suficiente exigir que el \emph{heap} final de la huella local del primer comando coincida con el \emph{heap} inicial de la huella local del segundo.
 
 Para representar esta situación,
 el constructor \lstinline|F_Seq| divide la memoria del estado intermedio en tres componentes,
@@ -4494,7 +4454,7 @@ Por eso,
 \lstinline|h0 <+> h_q| $\xrightarrow{\texttt{p}}$ \lstinline|(h_common <+> h_p) <+> h_q|.
 \end{center}
 De manera simétrica,
-la huella de \lstinline|q| usa los recursos comunes y sus recursos exclusivos,
+la huella local de \lstinline|q| usa los recursos comunes y sus recursos exclusivos,
 \begin{center}
 \lstinline|h_common <+> h_q| $\xrightarrow{\texttt{q}}$ \lstinline|h1|.
 \end{center}
@@ -4521,17 +4481,17 @@ La propagación de un error producido por el primer comando se representa con un
 Como el primer comando termina en error,
 el segundo no se ejecuta y no incorpora nuevos requisitos espaciales.
 
-Al igual que para \lstinline|runsto|,
+Como en el caso de \lstinline|runsto|,
 se utiliza \lstinline|state_equiv_eq| para reutilizar una derivación de \lstinline|footprint| sobre estados equivalentes.
 %\guido{esta no es admisible tambien?}
 
-\subsection*{Corrección operacional de las huellas}
+\subsection*{Corrección operacional de las huellas locales}
 Una vez definida la relación local,
-el primer resultado consiste en demostrar que toda huella representa una ejecución operacional válida:
+el primer resultado consiste en demostrar que toda huella local representa una ejecución operacional válida:
 
 \begin{lstlisting}
 let rec footprint_sound (p : stmt) (s0 : state) (s1 : state)
-                        (f : footprint p s0 s1)
+  (f : footprint p s0 s1)
   : GTot (runsto p s0 s1) (decreases f)
 \end{lstlisting}
 
@@ -4541,7 +4501,7 @@ En algunos de ellos es necesario identificar estados cuyos \emph{heaps} se const
 Por ejemplo,
 en el caso \lstinline|F_Free|,
 la regla operacional actualiza la celda liberada mediante \lstinline|override|,
-mientras que la huella describe el \emph{heap} final mediante \lstinline|singleton_empty_heap|:
+mientras que la huella local describe el \emph{heap} final mediante \lstinline|singleton_empty_heap|:
 
 \begin{lstlisting}
 | F_Free st e l v ->
@@ -4554,13 +4514,13 @@ mientras que la huella describe el \emph{heap} final mediante \lstinline|singlet
 Ambas expresiones describen el mismo \emph{heap}:
 la ubicación \lstinline|l| está marcada como \lstinline|Empty| y las demás permanecen como \lstinline|Unknown|.
 El lema \lstinline|state_equiv_eq| establece la igualdad de los estados,
-lo que permite reutilizar la derivación \lstinline|r| con el estado final requerido por la huella.
+lo que permite reutilizar la derivación \lstinline|r| con el estado final requerido por la huella local.
 
 En el caso \lstinline|F_Seq|,
 las hipótesis inductivas proporcionan las ejecuciones de los dos comandos.
 Se extienden mediante \lstinline|r_frame| con \lstinline|h_q| y \lstinline|h_p|,
 respectivamente,
-según el esquema anteriormente.
+según el esquema anterior.
 Luego,
 \lstinline|state_equiv_eq| identifica los estados intermedios y \lstinline|R_Seq| compone las ejecuciones.
 
@@ -4637,13 +4597,22 @@ let heap_without (h : heap) (l : loc) : heap =
     if l' = l then Unknown
     else h l')
 \end{lstlisting}
-En los casos de liberación,
-lectura o escritura sobre una dirección no nula \lstinline|l|,
-la huella local utiliza el \emph{heap} de una única celda correspondiente,
-mientras que \lstinline|heap_without h l| se usa como marco.
+En el caso de la liberación,
+por ejemplo,
+la transición local describe el cambio de la celda ubicada en \lstinline|l|,
+que pasa de \lstinline|Full v| a \lstinline|Empty|.
+El resto del \emph{heap} se conserva como marco mediante \lstinline|heap_without s._2 l|:
+
+\begin{lstlisting}
+| R_Free s e l v ->
+  frame_local (F_Free s._1 e l v) s0 s1 (heap_without s._2 l)
+\end{lstlisting}
+
 Los casos de acceso nulo utilizan \lstinline|empty_heap| como \emph{heap} local y conservan todo el \emph{heap} global en el marco.
 
-Los lemas auxiliares demuestran que ambos fragmentos son disjuntos y que su unión reconstruye el \emph{heap} original.
+Esta elección del marco satisface las condiciones de \lstinline|frame_local|:
+el fragmento local y el marco son disjuntos,
+y su unión reconstruye el \emph{heap} correspondiente.
 Por ejemplo,
 si \lstinline|h l = Full v|, entonces:
 \begin{center}
@@ -4669,10 +4638,31 @@ let map_framed_footprint (#p #q : stmt) (#s0 #s1 : state)
     FF_Frame q s0_local s1_local h_fr fp' d0 d1
 \end{lstlisting}
 
-Si el primer comando termina en error,
-\lstinline|framed_seq_er| conserva su marco y transforma la huella local de \lstinline|Seq p q|.
-No se requiere una huella de \lstinline|q|,
-porque este comando no se ejecuta.
+Por ejemplo,
+en \lstinline|R_ChoiceL| se descompone recursivamente la ejecución de la rama elegida.
+Luego se aplica \lstinline|F_ChoiceL| a la derivación local obtenida,
+conservando su marco:
+
+\begin{lstlisting}
+| R_ChoiceL #p #q r_p ->
+  let ff_p = runsto_decompose r_p in
+  map_framed_footprint (fun #sl0 #sl1 fp_p ->
+    footprint_starts_ok fp_p;
+    F_ChoiceL p q sl0 sl1 fp_p) ff_p
+\end{lstlisting}
+
+En el caso de \lstinline|R_SeqEr|,
+el primer comando termina en error y el segundo no se ejecuta.
+La hipótesis inductiva proporciona la descomposición de la ejecución de \lstinline|p|.
+Para adaptarla a \lstinline|Seq p q|,
+se utiliza el auxiliar \lstinline|framed_seq_er|,
+que aplica \lstinline|F_SeqEr| a la derivación local y conserva el mismo marco:
+
+\begin{lstlisting}
+| R_SeqEr #p #q #s #t r_p ->
+  let ff_p = runsto_decompose r_p in
+  framed_seq_er #p #q #s #t ff_p
+\end{lstlisting}
 
 El caso de \lstinline|R_Seq| es la parte central de la prueba.
 Supongamos una ejecución operacional \lstinline|s0| $\xrightarrow{\texttt{p}}$ \lstinline|t| $\xrightarrow{\texttt{q}}$ \lstinline|s1|.
@@ -4729,7 +4719,8 @@ Para expresar las igualdades se reutiliza \lstinline|heap_merge|,
 definida en la \autoref{sec:isl-aserciones}.
 Las condiciones del registro garantizan que los fragmentos son disjuntos,
 de modo que esta operación coincide allí con la unión disjunta.
-La estructura que almacena estos componentes se define mediante:
+Luego,
+la estructura que almacena estos componentes se define mediante:
 
 \begin{lstlisting}
 type cross_split_witness (h1 h2 h3 h4 : heap) = {
@@ -4766,7 +4757,7 @@ pertenece a ambos marcos y se conserva como marco exterior de toda la secuencia.
 
 A partir de esta partición,
 \lstinline|state_equiv_eq| permite identificar los estados de las huellas locales con los requeridos por \lstinline|F_Seq|.
-Este constructor combina ambas huellas,
+Este constructor combina ambas huellas locales,
 y \lstinline|FF_Frame| incorpora \lstinline|h_ext| como marco exterior de la secuencia.
 Finalmente,
 se vuelve a utilizar \lstinline|state_equiv_eq| para identificar los estados reconstruidos con los de la derivación operacional original.
@@ -4796,11 +4787,20 @@ let framed_decomposition_complete (#p : stmt) (#s0 #s1 : state)
 \end{lstlisting}
 
 Esta caracterización proporciona una descomposición local,
-pero no exige que la transición obtenida sea mínima respecto de la extensión por marcos.
-Para obtener el Teorema de la Huella~\ref{teo:huella},
-se demuestra a continuación que toda ejecución admite una transición mínima por debajo de ella.
+pero no exige que la transición obtenida sea minimal respecto de la extensión por marcos de la Definición~\ref{def:huella-minima}.
+Por ejemplo,
+para el comando \lstinline|skip| $+ \ x := [1]$,
+con $x = 0$ y \emph{heap} $1 \mapsto 0$,
+la rama de lectura produce una derivación de \lstinline|footprint| que usa la celda 1 y deja el estado sin cambios.
+Sin embargo,
+la rama \lstinline|skip| produce la misma transición sobre el \emph{heap} vacío,
+por lo que la primera no es minimal.
+Cada constructor elige los recursos necesarios para su instrucción,
+pero no puede tener en cuenta que otra rama del programa justifique la misma transición con menos memoria.
+Por eso,
+\lstinline|footprint| se usa como paso intermedio para demostrar a continuación la existencia de una transición minimal por debajo de cada ejecución.
 
-\subsection*{Orden por marcos y transiciones mínimas}
+\subsection*{Orden por marcos y transiciones minimales}
 Para expresar la minimalidad como una propiedad lógica,
 \lstinline|runs p s0 s1| afirma que existe una derivación operacional entre los estados.
 Además,
@@ -4821,7 +4821,7 @@ se obtienen agregando el mismo marco a \lstinline|t0| y \lstinline|t1|.
 Esta relación permite definir \lstinline|minimal| como una transición válida de la que no puede retirarse un marco no vacío
 conservando una ejecución del mismo comando.
 Finalmente,
-\lstinline|has_min_below| afirma que existe una transición mínima cuya extensión reconstruye la transición original:
+\lstinline|has_min_below| afirma que existe una transición minimal cuya extensión reconstruye la transición original:
 
 \begin{lstlisting}
 let framed_by (t0 t1 s0 s1 : state) (hf : heap) : prop =
@@ -4840,7 +4840,7 @@ let has_min_below (p : stmt) (s0 s1 : state) : prop =
 \end{lstlisting}
 
 \subsection*{Finitud del fragmento local}
-Para demostrar que existe una transición mínima,
+Para demostrar que existe una transición minimal,
 se retiran marcos no vacíos mientras sea posible.
 La finitud del fragmento local permite justificar que este proceso termina.
 
@@ -4858,9 +4858,7 @@ let bounded (h : heap) (n : nat) : prop =
 
 let rec count (h : heap) (n : nat) : GTot nat (decreases n) =
   if n = 0 then 0
-  else count h (n - 1) + (
-    if known (h (n - 1)) then 1 else 0
-  )
+  else count h (n - 1) + (if known (h (n - 1)) then 1 else 0)
 \end{lstlisting}
 
 La prueba de que el fragmento local es finito tiene la siguiente signatura:
@@ -4869,20 +4867,20 @@ La prueba de que el fragmento local es finito tiene la siguiente signatura:
 let rec footprint_bounded (#p : stmt) (#s0 #s1 : state) (f : footprint p s0 s1)
   : Lemma (ensures exists (n : nat). bounded s0._2 n) (decreases f)
 \end{lstlisting}
-La prueba procede por inducción sobre la huella.
+La prueba procede por inducción sobre la huella local.
 Los casos primitivos parten de un \emph{heap} vacío o una única celda,
 para los que basta una cota igual a cero o a la dirección más uno.
 En la composición secuencial,
 se combinan las cotas de los fragmentos mediante \lstinline|union_bounded|,
 que toma el máximo de ambas.
 Los constructores de elección y de iteración reutilizan el resultado inductivo.
-La propiedad demostrada se refiere al \emph{heap} inicial de la huella y permite utilizar \lstinline|count| como medida finita en la prueba de minimalidad.
+La propiedad demostrada se refiere al \emph{heap} inicial de la huella local y permite utilizar \lstinline|count| como medida finita en la prueba de minimalidad.
 
 Con esta cota,
-el lema \lstinline|minimize| demuestra la existencia de una transición mínima.
+el lema \lstinline|minimize| demuestra la existencia de una transición minimal.
 Para ello utiliza dos propiedades de la extensión por marcos:
 \lstinline|empty_frame| establece que toda transición es extensión de sí misma por el \emph{heap} vacío,
-y \lstinline|compose_frames| permite combinar dos extensiones sucesivas mediante la unión de sus marcos.
+y \lstinline|compose_frames| permite reemplazar la extensión por un marco seguida de la extensión por otro marco por una única extensión con la unión de ambos.
 La signatura de \lstinline|minimize| es la siguiente:
 
 \begin{lstlisting}
@@ -4891,48 +4889,43 @@ let rec minimize (p : stmt) (s0 s1 : state) (n : nat)
           (ensures has_min_below p s0 s1) (decreases (count s0._2 n))
 \end{lstlisting}
 
-La demostración distingue si la transición recibida ya es mínima.
+La demostración distingue si la transición recibida ya es minimal.
 En ese caso,
 basta tomarla como testigo y utilizar el marco vacío.
 En caso contrario,
 la negación de minimalidad permite elegir una transición menor y un marco no vacío cuya extensión produce la original.
 Ese marco contiene al menos una ubicación conocida que,
 por ser disjunto del fragmento restante,
-no es conocida en dicho fragemento.
+no es conocida en dicho fragmento.
 Por ello,
 al retirarlo disminuye estrictamente la cantidad de ubicaciones conocidas del \emph{heap} inicial,
 como demuestra \lstinline|count_strict|.
-La llamada recursiva obtiene una transición mínima por debajo de la transición menor
+La llamada recursiva obtiene una transición minimal por debajo de la transición menor
 y \lstinline|compose_frames| combina los marcos para reconstruir la transición original.
 
 \subsection*{Resultado de minimalidad}
-La descomposición anterior permite aplicar \lstinline|minimize| al fragmento local acotado y extender el resultado a una ejecución cualquiera:
-
-\begin{teorema}[Descomposición en una transición mínima]
-Para todo comando \lstinline|p| y estados \lstinline|s0| y \lstinline|s1|,
-si existe una derivación de \lstinline|runsto p s0 s1|,
-entonces existe una transición mínima del mismo comando que,
+La descomposición anterior permite aplicar \lstinline|minimize| al fragmento local acotado y extender el resultado a una ejecución cualquiera.
+El lema \lstinline|footprint_theorem_minimal| estabece que toda ejecución admite una transición minimal del comando que,
 al extenderse con un marco disjunto de sus \emph{heaps} inicial y final,
-reconstruye los estados \lstinline|s0| y \lstinline|s1|.
-\end{teorema}
-
-El resultado se mecaniza mediante la función \lstinline|footprint_theorem_minimal|,
-cuya signatura es:
+reconstruye los estados originales:
 
 \begin{lstlisting}
 let footprint_theorem_minimal (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : Lemma (has_min_below p s0 s1)
 \end{lstlisting}
 
-Una vez obtenida la huella local,
-\lstinline|footprint_sound| proporciona su derivación operacional y \lstinline|minimize| permite obtener una transición mínima por debajo de ella.
+Para demostrarlo,
+\lstinline|runsto_decompose| descompone la ejecución en una huella local y un marco.
+Luego,
+\lstinline|footprint_sound| proporciona la derivación operacional de la huella local,
+y \lstinline|minimize| obtiene una transición minimal por debajo de ella.
 Finalmente,
 \lstinline|compose_frames| combina el marco retirado durante la minimización con el marco de la descomposición inicial,
-de modo que la extensión de la transición mínima reconstruye la ejecución original.
+de modo que la extensión de la transición minimal reconstruye la ejecución original.
 
 Para completar la caracterización del Teorema de la Huella,
 resta considerar la dirección inversa:
-toda transición mínima puede extenderse con un marco compatible.
+toda transición minimal extendida con un marco compatible es una ejecución del comando.
 Esta propiedad se obtiene mediante \lstinline|r_frame| y se expresa en el lema \lstinline|minimal_framed_runs|:
 
 \begin{lstlisting}
@@ -4946,19 +4939,26 @@ let minimal_framed_runs (p : stmt) (r0 r1 : state) (hf : heap)
     (r_frame r hf #() #())
 \end{lstlisting}
 
-Ambos resultados establecen el Teorema de la Huella~\ref{teo:huella} para el modelo formalizado.
-La minimalidad se expresa mediante \lstinline|minimal| y no se exige a toda derivación de \lstinline|footprint|.
+Combinando ambas direcciones obtenemos la versión mecanizada del Teorema de la Huella~\ref{teo:huella}.
+
+\begin{teorema}(Teorema de la Huella formalizado)
+Para todo comando \lstinline|p| y estados \lstinline|s0| y \lstinline|s1|,
+\begin{center}
+\lstinline|runs p s0 s1| $\iff$
+\lstinline|has_min_below p s0 s1|.
+\end{center}
+\end{teorema}
 
 \section{Completado de \emph{heaps} y certificados de error}
 Los resultados anteriores permiten razonar sobre fragmentos que dejan algunas ubicaciones como \lstinline|Unknown|.
-Para relacionar esas ejecuciones con estados cuyo \emph{heap} describe todas las ubicaciones,
+Para demostrar que los errores demostrados sobre esos fragmentos también pueden ocurrir en una memoria completa descrita,
 se define una operación de completado.
-Esta reemplaza cada celda \lstinline|Unknown| por \lstinline|Empty| y conserva las celdas ya conocidas:
+Esta reemplaza cada celda \lstinline|Unknown| por \lstinline|Empty| y conserva las celdas ya conocidas.
+Luego se demuestra que esta transformación preserva las ejecuciones y,
+en particular,
+las que terminan en error:
 
 \begin{lstlisting}
-let heap_is_complete (h : heap) : prop =
-  forall l. known (h l)
-
 let complete_cell (c : cell) : cell =
   match c with
   | Unknown -> Empty
@@ -4971,19 +4971,27 @@ let cstate (s : state) : state =
   (s._1, complete s._2, s._3)
 \end{lstlisting}
 
-El predicado \lstinline|heap_is_complete| caracteriza los \emph{heaps} que no contienen celdas \lstinline|Unknown|,
-y \lstinline|cstate| aplica el completado al \emph{heap} de un estado sin modificar su \emph{store} ni su modo de terminación.
+El estado \lstinline|cstate| aplica el completado al \emph{heap} de un estado sin modificar su \emph{store} ni su modo de terminación.
 Para demostrar que esta transformación conserva las ejecuciones,
-\lstinline|run_complete| construye por inducción una derivación operacional del mismo comando entre los estados completados:
+\lstinline|run_complete| demustra,
+por inducción sobre la derivación operacional original,
+que el mismo comando puede ejecutarse entre los estados obtenidos al completar su \emph{heap}:
 
 \begin{lstlisting}
 let rec run_complete (#p : stmt) (#s0 #s1 : state) (r : runsto p s0 s1)
   : GTot (runsto p (cstate s0) (cstate s1)) (decreases r)
 \end{lstlisting}
+
 En el caso de la alocación,
-una celda \lstinline|Unknown| pasa a ser \lstinline|Empty| y sigue cumpliendo la condición de \lstinline|R_Alloc|.
-Para las operaciones que actualizan el \emph{heap} se utiliza \lstinline|complete_override|,
-que permite intercambiar el completado y una actualización con una celda conocida:
+\lstinline|R_Alloc| permite reservar una ubicación marcada como \lstinline|Unknown| o \lstinline|Empty|.
+Por lo tanto,
+si el completado reemplaza \lstinline|Unknown| por \lstinline|Empty|,
+la misma ubicación sigue disponible para la alocación.
+
+Para los casos que modifican el \emph{heap},
+se utiliza el lema \lstinline|complete_override|.
+Este establece que actualizar una celda con un valor distinto de \lstinline|Unknown|
+y luego copletar el \emph{heap} produce el mismo resultado que completar primero el \emph{heap} y realizar despué esa actualización:
 
 \begin{lstlisting}
 let complete_override (st : store) (h : heap) (m : term_mode)
@@ -5005,7 +5013,7 @@ La función \lstinline|certify| demuestra esta propiedad a partir de la derivaci
 \begin{lstlisting}
 let error_reachable (pre : cond) (p : stmt) : prop =
   exists (s0 s1 : state). pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
-    heap_is_complete (cstate s0)._2 /\ runs p (cstate s0) (cstate s1)
+    (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1)
 
 let certify (#pre #post : cond) (#p : stmt)
   (pf : isl_triple pre p post) (s1 : state)
@@ -5016,12 +5024,13 @@ let certify (#pre #post : cond) (#p : stmt)
   exists_intro (fun (_ : runsto p (cstate s0) (cstate s1)) -> True)
     (run_complete r);
   assert (pre s0 /\ s1._3 == Er /\ runs p s0 s1 /\
-    heap_is_complete (cstate s0)._2 /\ runs p (cstate s0) (cstate s1))
+    (cstate s1)._3 == Er /\ runs p (cstate s0) (cstate s1))
 \end{lstlisting}
-La función \lstinline|certify| aplica \lstinline|soundness| al estado final recibido y obtiene un estado inicial que satisface la presunción,
-junto con una ejecución que alcanza el error.
+La función \lstinline|certify| combina la solidez de la ISL con la preservación de las ejecuciones por completado.
+A partir de una derivación lógica y de un estado final que satisface la postcondición y tiene modo \lstinline|Er|,
+obtiene una ejecución errónea desde un estado que satisfaace la presunción.
 Luego,
-\lstinline|run_complete| construye la correspondiente ejecución entre estados completados.
+\lstinline|run_complete| permite obtener también una ejecución errónea entre estados completados.
 De este modo,
 el certificado justifica tanto la alcanzabilidad desde el fragmento descrito por la presunción
 como la existencia de una ejecución de error sobre el \emph{heap} completo.
@@ -5031,7 +5040,7 @@ como la existencia de una ejecución de error sobre el \emph{heap} completo.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \chapter{Evaluación}
-\guido{En todos los ejemplos acá abajo, está claro que la post es satisfacible?}
+%\guido{En todos los ejemplos acá abajo, está claro que la post es satisfacible?}
 
 \label{cap:evaluacion}
 \begin{quote}
@@ -5051,10 +5060,15 @@ Estos casos muestran que la formalización puede expresar y verificar derivacion
 Además,
 se presenta un experimento exploratorio en el que un agente basado en un modelo de lenguaje utiliza la formalización para construir una prueba de error.
 
-\guido{``La formalización y ejemplos se desarrollaron sobre \fstar{} version XXX
-y se encuentran en el repositorio XXX, commit XXX''}
+Para cada caso,
+además de la derivación,
+se proporciona un estado final testigo y se demuestra la existencia del error,
+no solo la validez de la tripleta.
 
-\section{Detección de errores temporales básicos (\emph{Use After Free})}
+%\guido{``La formalización y ejemplos se desarrollaron sobre \fstar{} version XXX
+%y se encuentran en el repositorio XXX, commit XXX''}
+
+\section{Certificación de errores temporales básicos (\emph{use after free})}
 \label{sec:uaf}
 Para el primer caso de evaluación,
 analizaremos la capacidad del sistema para detectar un error temporal de memoria en lenguajes de bajo nivel,
@@ -5591,6 +5605,14 @@ Una vez demostrado el paso general,
 la regla permite obtener estados correspondientes a una cantidad finita de iteraciones
 sin construir manualmente una derivación diferente para cada valor del índice.
 
+La salida del bucle se representa mediante \lstinline|Assume (Eq (Var "i") (Var "n"))|.
+En este programa,
+\lstinline|i| comienza en cero y aumenta de a uno mientras sea menor que \lstinline|n|,
+por lo que nunca supera ese valor.
+Así,
+sobre los estados alcanzables del bucle,
+la igualdad equivale a la negación de su condición de continuación.
+
 La instrucción \lstinline|assert| se codifica como una elección entre el camino de error y el exitoso.
 Para expresar la condición opuesta se utiliza \lstinline|enot|,
 que representa la negación lógica de una expresión del lenguaje:
@@ -5642,7 +5664,7 @@ let rl_reachable () : Lemma (error_reachable (is_ok pre_init) prog_random_loop) 
 
 \section{Recorrido de una lista enlazada}
 \label{sec:listas}
-El último caso combina el razonamiento iterativo de la sección anterior con estructuras de datos almacenadas en memoria dinámica.
+Este caso combina el razonamiento iterativo de la sección anterior con estructuras de datos almacenadas en memoria dinámica.
 Para este escenario,
 formalizamos un programa que recorre una lista enlazada representada mediante nodos de dos celdas,
 acumulando la suma de sus elementos en la variable \lstinline|sum| y contando su longitud en la variable \lstinline|len|.
@@ -5690,7 +5712,7 @@ Un nodo ocupa dos ubicaciones de memoria adyacentes:
 \end{enumerate}
 
 Para describir una lista con una longitud arbitraria se define el predicado \lstinline|list_seg|.
-El caso de \lstinline|list_seg i j xs| describe un segmento de lista que empieza en \lstinline|i|,
+La aserción \lstinline|list_seg i j xs| describe un segmento de lista que empieza en \lstinline|i|,
 termina en \lstinline|j| y tiene la secuencia de valores \lstinline|xs|.
 El caso vacío representa un segmento sin nodos.
 El caso inductivo describe las dos celdas del primer nodo y el segmento restante con la conjunción separadora:
@@ -5920,12 +5942,12 @@ let lemma_sum (start_ptr : loc) (n : nat) (k : nat) (s : state)
   : Lemma (requires (post_sum start_ptr n k s))
           (ensures (is_ok (fun s0 -> exists (st_init : store).
             post_load_v start_ptr n k (st_init, s0._2, s0._3) /\
-            s0._1 "sum" == eval_value (st_init, s0._2, s0._3) (Plus (Var "sum") (Var "v")) /\
+            s0._1 "sum" == eval_value st_init (Plus (Var "sum") (Var "v")) /\
             (forall (y : var). y <> "sum" ==> s0._1 y == st_init y)) s)) =
   let st_init = override s._1 "sum" (Nat k) in
   exists_intro (fun (st_init : store) ->
     post_load_v start_ptr n k (st_init, s._2, s._3) /\
-    s._1 "sum" == eval_value (st_init, s._2, s._3) (Plus (Var "sum") (Var "v")) /\
+    s._1 "sum" == eval_value st_init (Plus (Var "sum") (Var "v")) /\
     (forall (y : var). y <> "sum" ==> s._1 y == st_init y)) st_init
 \end{lstlisting}
 El \emph{store} anterior se obtiene restableciendo únicamente \lstinline|sum| a \lstinline|Nat k|.
@@ -6140,8 +6162,13 @@ y obtuvo una postcondición de error que conserva el \emph{heap} negativo corres
 La demostración generada fue aceptada por \fstar{}.
 
 Se agregó además un estado final testigo para este programa abstracto.
-La cola se describe con tamaño y capacidad iguales a cuatro,
-el valor de \lstinline|"avg"| es \lstinline|Nat 16| y \lstinline|"lowest"| contiene \lstinline|Loc 1|.
+Las variables \lstinline|"q_size"| y \lstinline|"q_capacity"| conservan el valor cuatro,
+utilizado para seleccionar el camino en el que la cola estaba llena.
+El valor de \lstinline|"avg"| se abstrae mediante \lstinline|Nat 16|:
+no se representa el cálculo en punto flotante,
+cuyo resultado en el programa C es $16,25$,
+ya que el error depede de la dirección de escritura.
+La variable \lstinline|"lowest"| contiene \lstinline|Loc 1|.
 La ubicación \lstinline|1| aparece como \lstinline|Empty| y el modo es \lstinline|Er|.
 El lema \lstinline|tq_reachable| aplica \lstinline|certify| a la derivación y a este estado,
 por lo que establece la existencia del error en el modelo y de la correspondiente ejecución sobre estados completados.
@@ -6150,7 +6177,7 @@ Esta demostración corresponde al programa abstracto que modela la invalidación
 y la escritura posterior sobre ella.
 No se mecanizó la traducción desde C ni su correspondencia completa con \lstinline|realloc|.
 
-Este experimento constituye una prueba preliminar de uso y no una evaluación sistemática de la capacidad de los LLM para construir pruebas formales.
+Este experimento constituye una prueba preliminar de uso y no una evaluación sistemática de la capacidad de los modelos de lenguaje para construir pruebas formales.
 En este caso,
 muestra que la formalización puede usarse como un lenguaje objetivo en el cual un agente automático
 construya certificados de incorrectitud que luego puedan ser comprobados por \fstar{}.
@@ -6174,8 +6201,8 @@ El predicado \lstinline|history| relaciona las posiciones sucesivas del puntero,
 mientras que la Regla del Marco permite justificar las lecturas conservando la información sobre el resto de la lista.
 
 Finalmente,
-en el experimento,
-el agente utilizó la formalización para construir una prueba de error que luego fue comprobada por \fstar{}. 
+el último caso consiste en el experimento,
+donde el agente utilizó la formalización para construir una prueba de error que luego fue comprobada por \fstar{}. 
 
 En los cinco casos se obtiene además un certificado de existencia de error.
 
@@ -6243,16 +6270,18 @@ el resultado relaciona cada estado final descrito por su derivación con un esta
 La demostración del caso de la Regla del Marco requirió probar que una ejecución local puede extenderse con un \emph{heap} disjunto que no es modificado.
 
 También se mecanizó el Teorema de la Huella,
-que caracteriza las ejecuciones como extensiones de transiciones mpinimas mediante marcos disjuntos.
+que caracteriza las ejecuciones como extensiones de transiciones minimales mediante marcos disjuntos.
 Además,
 se demostró que las ejecuciones se preservan al completar los \emph{heaps} y se incorporaron certificados de existencia de errores.
 
 Finalmente,
-la formalización fue evaluada con cinco casos de estudio.
+la formalización fue evaluada con cuatro casos de estudio y un experimento expliratorio.
 Se construyeron derivaciones para un error \emph{use after free},
 un puntero colgante producido por una reasignación no determinista,
 una ejecución con una gran cantidad de iteraciones y decisiones no deterministas,
 y el recorrido de una lista enlazada.
+Además,
+se verificó la abstracción del camino de error del programa generado en C en el experimento exploratorio.
 Cada caso cuenta con un certificado de existencia de error.
 
 El desarrollo obtenido constituye un núcleo lógico mecanizado y la formalización garantiza el respaldo operacional de las derivaciones construidas.
@@ -6276,7 +6305,7 @@ El desarrollo fue formalizado en lógica de orden superior y mecanizado en HOL4~
 El objetivo de ese trabajo es permitir la especificación y verificación de propiedades funcionales
 y de uso de recursos directamente sobre programas de bajo nivel.
 Aunque el modelo conserva detalles de la máquina,
-las especificaciones se expresan con una especificación flexible del estado inspirada en el razonamiento local de la SL.
+las especificaciones se expresan mediante un representación flexible del estado inspirada en el razonamiento local de la SL.
 
 El uso de una semántica operacional explícita y de un asistente de pruebas para justificar las reglas de razonamiento
 es un enfoque que comparte ese trabajo con la tesina actual.
@@ -6357,7 +6386,7 @@ registros, palabras de máquina, saltos y detalles de arquitecturas concretas.
 Esta tesina usa un lenguaje más chico para estudiar directamente la estructura metateórica de la IL y la ISL.
 
 La diferencia más importante se encuentra en el razonamiento espacial.
-IsaBIL no incorpora actualmente la SL ni la ISL.
+La versión de IsaBIL presentada en ese trabajo no incorpora la SL ni la ISL.
 Los autores explican que la memoria de BIL se representa con un historial de actualizaciones y que esa representación
 no es directamente compatible con la separación del \emph{heap},
 por lo que dejan la ISL como una extensión futura.

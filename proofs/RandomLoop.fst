@@ -65,14 +65,14 @@ let lemma_assign_i (k : nat) (s : state) : Lemma
   (ensures (is_ok (fun s ->
       exists (st_init : store). 
         pre_assign k (st_init, s._2, s._3) /\ 
-        s._1 "i" == eval_value (st_init, s._2, s._3) (Plus (Var "i") (Const 1)) /\
+        s._1 "i" == eval_value st_init (Plus (Var "i") (Const 1)) /\
         (forall y. y <> "i" ==> s._1 y == st_init y)) s)) =
   let st, hp, m = s in
   let st_init = override st "i" (Nat k) in
   let s_init = (st_init, hp, m) in
   let p_exist (st_i : store) : prop =
     pre_assign k (st_i, hp, m) /\ 
-    st "i" == eval_value (st_i, hp, m) (Plus (Var "i") (Const 1)) /\
+    st "i" == eval_value st_i (Plus (Var "i") (Const 1)) /\
     (forall y. y <> "i" ==> st y == st_i y)
   in
   Classical.exists_intro p_exist st_init
@@ -82,14 +82,14 @@ let lemma_assign_j (k:nat) (s:state) : Lemma
   (ensures (is_ok (fun s ->
       exists (st_init : store). 
         post_inc_i k (st_init, s._2, s._3) /\ 
-        s._1 "j" == eval_value (st_init, s._2, s._3) (Plus (Var "j") (Const 1)) /\
+        s._1 "j" == eval_value st_init (Plus (Var "j") (Const 1)) /\
         (forall y. y <> "j" ==> s._1 y == st_init y)) s)) =
   let st, hp, m = s in
   let st_init = override st "j" (Nat k) in
   let s_init = (st_init, hp, m) in
   let p_exist (st_i : store) : prop =
     post_inc_i k (st_i, hp, m) /\ 
-    st "j" == eval_value (st_i, hp, m) (Plus (Var "j") (Const 1)) /\
+    st "j" == eval_value st_i (Plus (Var "j") (Const 1)) /\
     (forall y. y <> "j" ==> st y == st_i y)
   in
   Classical.exists_intro p_exist st_init
